@@ -28,10 +28,10 @@ import git
 from git.exc import InvalidGitRepositoryError
 from pathvalidate.argparse import sanitize_filename, validate_filename, validate_filepath
 
-from config import CONFIG
-from constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAMES, OPTIMIZERS_FILE, PY_INTERPRETER
-from path_util import absopen, abspath
-from util import shell_join
+from bbomark.optimizers.config import CONFIG
+from bbomark.constants import ARG_DELIM, DATA_LOADER_NAMES, METRICS, MODEL_NAMES, OPTIMIZERS_FILE, PY_INTERPRETER
+from bbomark.utils.path_util import absopen, abspath
+from bbomark.utils.util import shell_join
 
 assert not any(ARG_DELIM in opt for opt in MODEL_NAMES)
 assert not any(ARG_DELIM in opt for opt in DATA_LOADER_NAMES)
@@ -172,7 +172,7 @@ def load_rev_number():
         rev = rev_file
 
     # Get rev from git API if inside git repo (and not built wheel from pip install ...)
-    wdir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    wdir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     try:
         repo = git.Repo(path=wdir, search_parent_directories=False)
     except InvalidGitRepositoryError:
@@ -246,11 +246,11 @@ def launcher_parser(description):
 def experiment_parser(description):
     parser = argparse.ArgumentParser(description=description, parents=[base_parser()])
 
-    add_argument(parser, CmdArgs.uuid, type=uuid, required=True, help="length 32 hex UUID for this experiment")
+    add_argument(parser, CmdArgs.uuid, type=uuid, required=False, help="length 32 hex UUID for this experiment") # TODO
 
     # This could be made simpler and use '.' default for dataroot, even if no custom data used.
     add_argument(parser, CmdArgs.data_root, type=filepath, help="root directory for all custom csv files")
-    add_argument(parser, CmdArgs.db, type=filename, required=True, help="database ID of this benchmark experiment")
+    add_argument(parser, CmdArgs.db, type=filename, required=False, help="database ID of this benchmark experiment") # TODO
     add_argument(parser, CmdArgs.optimizer, required=True, type=joinable, help="optimizer to use")
     add_argument(parser, CmdArgs.data, required=True, type=joinable, help="data set to use")
     add_argument(parser, CmdArgs.classifier, required=True, type=joinable, help="classifier to use")

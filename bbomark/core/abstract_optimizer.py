@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 
 from importlib_metadata import version
 
-import space
+
 
 def validate_space(config_spaces):
     for config_space in config_spaces:
@@ -30,7 +30,7 @@ class AbstractOptimizer(ABC):
     # Every implementation package needs to specify this static variable, e.g., "primary_import=opentuner"
     primary_import = None
 
-    def __init__(self, api_config, **kwargs):
+    def __init__(self, config_spaces, **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -39,7 +39,7 @@ class AbstractOptimizer(ABC):
             Configuration of the optimization variables. See API description.
         """
         # self.api_config = api_config
-        self.space = space.build_space(api_config)
+        self.space = config_spaces
 
     @classmethod
     def get_version(cls):
@@ -56,6 +56,7 @@ class AbstractOptimizer(ABC):
         version_str = "1.0.0"
         return version_str
 
+    @abstractmethod
     def suggest(self, n_suggestions): # output [meta param]
         """Get a suggestion from the optimizer.
 
@@ -71,64 +72,17 @@ class AbstractOptimizer(ABC):
             function. Each suggestion is a dictionary where each key
             corresponds to a parameter being optimized.
         """
-
-        next_guess = [self._suggest() for _ in range(n_suggestions)]
-        self._post_suggest(next_guess)
-
-        return next_guess
-
-    @abstractmethod
-    def _suggest(self, n_suggestions): # output [meta param]
-        """Get a suggestion from the optimizer.
-
-        Parameters
-        ----------
-        n_suggestions : int
-            Desired number of parallel suggestions in the output
-
-        Returns
-        -------
-        next_guess : list of dict
-            List of `n_suggestions` suggestions to evaluate the objective
-            function. Each suggestion is a dictionary where each key
-            corresponds to a parameter being optimized.
-        """
         pass
+        # next_guess = self._suggest(n_suggestions)
+        # self._post_suggest(next_guess)
+        #
+        # return next_guess
 
 
-    # def _pre_suggest(self):
-    #     """Get a suggestion from the optimizer.
-    #
-    #     Parameters
-    #     ----------
-    #     n_suggestions : int
-    #         Desired number of parallel suggestions in the output
-    #
-    #     Returns
-    #     -------
-    #     next_guess : list of dict
-    #         List of `n_suggestions` suggestions to evaluate the objective
-    #         function. Each suggestion is a dictionary where each key
-    #         corresponds to a parameter being optimized.
-    #     """
-    #     pass
 
-    def _post_suggest(self, next_guess):
-        """Get a suggestion from the optimizer.
+    # def _post_suggest(self, next_guess):
 
-        Parameters
-        ----------
-        n_suggestions : int
-            Desired number of parallel suggestions in the output
-
-        Returns
-        -------
-        next_guess : list of dict
-            List of `n_suggestions` suggestions to evaluate the objective
-            function. Each suggestion is a dictionary where each key
-            corresponds to a parameter being optimized.
-        """
-        validate_space(next_guess)
+    #     validate_space(next_guess)
 
 
     def observe(self, X, y): # input [meta param]
@@ -143,26 +97,10 @@ class AbstractOptimizer(ABC):
         y : array-like, shape (n,)
             Corresponding values where objective has been evaluated
         """
-        for xx, yy in zip(X, y):
-            xx = self.warp(xx)
-            self.space.
-            self._observe(xx, yy)
-
-
-    @abstractmethod
-    def _observe(self, X, y): # input [meta param]
-        """Send an observation of a suggestion back to the optimizer.
-
-        Parameters
-        ----------
-        X : list of dict-like
-            Places where the objective function has already been evaluated.
-            Each suggestion is a dictionary where each key corresponds to a
-            parameter being optimized.
-        y : array-like, shape (n,)
-            Corresponding values where objective has been evaluated
-        """
         pass
+
+
+
 
     def warp(self, parms):
         pass

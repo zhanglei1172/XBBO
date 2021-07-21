@@ -19,9 +19,9 @@ import numpy as np
 import pandas as pd  # only needed for csv reader, maybe try something else
 from sklearn import datasets
 
-from constants import DATA_LOADER_NAMES, SCORERS_CLF, SCORERS_REG
-from path_util import join_safe_r
-from stats import robust_standardize
+from bbomark.constants import DATA_LOADER_NAMES, SCORERS_CLF, SCORERS_REG
+from bbomark.utils.path_util import join_safe_r
+from bbomark.data.stats import robust_standardize
 
 
 class ProblemType(IntEnum):

@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import bbomark.random_search as rs
 # from bbomark import np_util
-from bbomark.abstract_optimizer import AbstractOptimizer
+from bbomark.core.abstract_optimizer import AbstractOptimizer
 
 
 class RandomOptimizer(AbstractOptimizer):
     # Unclear what is best package to list for primary_import here.
     primary_import = "bbomark"
 
-    def __init__(self, api_config, random=None):
+    def __init__(self, config_spaces, random=None):
         """Build wrapper class to use random search function in benchmark.
 
         Settings for `suggest_dict` can be passed using kwargs.
@@ -30,10 +29,10 @@ class RandomOptimizer(AbstractOptimizer):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        super().__init__(self, api_config)
+        super().__init__(config_spaces)
         self.random = random
 
-    def _suggest(self, n_suggestions=1):
+    def suggest(self, n_suggestions=1):
         """Get suggestion.
 
         Parameters
@@ -48,7 +47,9 @@ class RandomOptimizer(AbstractOptimizer):
             function. Each suggestion is a dictionary where each key
             corresponds to a parameter being optimized.
         """
-        x_guess = rs.suggest_dict([], [], self.api_config, n_suggestions=n_suggestions, random=self.random)
+        # x_guess = rs.suggest_dict([], [], self.space, n_suggestions=n_suggestions, random=self.random)
+        x_guess = self.space.sample_configuration_and_unwarp(size=n_suggestions)
+        # x_guess = self.space.sample_configuration_and_unwarp(size=n_suggestions)
         return x_guess
 
     def observe(self, X, y):
