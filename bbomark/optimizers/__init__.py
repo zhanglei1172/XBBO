@@ -38,4 +38,4 @@ def get_opt_class(opt_name):
         assert False, "CONFIG for built in optimizers has added a new optimizer, but not updated this function."
 
     opt_class = opt.opt_wrapper
-    return opt_class
+    return opt_class, opt.feature_space

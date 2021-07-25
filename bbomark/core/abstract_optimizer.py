@@ -14,14 +14,12 @@
 """Abstract base class for the optimizers in the benchmark. This creates a common API across all packages.
 """
 from abc import ABC, abstractmethod
-
-from importlib_metadata import version
-
+# from bbomark.configspace.space import Configurations
 
 
-def validate_space(config_spaces):
-    for config_space in config_spaces:
-        config_space.is_valid_configuration()
+# def validate_space(config_spaces):
+#     for config_space in config_spaces:
+#         config_space.is_valid_configuration()
 
 class AbstractOptimizer(ABC):
     """Abstract base class for the optimizers in the benchmark. This creates a common API across all packages.
@@ -30,7 +28,7 @@ class AbstractOptimizer(ABC):
     # Every implementation package needs to specify this static variable, e.g., "primary_import=opentuner"
     primary_import = None
 
-    def __init__(self, config_spaces, **kwargs):
+    def __init__(self, config_spaces, feature_spaces, **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -40,6 +38,13 @@ class AbstractOptimizer(ABC):
         """
         # self.api_config = api_config
         self.space = config_spaces
+        self.feature_spaces = feature_spaces
+        self.feature_spaces.dtypes_idx_map = self.space.dtypes_idx_map
+        # self.warp = warp
+        # if logger is None:
+        #     self.logger = logging.getLogger('bbomark')
+        # else:
+        #     self.logger = logger
 
     @classmethod
     def get_version(cls):
@@ -55,6 +60,8 @@ class AbstractOptimizer(ABC):
         # version_str = "x.x.x" if cls.primary_import is None else version(cls.primary_import)
         version_str = "1.0.0"
         return version_str
+
+
 
     @abstractmethod
     def suggest(self, n_suggestions): # output [meta param]
@@ -72,7 +79,11 @@ class AbstractOptimizer(ABC):
             function. Each suggestion is a dictionary where each key
             corresponds to a parameter being optimized.
         """
-        pass
+        x_guess_configs = self.space.sample_configuration(size=n_suggestions)
+        x_guess = [x_guess_config.get_dict_unwarped() for x_guess_config in x_guess_configs]
+        # x_guess = self.configspace.sample_configuration_and_unwarp(size=n_suggestions)
+        # x_guess = self.configspace.sample_configuration_and_unwarp(size=n_suggestions)
+        return x_guess
         # next_guess = self._suggest(n_suggestions)
         # self._post_suggest(next_guess)
         #
@@ -85,7 +96,7 @@ class AbstractOptimizer(ABC):
     #     validate_space(next_guess)
 
 
-    def observe(self, X, y): # input [meta param]
+    def observe(self, features, y): # input [meta param]
         """Send an observation of a suggestion back to the optimizer.
 
         Parameters
@@ -102,8 +113,8 @@ class AbstractOptimizer(ABC):
 
 
 
-    def warp(self, parms):
-        pass
-
-    def unwarp(self, cs):
-        pass
+    # def warp(self, parms):
+    #     pass
+    #
+    # def unwarp(self, cs):
+    #     pass

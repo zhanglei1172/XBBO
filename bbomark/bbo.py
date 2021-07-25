@@ -5,14 +5,15 @@ from time import time
 
 from constants import ITER
 from bbomark.model import build_test_problem
-from bbomark.space import build_space
-
+from bbomark.configspace import build_space
+from bbomark.data.record import Record
 
 class BBO:
 
     def __init__(
             self,
             opt_class,
+            feature_spaces,
             opt_kwargs,
             model_name,
             dataset,
@@ -22,11 +23,11 @@ class BBO:
             data_root=None,
             callback=None):
         self.function_instance = build_test_problem(model_name, dataset, scorer, data_root)
-
+        self.feature_spaces = feature_spaces
         # Setup optimizer
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
         self.config_spaces = build_space(self.api_config)
-        self.optimizer_instance = opt_class(self.config_spaces, **opt_kwargs)
+        self.optimizer_instance = opt_class(self.config_spaces, self.feature_spaces, **opt_kwargs)
 
         # assert function_instance.objective_names == OBJECTIVE_NAMES
         # assert OBJECTIVE_NAMES[0] == cc.VISIBLE_TO_OPT
@@ -41,12 +42,14 @@ class BBO:
             # First do initial log at inf score, in case we don't even get to first eval before crash/job timeout
             self.callback(np.full((self.n_obj,), np.inf, dtype=float), 0)
 
-        self.suggest_time = np.zeros(n_calls)
-        self.observe_time = np.zeros(n_calls)
-        self.eval_time = np.zeros((n_calls, n_suggestions))
-        self.function_evals = np.zeros((n_calls, n_suggestions, self.n_obj))
-        self.suggest_log = [None] * n_calls
+        # self.suggest_time = np.zeros(n_calls)
+        # self.observe_time = np.zeros(n_calls)
+        # self.eval_time = np.zeros((n_calls, n_suggestions))
+        # self.function_evals = np.zeros((n_calls, n_suggestions, self.n_obj))
+        # self.suggest_log = [None] * n_calls
         self.n_calls = n_calls
+        self.record = Record(n_suggestions=self.n_suggestions)
+
 
 
     def _check(self):
@@ -59,21 +62,26 @@ class BBO:
     def run(self):
 
         for ii in range(self.n_calls):
+            # next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
+
             tt = time()
             try:
-                next_points = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
+                next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
             except Exception as e:
                 # logger.warning("Failure in optimizer suggest. Falling back to random search.")
                 # logger.exception(e, exc_info=True)
                 print(json.dumps({"optimizer_suggest_exception": {ITER: ii}}))
                 api_config = self.function_instance.get_api_config()
                 # TODO 直接随机采样
-                self.optimizer_instance.space.sample_configuration_and_unwarp(size=self.n_suggestions)
+                x_guess_configs = self.optimizer_instance.space.sample_configuration(size=self.n_suggestions) # a list
+                next_points = [x_guess_config.get_dict_unwarped() for x_guess_config in x_guess_configs]
+                features = [x_guess_config.get_array() for x_guess_config in x_guess_configs]
 
-            self.suggest_time[ii] = time() - tt
+            suggest_time = time() - tt
 
             assert len(next_points) == self.n_suggestions, "invalid number of suggestions provided by the optimizer"
-
+            eval_time = [None for _ in range(self.n_suggestions)]
+            function_evals = [None for _ in range(self.n_suggestions)]
             for jj, next_point in enumerate(next_points):
                 tt = time()
                 try:
@@ -81,13 +89,12 @@ class BBO:
                 except Exception as e:
 
                     f_current_eval = np.full((self.n_obj,), np.inf, dtype=float)
-                self.eval_time[ii, jj] = time() - tt
+                eval_time[jj] = time() - tt
                 assert np.shape(f_current_eval) == (self.n_obj,)
 
-                self.suggest_log[ii] = next_points
-                self.function_evals[ii, jj, :] = f_current_eval
+                function_evals[jj] = f_current_eval
 
-            eval_list = self.function_evals[ii, :, 0].tolist()
+            eval_list = np.asarray(function_evals)[:, 0].tolist()
 
             if self.callback is not None:
                 raise NotImplementedError()
@@ -96,14 +103,17 @@ class BBO:
 
             tt = time()
             try:
-                self.optimizer_instance.observe(next_points, eval_list)  # TODO 3
+                self.optimizer_instance.observe(features, eval_list)  # TODO 3
             except Exception as e:
                 # logger.warning("Failure in optimizer observe. Ignoring these observations.")
                 # logger.exception(e, exc_info=True)
                 print(json.dumps({"optimizer_observe_exception": {ITER: ii}}))
-            self.observe_time[ii] = time() - tt
+            observe_time = time() - tt
+            timing = {
+                         'suggest_time': suggest_time,
+                         'observe_time': eval_time,
+                         'eval_time': observe_time
+            }
+            self.record.append(features, function_evals, timing=timing, )
 
-        self.timing = (self.suggest_time, self.eval_time, self.observe_time)
-
-        return self.function_evals, self.timing, self.suggest_log
 

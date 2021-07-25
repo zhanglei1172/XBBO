@@ -27,7 +27,7 @@ class TestFunction(ABC):
 
     def __init__(self):
         """Setup general test function for benchmark. We assume the test function knows the meta-data about the search
-        space, but is also stateless to fit modeling assumptions. To keep stateless, it does not do things like count
+        configspace, but is also stateless to fit modeling assumptions. To keep stateless, it does not do things like count
         the number of function evaluations.
         """
         # This will need to be set before using other routines
@@ -209,11 +209,11 @@ class SklearnModel(TestFunction):
 #         """
 #         TestFunction.__init__(self)
 #
-#         # Find the space class, we could consider putting this in pkl too
+#         # Find the configspace class, we could consider putting this in pkl too
 #         problem_type = get_problem_type(dataset)
 #         assert problem_type in (ProblemType.clf, ProblemType.reg)
 #         _, _, self.api_config = MODELS_CLF[model] if problem_type == ProblemType.clf else MODELS_REG[model]
-#         self.space = JointSpace(self.api_config)
+#         self.configspace = JointSpace(self.api_config)
 #
 #         # Load the pre-trained model
 #         fname = SklearnModel.test_case_str(model, dataset, scorer) + ".pkl"
@@ -242,7 +242,7 @@ class SklearnModel(TestFunction):
 #         overall_loss : float
 #             Average loss over CV splits for sklearn model when tested using the settings in params.
 #         """
-#         x = self.space.warp([params])
+#         x = self.configspace.warp([params])
 #         y, = self.model.predict(x)
 #
 #         assert y.shape == (len(self.objective_names),)

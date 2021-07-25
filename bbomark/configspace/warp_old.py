@@ -2,19 +2,25 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.special import expit as logistic  # because nobody calls it expit
 from scipy.special import logit
-
+from copy import deepcopy
+import warnings
+import ConfigSpace.hyperparameters as CSH
 # from bbomark.utils.util import clip_chk
+'''
+warp for dict
+'''
 
 WARPED_DTYPE = np.float_
 N_GRID_DEFAULT = 8
 
+
 def identity(x):
-    """Helper function that perform warping in linear space. Sort of a no-op.
+    """Helper function that perform warping in linear configspace. Sort of a no-op.
 
     Parameters
     ----------
     x : scalar
-        Input variable in linear space. Can be any numeric type and is vectorizable.
+        Input variable in linear configspace. Can be any numeric type and is vectorizable.
 
     Returns
     -------
@@ -34,7 +40,7 @@ def bilog(x):
     Parameters
     ----------
     x : scalar
-        Input variable in linear space. Can be any numeric type and is vectorizable.
+        Input variable in linear configspace. Can be any numeric type and is vectorizable.
 
     Returns
     -------
@@ -51,7 +57,7 @@ def biexp(x):
     Parameters
     ----------
     x : scalar
-        Input variable in linear space. Can be any numeric type and is vectorizable.
+        Input variable in linear configspace. Can be any numeric type and is vectorizable.
 
     Returns
     -------
@@ -64,6 +70,201 @@ def biexp(x):
 
 WARP_DICT = {"linear": identity, "log": np.log, "logit": logit, "bilog": bilog}
 UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": biexp}
+ROUND_DICT = {"linear": identity, "round": np.rint}
+
+class Warp():
+
+    def __init__(self):
+        '''
+        all_warp: a dict, {hp_name: warp_name}
+        all_round: a dict, {hp_name: （round_func_name param_values）} (need encode)      or
+                            {hp_name: （round_func_name None）} (no need encode)
+        '''
+        self.all_warp = {}
+        self.all_round = {}
+        self.space_warped = {}
+        self.dtype_map = {}
+        # self.need_encodes = {}
+
+    def warp_space(self,
+                   dtype,
+                   param_name,
+                   param_range=None,
+                   param_values=None,
+                   warp='linear',
+                   discrete_method='linear',
+                   ):
+        '''
+        type: one of {'cat', 'ord', 'float'}
+        return range: [lower_warped, upper_warped] or values
+        '''
+        self.all_warp[param_name] = warp
+        self.dtype_map[param_name] = dtype
+        if dtype == 'cat':
+
+            assert warp == 'linear', "离散超参没有必要warp！！！"
+            assert not (param_values is None)
+            assert discrete_method == 'linear'
+            self.all_round[param_name] = (discrete_method, None)
+            param_values = np.sort(np.unique(param_values))
+            self.space_warped[param_name] = param_values
+            # return param_values
+            return CSH.CategoricalHyperparameter(name=param_name, choices=param_values)
+        elif dtype == 'ord':
+            assert not (param_values is None)
+            assert warp == 'linear', "离散超参没有必要warp！！！"
+            param_values = np.sort(np.unique(np.asarray(param_values, dtype='str')))
+            self.all_round[param_name] = (discrete_method, param_values)
+            # UniformIntegerHyperparameter(linear)、UniformFloatHyperparameter(round)
+            self.space_warped[param_name] = param_values
+            if discrete_method != 'linear':
+                warnings.warn("You should use UniformIntegerHyperparameter with discrete_method='linear' instead")
+                return CSH.UniformFloatHyperparameter(name=param_name, lower=0, upper=len(param_values) - 1)
+
+            # return 0, len(param_values) - 1
+            return CSH.UniformIntegerHyperparameter(name=param_name, lower=0, upper=len(param_values) - 1)
+        elif dtype in ('float', 'int'): # discrete_method actually use, int
+            assert (param_values is None)
+            assert not (param_range is None)
+            warp_func = WARP_DICT[warp]
+            self.space_warped[param_name] = warp_func(np.asarray(param_range))
+            self.all_round[param_name] = (discrete_method, None)
+            # return self.space_warped[param_name]
+            if dtype == 'float': # discrete_method can be round
+                return CSH.UniformFloatHyperparameter(
+                    name=param_name,
+                    lower=self.space_warped[param_name][0],
+                    upper=self.space_warped[param_name][1]
+                )
+            elif dtype == 'int':
+                assert discrete_method == 'linear'
+                assert warp == 'linear', 'type=int, configspace:{} must be "linear"'.format(warp)
+                return CSH.UniformIntegerHyperparameter(
+                    name=param_name,
+                    lower=self.space_warped[param_name][0],
+                    upper=self.space_warped[param_name][1]
+                )
+            else:
+                pass
+        else:
+            raise ValueError('param: type=%s not in {"cat", "ord", "con"}')
+
+
+    # @staticmethod
+    def _warp_space(self,
+                   param_name,
+                   param_range=None,
+                   param_values=None,
+                   warp='linear',
+                   discrete_method='linear',
+                   need_encode=False # ordinal var
+                   ):
+        '''
+        return range: [lower_warped, upper_warped]
+        '''
+        self.all_warp[param_name] = warp
+        if not (param_range is None): # 连续，包括uniformInt、uniformFloat(可能需要round)
+            assert (param_values is None)
+            warp_func = WARP_DICT[warp]
+            self.space_warped[param_name] = warp_func(np.asarray(param_range))
+            self.all_round[param_name] = (discrete_method, None)
+            return self.space_warped[param_name]
+        else: # 离散，包括cat、ordinal（sparse array离散）
+            assert not (param_values is None)
+            assert warp == 'linear', "离散超参没有必要warp！！！"
+            if need_encode: # ordinal,e.g. values=[False, True]
+                param_values = np.sort(np.unique(np.asarray(param_values, dtype='str')))
+                self.all_round[param_name] = (discrete_method, param_values)
+                # UniformIntegerHyperparameter(linear)、UniformFloatHyperparameter(round)
+                if discrete_method != 'linear':
+                    warnings.warn("You should use UniformIntegerHyperparameter with discrete_method='linear' instead")
+                self.space_warped[param_name] = param_values
+                return 0, len(param_values) - 1
+            else: # e.g. ['cat','dog','person'] => one-hot
+                # CategoricalHyperparameter
+                assert discrete_method == 'linear'
+                self.all_round[param_name] = (discrete_method, None)
+                param_values = np.sort(np.unique(param_values))
+                self.space_warped[param_name] = param_values
+                return param_values
+
+
+
+    # def unwarp_space(self, param_name):
+    #
+    #     warp = self.all_warp[param_name]
+    #     unwarp_func = UNWARP_DICT[warp]
+    #
+    #     return unwarp_func(self.space_warped[param_name])
+
+    def warp(self, xx): # TODO
+        '''
+        xx： a dict, valid
+        return: [dict]
+        '''
+        # xx_warped_list = []
+        # for xx in xx_list:
+        xx_warped = deepcopy(xx)
+        for param_key in self.all_warp:
+            warp_func = WARP_DICT[self.all_warp[param_key]]
+            xx_warped[param_key] = warp_func(xx_warped[param_key])
+            discrete_method, param_values = self.all_round[param_key]
+            if not (param_values is None):
+
+                xx_warped[param_key] = np.searchsorted(param_values, xx_warped[param_key])
+            # xx_warped_list.append(xx_warped)
+        return xx_warped
+
+    def unwrap(self, xx_warped): # TODO
+        '''
+        xx_warped: a dict
+        '''
+        # xx_list = []
+        xx = deepcopy(xx_warped)
+        for param_key in self.all_warp:
+            unwarp_func = UNWARP_DICT[self.all_warp[param_key]]
+            xx[param_key] = unwarp_func(xx[param_key])
+            # xx_list.append(xx)
+            # TODO
+            discrete_method, param_values = self.all_round[param_key]
+
+            round_func = ROUND_DICT[discrete_method]
+            xx_rounded = round_func(xx[param_key])
+            # if discrete_method != 'linear':
+            #     round_func = ROUND_DICT[discrete_method]
+            #     xx_rounded = round_func(xx[param_key])
+            # else:
+            #     xx_rounded = xx[param_key]
+            if param_values is None:
+                xx[param_key] = xx_rounded
+            else:
+                idx = np.clip(xx_rounded, 0, len(param_values) - 1)
+                xx[param_key] = param_values[idx] # TODO round索引类型
+        return xx
+
+    def warp_s(self, xx_list): # TODO
+        '''
+        xx_list: [:dict: hp]
+        return: [dict]
+        '''
+        xx_warped_list = []
+        for xx in xx_list:
+            # xx_warped = deepcopy(xx)
+            # for param_key in self.all_warp:
+            #     warp_func = WARP_DICT[self.all_warp[param_key]]
+            #     xx_warped[param_key] = warp_func(xx_warped[param_key])
+            xx_warped_list.append(self.warp(xx))
+        return xx_warped_list
+
+    def unwrap_s(self, xx_warped_list): # TODO
+        xx_list = []
+        for xx_w in xx_warped_list:
+            # xx = deepcopy(xx_w)
+            # for param_key in self.all_warp:
+            #     unwarp_func = UNWARP_DICT[self.all_warp[param_key]]
+            #     xx[param_key] = unwarp_func(xx[param_key])
+            xx_list.append(self.unwrap(xx_w))
+        return xx_list
 
 # def _error(msg, pre=False):  # pragma: validator
 #     """Helper routine for :func:`.check_array`.
@@ -175,7 +376,7 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         will not give an error when instantiated.
 #         """
 #         self.dtype = dtype
-#         assert warp in WARP_DICT, "invalid space %s, allowed spaces are: %s" % (str(warp), str(WARP_DICT.keys()))
+#         assert warp in WARP_DICT, "invalid configspace %s, allowed spaces are: %s" % (str(warp), str(WARP_DICT.keys()))
 #         self.warp_f = WARP_DICT[warp]
 #         self.unwarp_f = UNWARP_DICT[warp]
 #
@@ -265,7 +466,7 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         return X
 #
 #     def warp(self, X):
-#         """Warp inputs to a continuous space.
+#         """Warp inputs to a continuous configspace.
 #
 #         Parameters
 #         ----------
@@ -276,7 +477,7 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         Returns
 #         -------
 #         X_w : :class:`numpy:numpy.ndarray` of shape (..., m)
-#             Warped version of input space. By convention there is an extra dimension on warped array.
+#             Warped version of input configspace. By convention there is an extra dimension on warped array.
 #             Currently, ``m=1`` for all warpers. `X_w` will have a `float` type.
 #         """
 #         X = self.validate(X, pre=True)
@@ -294,7 +495,7 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         Parameters
 #         ----------
 #         X_w : :class:`numpy:numpy.ndarray` of shape (..., m)
-#             Warped version of input space. This is vectorized to work in any dimension. But, by convention, there is an
+#             Warped version of input configspace. This is vectorized to work in any dimension. But, by convention, there is an
 #             extra dimension on the warped array. Currently, the last dimension ``m=1`` for all warpers. `X_w` must be of
 #             a `float` type.
 #
@@ -313,12 +514,12 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         return X
 #
 #     def get_bounds(self):
-#         """Get bounds of the warped space.
+#         """Get bounds of the warped configspace.
 #
 #         Returns
 #         -------
 #         bounds : :class:`numpy:numpy.ndarray` of shape (D, 2)
-#             Bounds in the warped space. First column is the lower bound and the second column is the upper bound.
+#             Bounds in the warped configspace. First column is the lower bound and the second column is the upper bound.
 #             Calling ``bounds.tolist()`` gives the bounds in the standard form expected by `scipy` optimizers:
 #             ``[(lower_1, upper_1), ..., (lower_n, upper_n)]``.
 #         """
@@ -327,18 +528,18 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         return bounds
 #
 #     def grid(self, max_interp=N_GRID_DEFAULT):
-#         """Return grid spanning the original (unwarped) space.
+#         """Return grid spanning the original (unwarped) configspace.
 #
 #         Parameters
 #         ----------
 #         max_interp : int
-#             The number of points to use in grid space when a range and not values are used to define the space.
+#             The number of points to use in grid configspace when a range and not values are used to define the configspace.
 #             Must be ``>= 0``.
 #
 #         Returns
 #         -------
 #         values : list
-#             Grid spanning the original space. This is simply `self.values` if a grid has already been specified,
+#             Grid spanning the original configspace. This is simply `self.values` if a grid has already been specified,
 #             otherwise it is just grid across the range.
 #         """
 #         values = self.values
@@ -356,57 +557,57 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #
 #
 # class Real(Warp):
-#     """Space for transforming real variables to normalized space (after warping).
+#     """Space for transforming real variables to normalized configspace (after warping).
 #     """
 #
 #     def __init__(self, warp="linear", values=None, range_=None):
-#         """Build Real space class.
+#         """Build Real configspace class.
 #
 #         Parameters
 #         ----------
 #         warp : {'linear', 'log', 'logit', 'bilog'}
-#             Which warping type to apply to the space. The warping is applied in the original space. That is, in a space
+#             Which warping type to apply to the configspace. The warping is applied in the original configspace. That is, in a configspace
 #             with ``warp='log'`` and ``range_=(2.0, 10.0)``, the value 2.0 warps to ``log(2)``, not ``-inf`` as in some
 #             other frameworks.
 #         values : None or list(float)
-#             Possible values for space to take. Values must be of `float` type.
+#             Possible values for configspace to take. Values must be of `float` type.
 #         range_ : None or :class:`numpy:numpy.ndarray` of shape (2,)
-#             Array with (lower, upper) pair with limits of space. Note that one must specify `values` or `range_`, but
+#             Array with (lower, upper) pair with limits of configspace. Note that one must specify `values` or `range_`, but
 #             not both. `range_` must be composed of `float`.
 #         """
-#         assert warp is not None, "warp/space not specified for real"
+#         assert warp is not None, "warp/configspace not specified for real"
 #         super().__init__(np.float_, identity, warp, values, range_)
 #
 #
 # class Integer(Warp):
-#     """Space for transforming integer variables to continuous normalized space.
+#     """Space for transforming integer variables to continuous normalized configspace.
 #     """
 #
 #     def __init__(self, warp="linear", values=None, range_=None):
-#         """Build Integer space class.
+#         """Build Integer configspace class.
 #
 #         Parameters
 #         ----------
 #         warp : {'linear', 'log', 'bilog'}
-#             Which warping type to apply to the space. The warping is applied in the original space. That is, in a space
+#             Which warping type to apply to the configspace. The warping is applied in the original configspace. That is, in a configspace
 #             with ``warp='log'`` and ``range_=(2, 10)``, the value 2 warps to ``log(2)``, not ``-inf`` as in some other
 #             frameworks. There are no settings with integers that are compatible with the logit warp.
 #         values : None or list(float)
-#             Possible values for space to take. Values must be of `int` type.
+#             Possible values for configspace to take. Values must be of `int` type.
 #         range_ : None or :class:`numpy:numpy.ndarray` of shape (2,)
-#             Array with (lower, upper) pair with limits of space. Note that one must specify `values` or `range_`, but
+#             Array with (lower, upper) pair with limits of configspace. Note that one must specify `values` or `range_`, but
 #             not both. `range_` must be composed of `int`.
 #         """
-#         assert warp is not None, "warp/space not specified for int"
+#         assert warp is not None, "warp/configspace not specified for int"
 #         super().__init__(np.int_, np.round, warp, values, range_)
 #
 #
 # class Boolean(Warp):
-#     """Space for transforming Boolean variables to continuous normalized space.
+#     """Space for transforming Boolean variables to continuous normalized configspace.
 #     """
 #
 #     def __init__(self, warp=None, values=None, range_=None):
-#         """Build Boolean space class.
+#         """Build Boolean configspace class.
 #
 #         Parameters
 #         ----------
@@ -432,18 +633,18 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #
 #
 # class Categorical(Warp):
-#     """Space for transforming categorical variables to continuous normalized space.
+#     """Space for transforming categorical variables to continuous normalized configspace.
 #     """
 #
 #     def __init__(self, warp=None, values=None, range_=None):
-#         """Build Integer space class.
+#         """Build Integer configspace class.
 #
 #         Parameters
 #         ----------
 #         warp : None
 #             Must be omitted or None, provided for consitency with other types.
 #         values : list(str)
-#             Possible values for space to take. Values must be unicode strings. Requiring type unicode (``'U'``) rather
+#             Possible values for configspace to take. Values must be unicode strings. Requiring type unicode (``'U'``) rather
 #             than strings (``'S'``) corresponds to the native string type.
 #         range_ : None
 #             Must be omitted or None, provided for consitency with other types.
@@ -474,19 +675,19 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         return decode(x, self.values, True)
 #
 #     def warp(self, X):
-#         """Warp inputs to a continuous space.
+#         """Warp inputs to a continuous configspace.
 #
 #         Parameters
 #         ----------
 #         X : :class:`numpy:numpy.ndarray` of shape (...)
 #             Input variables to warp. This is vectorized to work in any dimension, but it must have the same
-#             type code as the class, which is unicode (``'U'``) for the :class:`.Categorical` space.
+#             type code as the class, which is unicode (``'U'``) for the :class:`.Categorical` configspace.
 #
 #         Returns
 #         -------
 #         X_w : :class:`numpy:numpy.ndarray` of shape (..., m)
-#             Warped version of input space. By convention there is an extra dimension on warped array. The warped space
-#             has a one-hot encoding and therefore `m` is the number of possible values in the space. `X_w` will have
+#             Warped version of input configspace. By convention there is an extra dimension on warped array. The warped configspace
+#             has a one-hot encoding and therefore `m` is the number of possible values in the configspace. `X_w` will have
 #             a `float` type.
 #         """
 #         X = self.validate(X, pre=True)
@@ -504,8 +705,8 @@ UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": bi
 #         Parameters
 #         ----------
 #         X_w : :class:`numpy:numpy.ndarray` of shape (..., m)
-#             Warped version of input space. The warped space has a one-hot encoding and therefore `m` is the number of
-#             possible values in the space. `X_w` will have a `float` type. Non-zero/one values are allowed in `X_w`.
+#             Warped version of input configspace. The warped configspace has a one-hot encoding and therefore `m` is the number of
+#             possible values in the configspace. `X_w` will have a `float` type. Non-zero/one values are allowed in `X_w`.
 #             The maximal element in the vector is taken as the encoded value.
 #
 #         Returns

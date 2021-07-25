@@ -20,9 +20,10 @@ def experiment_main(args=None):  # pragma: main
         args = cmd.parse_args(cmd.experiment_parser(description))
     # args[CmdArgs.opt_rev] = opt_class.get_version()
     # load meta info
-    opt_class = get_opt_class(args[CmdArgs.optimizer])
+    opt_class, feature_space_class = get_opt_class(args[CmdArgs.optimizer])
+    feature_space = feature_space_class()
     opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
-    bbo = BBO(opt_class,
+    bbo = BBO(opt_class,feature_space,
                 opt_kwargs,
                 args[CmdArgs.classifier],
                 args[CmdArgs.data],
@@ -32,8 +33,8 @@ def experiment_main(args=None):  # pragma: main
                 data_root=args[CmdArgs.data_root],
                 callback=None)
 
-    function_evals, timing, suggest_log = bbo.run()
-    print(function_evals, timing, suggest_log)
+    bbo.run()
+    print(bbo.record)
     # eval_ds = build_eval_ds(function_evals, OBJECTIVE_NAMES)
     # time_ds = build_timing_ds(*timing)
     # suggest_ds = build_suggest_ds(suggest_log)

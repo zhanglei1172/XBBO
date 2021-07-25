@@ -31,6 +31,14 @@
 
 ## 测试
 
+RandomSearch：
+
 ```bash
 python ./bbomark/demo.py -c DT -d boston -o RandomSearch -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 15 -p 1
+```
+
+Nevergrad优化器：
+
+```bash
+python ./bbomark/demo.py -c lasso -d boston -o Nevergrad-OnePlusOne -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 50 -p 1
 ```

@@ -10,78 +10,78 @@ from bbomark.constants import MODEL_NAMES
 
 # kNN
 knn_cfg = {
-    "n_neighbors": {"type": "int", "space": "linear", "range": (1, 25)},
-    "p": {"type": "int", "space": "linear", "range": (1, 4)},
+    "n_neighbors": {"type": "int", "configspace": "linear", "range": (1, 25)},
+    "p": {"type": "int", "configspace": "linear", "range": (1, 4)},
 }
 
 # SVM
 svm_cfg = {
-    "C": {"type": "real", "space": "log", "range": (1.0, 1e3)},
-    "gamma": {"type": "real", "space": "log", "range": (1e-4, 1e-3)},
-    "tol": {"type": "real", "space": "log", "range": (1e-5, 1e-1)},
+    "C": {"type": "real", "configspace": "log", "range": (1.0, 1e3)},
+    "gamma": {"type": "real", "configspace": "log", "range": (1e-4, 1e-3)},
+    "tol": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
 }
 
 # DT
 dt_cfg = {
-    "max_depth": {"type": "int", "space": "linear", "range": (1, 15)},
-    "min_samples_split": {"type": "real", "space": "logit", "range": (0.01, 0.99)},
-    "min_samples_leaf": {"type": "real", "space": "logit", "range": (0.01, 0.49)},
-    "min_weight_fraction_leaf": {"type": "real", "space": "logit", "range": (0.01, 0.49)},
-    "max_features": {"type": "real", "space": "logit", "range": (0.01, 0.99)},
-    "min_impurity_decrease": {"type": "real", "space": "linear", "range": (0.0, 0.5)},
+    "max_depth": {"type": "int", "configspace": "linear", "range": (1, 15)},
+    "min_samples_split": {"type": "real", "configspace": "logit", "range": (0.01, 0.99)},
+    "min_samples_leaf": {"type": "real", "configspace": "logit", "range": (0.01, 0.49)},
+    "min_weight_fraction_leaf": {"type": "real", "configspace": "logit", "range": (0.01, 0.49)},
+    "max_features": {"type": "real", "configspace": "logit", "range": (0.01, 0.99)},
+    "min_impurity_decrease": {"type": "real", "configspace": "linear", "range": (0.0, 0.5)},
 }
 
 # RF
 rf_cfg = {
-    "max_depth": {"type": "int", "space": "linear", "range": (1, 15)},
-    "max_features": {"type": "real", "space": "logit", "range": (0.01, 0.99)},
-    "min_samples_split": {"type": "real", "space": "logit", "range": (0.01, 0.99)},
-    "min_samples_leaf": {"type": "real", "space": "logit", "range": (0.01, 0.49)},
-    "min_weight_fraction_leaf": {"type": "real", "space": "logit", "range": (0.01, 0.49)},
-    "min_impurity_decrease": {"type": "real", "space": "linear", "range": (0.0, 0.5)},
+    "max_depth": {"type": "int", "configspace": "linear", "range": (1, 15)},
+    "max_features": {"type": "real", "configspace": "logit", "range": (0.01, 0.99)},
+    "min_samples_split": {"type": "real", "configspace": "logit", "range": (0.01, 0.99)},
+    "min_samples_leaf": {"type": "real", "configspace": "logit", "range": (0.01, 0.49)},
+    "min_weight_fraction_leaf": {"type": "real", "configspace": "logit", "range": (0.01, 0.49)},
+    "min_impurity_decrease": {"type": "real", "configspace": "linear", "range": (0.0, 0.5)},
 }
 
 # MLP with ADAM
 mlp_adam_cfg = {
-    "hidden_layer_sizes": {"type": "int", "space": "linear", "range": (50, 200)},
-    "alpha": {"type": "real", "space": "log", "range": (1e-5, 1e1)},
-    "batch_size": {"type": "int", "space": "linear", "range": (10, 250)},
-    "learning_rate_init": {"type": "real", "space": "log", "range": (1e-5, 1e-1)},
-    "tol": {"type": "real", "space": "log", "range": (1e-5, 1e-1)},
-    "validation_fraction": {"type": "real", "space": "logit", "range": (0.1, 0.9)},
-    "beta_1": {"type": "real", "space": "logit", "range": (0.5, 0.99)},
-    "beta_2": {"type": "real", "space": "logit", "range": (0.9, 1.0 - 1e-6)},
-    "epsilon": {"type": "real", "space": "log", "range": (1e-9, 1e-6)},
+    "hidden_layer_sizes": {"type": "int", "configspace": "linear", "range": (50, 200)},
+    "alpha": {"type": "real", "configspace": "log", "range": (1e-5, 1e1)},
+    "batch_size": {"type": "int", "configspace": "linear", "range": (10, 250)},
+    "learning_rate_init": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
+    "tol": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
+    "validation_fraction": {"type": "real", "configspace": "logit", "range": (0.1, 0.9)},
+    "beta_1": {"type": "real", "configspace": "logit", "range": (0.5, 0.99)},
+    "beta_2": {"type": "real", "configspace": "logit", "range": (0.9, 1.0 - 1e-6)},
+    "epsilon": {"type": "real", "configspace": "log", "range": (1e-9, 1e-6)},
 }
 
 # MLP with SGD
 mlp_sgd_cfg = {
-    "hidden_layer_sizes": {"type": "int", "space": "linear", "range": (50, 200)},
-    "alpha": {"type": "real", "space": "log", "range": (1e-5, 1e1)},
-    "batch_size": {"type": "int", "space": "linear", "range": (10, 250)},
-    "learning_rate_init": {"type": "real", "space": "log", "range": (1e-5, 1e-1)},
-    "power_t": {"type": "real", "space": "logit", "range": (0.1, 0.9)},
-    "tol": {"type": "real", "space": "log", "range": (1e-5, 1e-1)},
-    "momentum": {"type": "real", "space": "logit", "range": (0.001, 0.999)},
-    "validation_fraction": {"type": "real", "space": "logit", "range": (0.1, 0.9)},
+    "hidden_layer_sizes": {"type": "int", "configspace": "linear", "range": (50, 200)},
+    "alpha": {"type": "real", "configspace": "log", "range": (1e-5, 1e1)},
+    "batch_size": {"type": "int", "configspace": "linear", "range": (10, 250)},
+    "learning_rate_init": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
+    "power_t": {"type": "real", "configspace": "logit", "range": (0.1, 0.9)},
+    "tol": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
+    "momentum": {"type": "real", "configspace": "logit", "range": (0.001, 0.999)},
+    "validation_fraction": {"type": "real", "configspace": "logit", "range": (0.1, 0.9)},
 }
 
 # AdaBoostClassifier
 ada_cfg = {
-    "n_estimators": {"type": "int", "space": "linear", "range": (10, 100)},
-    "learning_rate": {"type": "real", "space": "log", "range": (1e-4, 1e1)},
+    "n_estimators": {"type": "int", "configspace": "linear", "range": (10, 100)},
+    "learning_rate": {"type": "real", "configspace": "log", "range": (1e-4, 1e1)},
 }
 
 # lasso
 lasso_cfg = {
-    "C": {"type": "real", "space": "log", "range": (1e-2, 1e2)},
-    "intercept_scaling": {"type": "real", "space": "log", "range": (1e-2, 1e2)},
+    "C": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
+    "intercept_scaling": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
 }
 
 # linear
 linear_cfg = {
-    "C": {"type": "real", "space": "log", "range": (1e-2, 1e2)},
-    "intercept_scaling": {"type": "real", "space": "log", "range": (1e-2, 1e2)},
+    "C": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
+    "intercept_scaling": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
 }
 
 MODELS_CLF = {
@@ -112,25 +112,25 @@ MODELS_CLF = {
 assert sorted(MODELS_CLF.keys()) == sorted(MODEL_NAMES)
 
 ada_cfg_reg = {
-    "n_estimators": {"type": "int", "space": "linear", "range": (10, 100)},
-    "learning_rate": {"type": "real", "space": "log", "range": (1e-4, 1e1)},
+    "n_estimators": {"type": "int", "configspace": "linear", "range": (10, 100)},
+    "learning_rate": {"type": "real", "configspace": "log", "range": (1e-4, 1e1)},
 }
 
 lasso_cfg_reg = {
-    "alpha": {"type": "real", "space": "log", "range": (1e-2, 1e2)},
+    "alpha": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
     "fit_intercept": {"type": "bool"},
     "normalize": {"type": "bool"},
-    "max_iter": {"type": "int", "space": "log", "range": (10, 5000)},
-    "tol": {"type": "real", "space": "log", "range": (1e-5, 1e-1)},
+    "max_iter": {"type": "int", "configspace": "log", "range": (10, 5000)},
+    "tol": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
     "positive": {"type": "bool"},
 }
 
 linear_cfg_reg = {
-    "alpha": {"type": "real", "space": "log", "range": (1e-2, 1e2)},
+    "alpha": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
     "fit_intercept": {"type": "bool"},
     "normalize": {"type": "bool"},
-    "max_iter": {"type": "int", "space": "log", "range": (10, 5000)},
-    "tol": {"type": "real", "space": "log", "range": (1e-4, 1e-1)},
+    "max_iter": {"type": "int", "configspace": "log", "range": (10, 5000)},
+    "tol": {"type": "real", "configspace": "log", "range": (1e-4, 1e-1)},
 }
 
 MODELS_REG = {
