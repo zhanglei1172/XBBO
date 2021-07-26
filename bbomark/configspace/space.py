@@ -180,6 +180,7 @@ class Configurations(CS.Configuration):
         assert isinstance(configuration_space, Space)
         super(Configurations, self).__init__(configuration_space,
                                                  *args, **kwargs)
+        super().is_valid_configuration()
 
     @classmethod
     def from_array(cls, configuration_space, array_sparse, dtype="float64"):

@@ -16,6 +16,9 @@
 import shlex
 import numpy as np
 
+random = np.random.random.__self__
+# np seed must be in [0, 2**32 - 1] = [0, uint32 max]
+SEED_MAX_INCL = np.iinfo(np.uint32).max
 
 def in_or_none(x, L):
     """Check if item is in list of list is None."""
@@ -250,3 +253,22 @@ def clip_chk(x, lb, ub, allow_nan=False):
         assert np.all(isclose_lte(x, ub))
     x = np.clip(x, lb, ub)
     return x
+
+def random_seed(random=random):
+    """Draw a random seed compatible with :class:`numpy:numpy.random.RandomState`.
+
+    Parameters
+    ----------
+    random : :class:`numpy:numpy.random.RandomState`
+        Random stream to use to draw the random seed.
+
+    Returns
+    -------
+    seed : int
+        Seed for a new random stream in ``[0, 2**32-1)``.
+    """
+    # np randint is exclusive on the high value, py randint is inclusive. We
+    # must use inclusive limit here to work with both. We are missing one
+    # possibility here (2**32-1), but I don't think that matters.
+    seed = random.randint(0, SEED_MAX_INCL)
+    return seed

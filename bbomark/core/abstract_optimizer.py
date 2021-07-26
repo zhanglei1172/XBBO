@@ -39,7 +39,8 @@ class AbstractOptimizer(ABC):
         # self.api_config = api_config
         self.space = config_spaces
         self.feature_spaces = feature_spaces
-        self.feature_spaces.dtypes_idx_map = self.space.dtypes_idx_map
+        if not (feature_spaces is None):
+            self.feature_spaces.dtypes_idx_map = self.space.dtypes_idx_map
         # self.warp = warp
         # if logger is None:
         #     self.logger = logging.getLogger('bbomark')
@@ -101,10 +102,7 @@ class AbstractOptimizer(ABC):
 
         Parameters
         ----------
-        X : list of dict-like
-            Places where the objective function has already been evaluated.
-            Each suggestion is a dictionary where each key corresponds to a
-            parameter being optimized.
+        features : list of features
         y : array-like, shape (n,)
             Corresponding values where objective has been evaluated
         """

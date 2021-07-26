@@ -71,7 +71,7 @@ class BBO:
                 # logger.warning("Failure in optimizer suggest. Falling back to random search.")
                 # logger.exception(e, exc_info=True)
                 print(json.dumps({"optimizer_suggest_exception": {ITER: ii}}))
-                api_config = self.function_instance.get_api_config()
+                # api_config = self.function_instance.get_api_config()
                 # TODO 直接随机采样
                 x_guess_configs = self.optimizer_instance.space.sample_configuration(size=self.n_suggestions) # a list
                 next_points = [x_guess_config.get_dict_unwarped() for x_guess_config in x_guess_configs]
@@ -114,6 +114,6 @@ class BBO:
                          'observe_time': eval_time,
                          'eval_time': observe_time
             }
-            self.record.append(features, function_evals, timing=timing, )
+            self.record.append(features, function_evals, timing=timing, suggest_log=next_points)
 
 

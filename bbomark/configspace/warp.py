@@ -83,6 +83,7 @@ class Warp():
         self.all_warp = {}
         # self.all_round = {}
         self.space_warped = {}
+        self.all_types = {}
         # self.dtype_map = {}
         # self.need_encodes = {}
 
@@ -109,6 +110,7 @@ class Warp():
             param_values = np.sort(np.unique(param_values))
             self.space_warped[param_name] = param_values
             # return param_values
+            self.all_types[param_name] = 'cat'
             return CSH.CategoricalHyperparameter(name=param_name, choices=param_values)
         elif dtype == 'ord':
             assert not (param_values is None)
@@ -122,6 +124,7 @@ class Warp():
             #     return CSH.UniformFloatHyperparameter(name=param_name, lower=0, upper=len(param_values) - 1)
 
             # return 0, len(param_values) - 1
+            self.all_types[param_name] = 'ord'
             return CSH.OrdinalHyperparameter(name=param_name, sequence=param_values)
         elif dtype in ('float', 'int'): # discrete_method actually use, int
             assert (param_values is None)
@@ -133,6 +136,7 @@ class Warp():
             if dtype == 'float': # discrete_method can be round
                 warp_func = WARP_DICT[warp]
                 self.space_warped[param_name] = warp_func(np.asarray(param_range))
+                self.all_types[param_name] = 'float'
                 return CSH.UniformFloatHyperparameter(
                     name=param_name,
                     lower=self.space_warped[param_name][0],
@@ -145,6 +149,7 @@ class Warp():
                 self.space_warped[param_name] = warp_func(np.asarray(param_range))
                 # assert discrete_method == 'linear'
                 # assert warp == 'linear', 'type=int, configspace:{} must be "linear"'.format(warp)
+                self.all_types[param_name] = 'int'
                 return CSH.UniformIntegerHyperparameter(
                     name=param_name,
                     lower=self.space_warped[param_name][0],

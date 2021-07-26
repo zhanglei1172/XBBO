@@ -12,12 +12,7 @@ class AbstractFeatureSpace(ABC):
 
 
     def __init__(self):
-        self.features = []
-
-    def mapping(self):
-        map_dict = {
-
-        }
+        pass
 
     def array_to_feature(self, array, dense_dim):
         return array
@@ -25,8 +20,72 @@ class AbstractFeatureSpace(ABC):
     def feature_to_array(self, feature, sparse_dim):
         return feature
 
-    def record_feature(self, feature):
-        self.features.append(feature)
+class Identity(AbstractFeatureSpace):
+    '''
+    uniform to Gaussian
+    '''
+
+    def __init__(self):
+        '''
+        U(0, 1) to std gaussian feature
+        define target feature's mean and std
+        '''
+        super().__init__()
+
+    def sparse_array_to_feature(self, sparse_array):
+        '''
+        convert to Gaussian distribution
+        '''
+
+        return sparse_array
+
+    def feature_to_sparse_array(self, feature):
+        return feature
+
+class Cat2Onehot(AbstractFeatureSpace):
+    '''
+    uniform to Gaussian
+    '''
+
+    def __init__(self):
+        '''
+        U(0, 1) to std gaussian feature
+        define target feature's mean and std
+        '''
+        super().__init__()
+
+    def sparse_array_to_feature(self, sparse_array, cat_num):
+        '''
+        convert to Gaussian distribution
+        '''
+        feat = np.zeros(cat_num)
+        feat[sparse_array] = 1
+        return feat
+
+    def feature_to_sparse_array(self, feature, cat_num):
+        return np.argmax(feature).item()
+
+class Ord2Uniform(AbstractFeatureSpace):
+    '''
+    uniform to Gaussian
+    '''
+
+    def __init__(self):
+        '''
+        U(0, 1) to std gaussian feature
+        define target feature's mean and std
+        '''
+        super().__init__()
+
+    def sparse_array_to_feature(self, sparse_array, seqnum):
+        '''
+        convert to Gaussian distribution
+        '''
+
+        return sparse_array / (seqnum-1)
+
+    def feature_to_sparse_array(self, feature, seqnum):
+        return np.rint(feature * (seqnum-1))
 
 class U2gaussian(AbstractFeatureSpace):
     '''
@@ -35,12 +94,15 @@ class U2gaussian(AbstractFeatureSpace):
 
     def __init__(self):
         '''
-        U(0, 1) to std gaussian
+        U(0, 1) to std gaussian feature
         define target feature's mean and std
         '''
         super().__init__()
 
     def sparse_array_to_feature(self, sparse_array):
+        '''
+        convert to Gaussian distribution
+        '''
 
         return stats.norm.ppf(sparse_array)
 
@@ -61,12 +123,15 @@ class Ordinal(AbstractFeatureSpace):
         return threshold_discretization(feature, arity=seq_num)
 
     def sparse_array_to_feature(self, sparse_array, seq_num):
+        '''
+        convert to Gaussian distribution
+        '''
         return inverse_threshold_discretization(sparse_array, arity=seq_num)
 
 
 class Gaussian(AbstractFeatureSpace):
 
-    def __init__(self, mean, std):
+    def __init__(self, mean=0, std=1):
         '''
         std gaussian to specify gaussian
         define target feature's mean and std
@@ -76,6 +141,9 @@ class Gaussian(AbstractFeatureSpace):
         self.std = std
 
     def sparse_array_to_feature(self, sparse_array):
+        '''
+        convert to Gaussian distribution
+        '''
         return self.std * sparse_array + self.mean
 
     def feature_to_sparse_array(self, feature):
@@ -90,12 +158,15 @@ class Category(AbstractFeatureSpace):
 
     def feature_to_sparse_array(self, feature, cat_num):
         '''
-        return a [0 1 0 0] one-hot
+        return a int index
         '''
 
-        return int(softmax_discretization(feature, cat_num, deterministic=self.deterministic)[0])
+        return int(softmax_discretization(feature, cat_num, deterministic=self.deterministic).item())
 
     def sparse_array_to_feature(self, sparse_array, cat_num):
+        '''
+        convert to Gaussian distribution
+        '''
         return inverse_softmax_discretization(sparse_array, cat_num)
 
 
@@ -156,14 +227,22 @@ def softmax_discretization(x, arity: int = 2, deterministic: bool = False):
     - in case of tie, the deterministic value is the first one (lowest) of the tie
     - nans and -infs are ignored, except if all are (then uniform random choice)
     """
-    data = np.array(x, copy=True, dtype=float).reshape((-1, arity))
+    # data = np.array(x, copy=True, dtype=float).reshape((-1, arity))
+    # if np.any(np.isnan(data)):
+    #     warnings.warn("Encountered NaN values for discretization")
+    #     data[np.isnan(data)] = -np.inf
+    # if deterministic:
+    #     output = np.argmax(data, axis=1).tolist()
+    #     return output
+    # return [np.random.choice(arity, p=softmax_probas(d)) for d in data]
+    data = np.array(x, copy=True, dtype=float)
     if np.any(np.isnan(data)):
         warnings.warn("Encountered NaN values for discretization")
         data[np.isnan(data)] = -np.inf
     if deterministic:
-        output = np.argmax(data, axis=1).tolist()
+        output = np.argmax(data, axis=1)
         return output
-    return [np.random.choice(arity, p=softmax_probas(d)) for d in data]
+    return np.random.choice(arity, p=softmax_probas(data))
     # data = np.array(x, copy=True, dtype=float)#.reshape((-1, arity))
     # output = np.zeros_like(data)
     # if np.any(np.isnan(data)):
@@ -191,10 +270,10 @@ def softmax_probas(data: np.ndarray) -> np.ndarray:
         data = np.ones(len(data))
     return data / np.sum(data)
 
-def inverse_softmax_discretization(_x: list, arity: int):
+def inverse_softmax_discretization(_x: int, arity: int):
     # p is an arbitrary probability that the provided arg will be sampled with the returned point
     p = (1 / arity) * 1.5
     # x = np.zeros(arity)
     x = np.zeros_like(_x)
-    x[_x==1] = np.log((p * (arity - 1)) / (1 - p))
+    x[_x] = np.log((p * (arity - 1)) / (1 - p))
     return x

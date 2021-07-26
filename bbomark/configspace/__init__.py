@@ -45,7 +45,7 @@ def build_space(meta):
                    warp=param_space,)
             # arg = CSH.OrdinalHyperparameter(name=param_name, sequence=param_values)
         elif param_values is not None:
-            assert param_type in ("int", "ordinal", "real") # TODO 有些优化器能直接处理Ordinal？现在直接转为real，warp取整
+            assert param_type in ("int", "ord", "real") # TODO 有些优化器能直接处理Ordinal？现在直接转为real，warp取整
             assert param_space == 'linear'
             arg = warp.warp_space('ord',
                    param_name,

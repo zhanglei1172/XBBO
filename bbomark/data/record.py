@@ -13,6 +13,7 @@ class Record:
             'observe_time': [],
             'eval_time': [] # n_calls, n_suggestions
         }
+        self.suggest_log = []
 
     def __str__(self):
         return np.asarray(self.targets).__str__()
@@ -20,10 +21,11 @@ class Record:
     def size(self):
         return len(self.targets)
 
-    def append(self, x, y, timing, b=None):
+    def append(self, x, y, timing, suggest_log, b=None):
         self.features.append(x)
         self.targets.append(y)
         self.timing.update(timing)
+        self.suggest_log.append(suggest_log)
         if b is not None:
             self.budgets.append(b)
 

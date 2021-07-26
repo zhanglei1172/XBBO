@@ -21,7 +21,10 @@ def experiment_main(args=None):  # pragma: main
     # args[CmdArgs.opt_rev] = opt_class.get_version()
     # load meta info
     opt_class, feature_space_class = get_opt_class(args[CmdArgs.optimizer])
-    feature_space = feature_space_class()
+    if feature_space_class is None:
+        feature_space = None
+    else:
+        feature_space = feature_space_class()
     opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
     bbo = BBO(opt_class,feature_space,
                 opt_kwargs,

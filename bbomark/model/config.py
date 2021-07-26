@@ -120,6 +120,8 @@ lasso_cfg_reg = {
     "alpha": {"type": "real", "configspace": "log", "range": (1e-2, 1e2)},
     "fit_intercept": {"type": "bool"},
     "normalize": {"type": "bool"},
+    # 'oooorrrrddd': {'type': "ord", "values": ['o', 'a', 'b']},
+    # 'zzzzzllll': {"type": "cat", "values": ['p', 'a', 'b']},
     "max_iter": {"type": "int", "configspace": "log", "range": (10, 5000)},
     "tol": {"type": "real", "configspace": "log", "range": (1e-5, 1e-1)},
     "positive": {"type": "bool"},
