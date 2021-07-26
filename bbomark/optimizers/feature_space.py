@@ -6,7 +6,10 @@ from bbomark.core.abstract_feature_space import (
     AbstractFeatureSpace,
     Identity,
     Ord2Uniform,
-    Cat2Onehot
+    Cat2Onehot,
+    U2gaussian,
+    Category,
+    Ordinal
 )
 
 class FeatureSpace_pysot(AbstractFeatureSpace):

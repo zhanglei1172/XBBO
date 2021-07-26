@@ -58,6 +58,6 @@ python ./bbomark/demo.py -c lasso -d boston -o HyperOpt Scikit-GP-LCB -u a98ee59
 
 - [ ] Transfer
 - [ ] Parallelizing
-- [ ] Result visualize
+- [x] Result visualize
 - [ ] Reproductable ( Random state )
 - [ ] Extract data and model
