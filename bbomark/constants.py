@@ -13,6 +13,8 @@
 # limitations under the License.
 """General constants that are used in multiple files in the code base.
 """
+EVAL_Q = 0.5  # Evaluate based on median loss across n_trials
+ALPHA = 0.05  # ==> 95% CIs
 
 # Special constant for random search since it gets used as our reference point in the baselines
 RANDOM_SEARCH = "RandomSearch"

@@ -77,38 +77,6 @@ MEMORY_ONLY_DB = "sqlite://"
 opentuner.tuningrunmain.init_logging = lambda: None
 
 
-def ClippedParam(cls, epsilon=1e-5):
-    """Build wrapper class of opentuner parameter class that use clip check to
-    keep parameters in the allowed range despite numerical errors.
-
-    Class built on `ScaledNumericParameter` abstract class defined in:
-    `opentuner.search.manipulator.ScaledNumericParameter`.
-
-    Parameters
-    ----------
-    cls : ScaledNumericParameter
-        Opentuner parameter class, such as `LogFloatParameter` or
-        `FloatParameter`, which transforms the domain of parameter.
-
-    Returns
-    -------
-    StableClass : ScaledNumericParameter
-        New class equivalent to original `cls` but it overwrites the orginal
-        `_unscale` method to enforce a clip check to keep the parameters within
-        their allowed range.
-    """
-    assert issubclass(
-        cls, ScaledNumericParameter
-    ), "this class cls should inherit from the ScaledNumericParameter class"
-
-    class StableClass(cls):
-        def _unscale(self, v):
-            unscaled_v = super(StableClass, self)._unscale(v)
-            unscaled_v = clip_chk(unscaled_v, self.min_value, self.max_value)
-            return unscaled_v
-
-    return StableClass
-
 
 class OpentunerOptimizer(AbstractOptimizer):
     primary_import = "opentuner"
@@ -131,7 +99,7 @@ class OpentunerOptimizer(AbstractOptimizer):
             Default number of suggestions to be made in parallel.
         """
         super().__init__(config_spaces, feature_spaces)
-
+        self.opt_name = 'opentuner'
         # Opentuner requires DesiredResult to reference suggestion when making
         # its observation. x_to_dr maps the dict suggestion to DesiredResult.
         self.x_to_dr = {}

@@ -24,6 +24,7 @@
 
 - 超参空间处理代码单独剥离，基于ConfigSpace（可利用conditional hyper-param），扩展warp、unwarp
 - 提取bbo核心过程在`bbo.py`
+- 抽象出Featurespace类，以适应不同optimizer的定义域
 
 ## 目标
 
@@ -31,19 +32,32 @@
 
 ## 测试
 
-RandomSearch：
+[comment]: <> (RandomSearch：)
+
+[comment]: <> (```bash)
+
+[comment]: <> (python ./bbomark/demo.py -c DT -d boston -o RandomSearch -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 15 -p 1)
+
+[comment]: <> (```)
+
+[comment]: <> (Nevergrad优化器：)
+
+[comment]: <> (```bash)
+
+[comment]: <> (python ./bbomark/demo.py -c lasso -d boston -o Nevergrad-OnePlusOne -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 50 -p 1)
+
+[comment]: <> (```)
 
 ```bash
-python ./bbomark/demo.py -c DT -d boston -o RandomSearch -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 15 -p 1
+python ./bbomark/demo.py -c lasso -d boston -o HyperOpt Scikit-GP-LCB -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 15 -p 2
 ```
 
-Nevergrad优化器：
-
-```bash
-python ./bbomark/demo.py -c lasso -d boston -o Nevergrad-OnePlusOne -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 50 -p 1
-```
+![](./out/demo_res.png)
 
 ## TODO
 
 - [ ] Transfer
 - [ ] Parallelizing
+- [ ] Result visualize
+- [ ] Reproductable ( Random state )
+- [ ] Extract data and model

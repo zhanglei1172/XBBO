@@ -42,6 +42,7 @@ class ScikitOptimizer(AbstractOptimizer):
         n_initial_points : int
             Number of points to sample randomly before actual Bayes opt.
         """
+        self.opt_name = 'scikit-optimize'
         super().__init__(config_spaces, feature_spaces)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)

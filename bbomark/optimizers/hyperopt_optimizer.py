@@ -52,6 +52,8 @@ class HyperoptOptimizer(AbstractOptimizer):
             Configuration of the optimization variables. See API description.
         """
         super().__init__(config_spaces, feature_spaces)
+        self.opt_name = 'hyperopt'
+
         self.random = random
         feature_space = {}
         configs = self.space.get_hyperparameters()

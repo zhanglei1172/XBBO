@@ -39,7 +39,7 @@ class PySOTOptimizer(AbstractOptimizer):
             Configuration of the optimization variables. See API description.
         """
         super().__init__(config_spaces, feature_spaces)
-
+        self.opt_name = 'pysot'
         # self.space_x = JointSpace(api_config)
         self.bounds = self.space.get_bounds()
         self.sparse_dimension = self.space.get_dimensions(sparse=True)

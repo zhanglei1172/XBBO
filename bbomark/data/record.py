@@ -6,7 +6,7 @@ class Record:
     def __init__(self, n_suggestions, n_calls=None):
         self.n_calls = n_calls
         self.features = []
-        self.targets = []
+        self.func_evals = []
         self.budgets = []
         self.timing = {
             'suggest_time': [],
@@ -16,14 +16,14 @@ class Record:
         self.suggest_log = []
 
     def __str__(self):
-        return np.asarray(self.targets).__str__()
+        return np.asarray(self.func_evals).__str__()
 
     def size(self):
-        return len(self.targets)
+        return len(self.func_evals)
 
     def append(self, x, y, timing, suggest_log, b=None):
         self.features.append(x)
-        self.targets.append(y)
+        self.func_evals.append(y)
         self.timing.update(timing)
         self.suggest_log.append(suggest_log)
         if b is not None:

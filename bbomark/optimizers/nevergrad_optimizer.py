@@ -36,6 +36,8 @@ class NevergradOptimizer(AbstractOptimizer):
         """
         super().__init__(config_spaces, feature_spaces)
         # self.random = random
+        self.opt_name = 'nevergrad'
+
         opt_class = optimization.registry[tool]
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)

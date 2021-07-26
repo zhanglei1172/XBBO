@@ -20,6 +20,7 @@ class RandomOptimizer(AbstractOptimizer):
     primary_import = "bbomark"
 
     def __init__(self, config_spaces, feature_spaces, random=None):
+        self.opt_name = 'radom-search'
         """Build wrapper class to use random search function in benchmark.
 
         Settings for `suggest_dict` can be passed using kwargs.

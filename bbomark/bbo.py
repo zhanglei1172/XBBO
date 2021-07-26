@@ -1,12 +1,17 @@
+from functools import reduce
+
 import numpy as np
 import json
 from time import time
 
+import matplotlib.pyplot as plt
 
-from constants import ITER
+
+from constants import ITER, ALPHA, EVAL_Q
 from bbomark.model import build_test_problem
 from bbomark.configspace import build_space
 from bbomark.data.record import Record
+import bbomark.utils.quantiles as qt
 
 class BBO:
 
@@ -116,4 +121,48 @@ class BBO:
             }
             self.record.append(features, function_evals, timing=timing, suggest_log=next_points)
 
+    def summary(self):
+        self.coord_y_multi = (np.asarray(self.record.func_evals))
+        self.coord_y = self.coord_y_multi[..., 0].mean(axis=-1)
+
+        self.minimum_history = np.minimum.accumulate(self.coord_y_multi, axis=0)
+        self.coord_x = np.arange(start=1, stop=len(self.coord_y)+1)
+        # self.stat_res = qt.quantile_and_CI(self.coord_y, EVAL_Q, alpha=ALPHA)
+
+    def visualize(self, ax=None):
+
+        self.summary()
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(5, 5), dpi=300)
+        else:
+            fig = None
+        opt_name = self.optimizer_instance.opt_name
+
+
+        # plt.fill_between(
+        #     self.coord_x,
+        #     self.stat_res[1],
+        #     self.stat_res[2],
+        #     # color=opt_name,
+        #     alpha=0.5,
+        # )
+        ax.plot(
+            self.coord_x,
+            self.coord_y,
+            # color=opt_name,
+            label=opt_name,
+            marker=".",
+        )
+        ax.set_xlabel("evaluation", fontsize=10)
+        # plt.ylabel("normalized median score", fontsize=10)
+        ax.set_ylabel("loss", fontsize=10)
+        ax.grid()
+        if fig:
+            ax.set_title(opt_name)
+            ax.legend(fontsize=8, bbox_to_anchor=(1.05, 1), loc="upper left", borderaxespad=0.0)
+            fig.show()
+
+
+        return ax
+        # ax.show()
 
