@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 import warnings
 import numpy as np
 
@@ -7,9 +6,10 @@ from sklearn.model_selection import cross_val_score, train_test_split
 
 
 # from data import load_data
-from bbomark.data.data import METRICS_LOOKUP, ProblemType, load_data
+from bbomark.model.data import METRICS_LOOKUP, ProblemType, load_data
 from bbomark.constants import ARG_DELIM, METRICS, MODEL_NAMES, VISIBLE_TO_OPT
 from bbomark.utils.util import str_join_safe
+from bbomark.core import TestFunction
 
 # Using 3 would be faster, but 5 is the most realistic CV split (5-fold)
 CV_SPLITS = 5
@@ -21,33 +21,7 @@ from .config import MODELS_REG, MODELS_CLF
 assert sorted(MODELS_REG.keys()) == sorted(MODEL_NAMES)
 
 
-class TestFunction(ABC):
-    """Abstract base class for test functions in the benchmark. These do not need to be ML hyper-parameter tuning.
-    """
 
-    def __init__(self):
-        """Setup general test function for benchmark. We assume the test function knows the meta-data about the search
-        configspace, but is also stateless to fit modeling assumptions. To keep stateless, it does not do things like count
-        the number of function evaluations.
-        """
-        # This will need to be set before using other routines
-        self.api_config = None
-
-    @abstractmethod
-    def evaluate(self, params):
-        """Abstract method to evaluate the function at a parameter setting.
-        """
-
-    def get_api_config(self):
-        """Get the API config for this test problem.
-
-        Returns
-        -------
-        api_config : dict(str, dict(str, object))
-            The API config for the used model. See README for API description.
-        """
-        assert self.api_config is not None, "API config is not set."
-        return self.api_config
 
 
 class SklearnModel(TestFunction):

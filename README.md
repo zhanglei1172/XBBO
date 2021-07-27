@@ -49,7 +49,7 @@
 [comment]: <> (```)
 
 ```bash
-python ./bbomark/demo.py -c lasso -d boston -o HyperOpt Scikit-GP-LCB -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 15 -p 2
+python ./bbomark/demo.py -c lasso -d boston -o RandomSearch HyperOpt Scikit-GP-LCB OpenTuner-GA-DE PySOT Nevergrad-OnePlusOne -u a98ee5903a9d5a5480d40ce9c81d7c86 -m mae -n 15 -p 2
 ```
 
 ![](./out/demo_res.png)

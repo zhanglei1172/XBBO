@@ -10,7 +10,7 @@ from bbomark.utils import cmd_parse as cmd
 from bbomark.utils.config_load import load_optimizer_kwargs
 from bbomark.optimizers import get_opt_class
 from bbomark.bbo import BBO
-from bbomark.data.data import (
+from bbomark.model.data import (
     METRICS_LOOKUP,
     DATA_LOADERS
 )
@@ -79,5 +79,5 @@ def main_all():
     fig.savefig('../out/demo_res.png')
 
 if __name__ == '__main__':
-    # main()
-    main_all()
+    main()
+    # main_all()

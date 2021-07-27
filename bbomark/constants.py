@@ -19,7 +19,7 @@ ALPHA = 0.05  # ==> 95% CIs
 # Special constant for random search since it gets used as our reference point in the baselines
 RANDOM_SEARCH = "RandomSearch"
 OPTIMIZERS_FILE = "config.json"
-ARG_DELIM = "_"  # Delimeter used when concat cmd argument for any reason
+ARG_DELIM = "~"  # Delimeter used when concat cmd argument for any reason
 PY_INTERPRETER = "python"  # What command to call for sub process, we could specify version number here also.
 
 # Variables to save in SAL

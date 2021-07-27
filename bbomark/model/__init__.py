@@ -1,4 +1,9 @@
+import importlib
+
 from .innermodel import SklearnModel
+import bbomark.model.custom_model as custom_model
+from bbomark.utils.util import chomp
+
 
 def build_test_problem(model_name, dataset, scorer, path):
     """Build the class with the class to use an objective. Sort of a factory.
@@ -21,10 +26,12 @@ def build_test_problem(model_name, dataset, scorer, path):
     prob : :class:`.sklearn_funcs.TestFunction`
         The test function to evaluate in experiments.
     """
-    if model_name.endswith("-surr"):
+    if model_name.endswith(".py"):
         # Requires IO to test these, so will add the pargma here. Maybe that points towards a possible design change.
-        raise NotImplementedError()
-        # model_name = chomp(model_name, "-surr")  # pragma: io
+        # raise NotImplementedError()
+        model_name = chomp(model_name, ".py")  # pragma: io
+        model = importlib.import_module('.'+model_name, __package__)
+        prob = model.Model(model_name, dataset, scorer, data_root=path)
         # prob = SklearnSurrogate(model_name, dataset, scorer, path=path)  # pragma: io
     else:
         prob = SklearnModel(model_name, dataset, scorer, data_root=path)
