@@ -59,7 +59,7 @@ class Cat2Onehot(AbstractFeatureSpace):
         convert to Gaussian distribution
         '''
         feat = np.zeros(cat_num)
-        feat[sparse_array] = 1
+        feat[int(sparse_array)] = 1
         return feat
 
     def feature_to_sparse_array(self, feature, cat_num):
@@ -161,7 +161,7 @@ class Category(AbstractFeatureSpace):
         return a int index
         '''
 
-        return int(softmax_discretization(feature, cat_num, deterministic=self.deterministic).item())
+        return int(softmax_discretization(feature, cat_num, deterministic=self.deterministic))
 
     def sparse_array_to_feature(self, sparse_array, cat_num):
         '''
@@ -274,6 +274,6 @@ def inverse_softmax_discretization(_x: int, arity: int):
     # p is an arbitrary probability that the provided arg will be sampled with the returned point
     p = (1 / arity) * 1.5
     # x = np.zeros(arity)
-    x = np.zeros_like(_x)
-    x[_x] = np.log((p * (arity - 1)) / (1 - p))
+    x = np.zeros(arity)
+    x[int(_x)] = np.log((p * (arity - 1)) / (1 - p))
     return x

@@ -33,6 +33,8 @@ class RandomOptimizer(AbstractOptimizer):
         super().__init__(config_spaces, feature_spaces)
         self.random = random
 
+    def transform_sparseArray_to_optSpace(self, sparse_array):
+        return sparse_array
 
     def suggest(self, n_suggestions=1):
         """Get suggestion.

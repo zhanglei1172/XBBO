@@ -58,6 +58,8 @@ class CmdArgs(IntEnum):
     rev = auto()
     opt_rev = auto()
     timeout = auto()
+    history = auto()
+    # history_dict = auto()
 
 
 CMD_STR = {
@@ -81,6 +83,8 @@ CMD_STR = {
     CmdArgs.dry_run: (None, "dry_run"),  # Will not be specified from CLI
     CmdArgs.rev: (None, "rev"),  # Will not be specified from CLI
     CmdArgs.opt_rev: (None, "opt_rev"),  # Will not be specified from CLI. Which version of optimizer.
+    CmdArgs.history: ('-his', '--history-file'),
+    # CmdArgs.history_dict: ('-hd', '--history-dict'),
 }
 
 
@@ -151,48 +155,6 @@ def joinable(val_str):
     return val
 
 
-def load_rev_number():
-    # This function uses a lot of language "power features" that could be considered bad form:
-    # 1) does a conditional import to get version
-    # 2) uses __file__ to try and extract and git repo version during execution
-    # We will let this fly anyway because:
-    # 1) The results of this are only used for logging anyway
-    # 2) This is a command parsing module of the code and inherently very non-pure and doing IO etc
-    # 3) Unclear if there is a cleaner way to do this
-
-    # Get rev from version file (if running inside the pip-installable wheel without the git repo)
-    try:
-        from bayesmark import version
-
-        rev_file = version.VERSION
-    except ImportError:
-        rev_file = None
-    else:
-        rev_file = rev_file.strip()
-        rev = rev_file
-
-    # Get rev from git API if inside git repo (and not built wheel from pip install ...)
-    wdir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    try:
-        repo = git.Repo(path=wdir, search_parent_directories=False)
-    except InvalidGitRepositoryError:
-        rev_repo = None
-    else:
-        rev_repo = repo.head.commit.hexsha
-        rev_repo = rev_repo.strip()
-        rev = rev_repo
-
-    # Check coherence of what we found
-    if (rev_repo is None) and (rev_file is None):
-        raise RuntimeError("Must specify version.py if not inside a git repo.")
-    if (rev_repo is not None) and (rev_file is not None):
-        assert rev_repo == rev_file, "Rev file %s does not match rev git %s" % (rev_file, rev_repo)
-
-    assert rev == rev.strip()
-    # We could first enforce is_lower_hex if we want to enforce that
-    rev = rev[:7]
-    return rev
-
 
 def base_parser():
     parser = argparse.ArgumentParser(add_help=False)
@@ -242,6 +204,25 @@ def launcher_parser(description):
     )
     return parser
 
+def benchmark_opt_parser(description):
+    parser = argparse.ArgumentParser(description=description, parents=[base_parser()])
+
+    add_argument(parser, CmdArgs.uuid, type=uuid, help="length 32 hex UUID for this experiment")
+
+    add_argument(parser, CmdArgs.optimizer, type=joinable, nargs="+", help="optimizers to use")
+    add_argument(parser, CmdArgs.data, required=True, type=joinable, help="data set to use")
+    add_argument(parser, CmdArgs.data_root, type=filepath, help="root directory for all custom csv files")
+    add_argument(parser, CmdArgs.db, type=filename, required=False, help="database ID of this benchmark experiment") # TODO
+    add_argument(parser, CmdArgs.classifier, required=True, type=joinable, help="classifier to use")
+    add_argument(parser, CmdArgs.metric, required=True, type=str, choices=METRICS, help="scoring metric to use")
+
+    # Iterations counts used in experiments
+    add_argument(parser, CmdArgs.n_calls, default=100, type=positive_int, help="number of function evaluations")
+    add_argument(
+        parser, CmdArgs.n_suggest, default=1, type=positive_int, help="number of suggestions to provide in parallel"
+    )
+
+    return parser
 
 def experiment_parser(description):
     parser = argparse.ArgumentParser(description=description, parents=[base_parser()])
@@ -260,6 +241,9 @@ def experiment_parser(description):
     add_argument(
         parser, CmdArgs.n_suggest, default=1, type=positive_int, help="number of suggestions to provide in parallel"
     )
+    add_argument(parser, CmdArgs.history, type=filepath, required=False, help="a file, contain history feature observation, features([np.ndarray.to_list()]), y(list 1-dim)") # TODO
+    # add_argument(parser, CmdArgs.history_dict, type=filename, required=False, help="a file, contain history feature observation, params([dict]), y(list 1-dim)") # TODO
+
     return parser
 
 

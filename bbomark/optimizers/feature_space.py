@@ -65,7 +65,7 @@ class FeatureSpace_pysot(AbstractFeatureSpace):
         warnings.warn("This method may no reason be called?")
         assert not (self.dtypes_idx_map is None)
         feature = np.zeros(shape=(dense_dim))
-        for dtype, array_idx_map in self.dtypes_idx_map:
+        for dtype, array_idx_map in self.dtypes_idx_map.items():
             # if array_idx_map.src_ids:
             if array_idx_map.src_ids is None:
                 continue
@@ -147,7 +147,7 @@ class FeatureSpace_nevergrad(AbstractFeatureSpace):
         warnings.warn("This method may no reason be called?")
         assert not (self.dtypes_idx_map is None)
         feature = np.zeros(shape=(dense_dim))
-        for dtype, array_idx_map in self.dtypes_idx_map:
+        for dtype, array_idx_map in self.dtypes_idx_map.items():
             # if array_idx_map.src_ids:
             if array_idx_map.src_ids is None:
                 continue

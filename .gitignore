@@ -153,3 +153,4 @@ dmypy.json
 cython_debug/
 
 .idea/
+/bbomark/data/cifar-10-batches-py/

@@ -160,6 +160,18 @@ class OpentunerOptimizer(AbstractOptimizer):
         interface = DMI(args=args, manipulator=manipulator)
         self.api = TuningRunManager(interface, args)
 
+    def transform_sparseArray_to_optSpace(self, sparse_array):
+        '''
+        opt space is a dict
+        '''
+        optFeatures = []
+        for obs_num in range(len(sparse_array)):
+            optFeature = {}
+            for i, name in enumerate(self.space.get_hyperparameter_names()):
+                optFeature[name] = sparse_array[obs_num][i]
+            optFeatures.append(optFeature)
+        return optFeatures
+
     @staticmethod
     def hashable_dict(d):
         """A custom function for hashing dictionaries.

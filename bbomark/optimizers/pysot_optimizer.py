@@ -43,11 +43,15 @@ class PySOTOptimizer(AbstractOptimizer):
         # self.space_x = JointSpace(api_config)
         self.bounds = self.space.get_bounds()
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.create_opt_prob()  # Sets up the optimization problem (needs self.bounds)
         self.max_evals = np.iinfo(np.int32).max  # NOTE: Largest possible int
         self.batch_size = None
         self.history = []
         self.proposals = []
+
+    def transform_sparseArray_to_optSpace(self, sparse_array):
+        return [self.feature_spaces.array_to_feature(x, self.dense_dimension) for x in sparse_array]
 
     def create_opt_prob(self):
         """Create an optimization problem object."""

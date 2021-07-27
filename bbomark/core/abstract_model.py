@@ -49,13 +49,13 @@ class TestFunction(ABC):
         assert isinstance(self.api_config, dict), "API config is not a dict type"
         return self.api_config
 
-    def load_data(self, dataset, data_root=None):
+    def _load_data(self, dataset, data_root=None):
         pass
 
-    def load_api_config(self):
+    def _load_api_config(self):
         pass
 
-    def load_base_model(self):
+    def _load_base_model(self):
         '''
         return a class
         '''

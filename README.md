@@ -20,6 +20,20 @@
 
 `model/config.py`内定义超参数及搜索范围
 
+## 使用
+
+> -c使用的model
+> 
+> -o使用的optimizer
+> 
+> -m使用的metric
+> 
+> -n给定的evaluation次数
+> 
+> -p每次suggest超参的数量
+> 
+> -his指定预加载观测的文件
+
 ## Feature
 
 - 超参空间处理代码单独剥离，基于ConfigSpace（可利用conditional hyper-param），扩展warp、unwarp
@@ -56,8 +70,8 @@ python ./bbomark/demo.py -c lasso -d boston -o RandomSearch HyperOpt Scikit-GP-L
 
 ## TODO
 
-- [ ] Transfer
+- [x] Transfer
 - [ ] Parallelizing
 - [x] Result visualize
 - [ ] Reproductable ( Random state )
-- [ ] Extract data and model
+- [x] Extra data and model

@@ -47,6 +47,10 @@ class AbstractOptimizer(ABC):
         # else:
         #     self.logger = logger
 
+    @abstractmethod
+    def transform_sparseArray_to_optSpace(self, sparse_array):
+        return sparse_array
+
     @classmethod
     def get_version(cls):
         """Get the version for this optimizer.

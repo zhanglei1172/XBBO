@@ -1,3 +1,6 @@
+import pickle
+import shelve
+
 from bbomark.optimizers.config import CONFIG
 from bbomark.utils import cmd_parse as cmd
 
@@ -25,3 +28,23 @@ def load_optimizer_kwargs(optimizer_name, opt_root):  # pragma: io
         assert optimizer_name in settings, "optimizer %s not found in settings file %s" % optimizer_name
         _, kwargs = settings[optimizer_name]
     return kwargs
+
+def load_history(filename):
+    with open(filename, 'rb') as db:
+        dct = pickle.load(db)
+        if 'features' in dct:
+            return dct['features'], dct['y'], True
+        else:
+            return dct['params'], dct['y'], False
+    # with shelve.open(filename) as db:
+    #     if 'features' in db:
+    #         return db['features'], db['y'], True
+    #     else:
+    #         return db['params'], db['y'], False
+
+def save_history(filename, dct):
+    with open(filename, 'wb') as db:
+        pickle.dump(dct, db)
+    # with shelve.open(filename) as db:
+    #     for k in dct:
+    #         db[k] = dct[k]

@@ -86,6 +86,9 @@ class ScikitOptimizer(AbstractOptimizer):
             acq_optimizer_kwargs={},
         )
 
+    def transform_sparseArray_to_optSpace(self, sparse_array):
+        return sparse_array
+
     def suggest(self, n_suggestions=1):
         """Get a suggestion from the optimizer.
 
@@ -130,6 +133,8 @@ class ScikitOptimizer(AbstractOptimizer):
         for xx, yy in zip(features, y):
             # Just ignore, any inf observations we got, unclear if right thing
             if np.isfinite(yy):
+                if isinstance(xx, np.ndarray):
+                    xx = xx.tolist()
                 self.skopt.tell(xx, yy)
 
 

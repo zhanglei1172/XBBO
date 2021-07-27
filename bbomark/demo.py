@@ -7,7 +7,7 @@ from bbomark.utils.cmd_parse import CmdArgs
 from bbomark.utils import cmd_parse as cmd
 
 # import random_search as rs
-from bbomark.utils.config_load import load_optimizer_kwargs
+from bbomark.utils.loading import load_optimizer_kwargs, load_history
 from bbomark.optimizers import get_opt_class
 from bbomark.bbo import BBO
 from bbomark.model.data import (
@@ -29,6 +29,7 @@ def experiment_main(args=None, ax=None):  # pragma: main
         args = cmd.parse_args(cmd.experiment_parser(description))
     # args[CmdArgs.opt_rev] = opt_class.get_version()
     # load meta info
+
     opt_class, feature_space_class = get_opt_class(args[CmdArgs.optimizer])
     if feature_space_class is None:
         feature_space = None
@@ -42,11 +43,14 @@ def experiment_main(args=None, ax=None):  # pragma: main
                 args[CmdArgs.metric],
                 args[CmdArgs.n_calls],
                 args[CmdArgs.n_suggest],
+                history=args[CmdArgs.history],
+                # history_dict=args[CmdArgs.history_dict],
                 data_root=args[CmdArgs.data_root],
                 callback=None)
 
     bbo.run()
     print(bbo.record)
+    bbo.save_as_history()
     ax = bbo.visualize(ax)
     print('-'*100)
     return ax
@@ -61,7 +65,7 @@ def main():
 
 def main_all():
     fig, ax = plt.subplots(figsize=(5, 5), dpi=300)
-    description = "Run a study with one benchmark function and an optimizer"
+    description = "Run all benchmark functions"
     args = cmd.parse_args(cmd.launcher_parser(description))
     # G = product(range_str(args[CmdArgs.n_repeat]), c_list, d_list, o_list)
     G = product(args[CmdArgs.classifier], args[CmdArgs.data], args[CmdArgs.optimizer], args[CmdArgs.metric])
@@ -78,6 +82,21 @@ def main_all():
     fig.show()
     fig.savefig('../out/demo_res.png')
 
+def benchmark_opt():
+    fig, ax = plt.subplots(figsize=(5, 5), dpi=300)
+    description = "Run a benchmark function with all optimizers"
+    args = cmd.parse_args(cmd.benchmark_opt_parser(description))
+    # G = product(range_str(args[CmdArgs.n_repeat]), c_list, d_list, o_list)
+    # G = product(args[CmdArgs.classifier], args[CmdArgs.data], args[CmdArgs.optimizer], args[CmdArgs.metric])
+    for optimizer in args[CmdArgs.optimizer]:
+        args_sub = deepcopy(args)
+        args_sub[CmdArgs.optimizer] = optimizer
+        ax = experiment_main(args=args_sub, ax=ax)
+    # ax = experiment_main(args=args)
+    ax.legend(fontsize=8, loc="upper left", borderaxespad=0.0)
+    fig.show()
+    fig.savefig('../out/demo_res.png')
+
 if __name__ == '__main__':
     main()
-    # main_all()
+    # benchmark_opt()

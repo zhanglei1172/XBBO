@@ -135,10 +135,10 @@ class Model(TestFunction):
         """
         super().__init__()
 
-        self.train_data, self.test_data = self.load_data(dataset, data_root=data_root)
+        self.train_data, self.test_data = self._load_data(dataset, data_root=data_root)
 
-        api_config = self.load_api_config()
-        base_model = self.load_base_model()
+        api_config = self._load_api_config()
+        base_model = self._load_base_model()
 
         # New members for model
         self.base_model = base_model
@@ -149,7 +149,7 @@ class Model(TestFunction):
         self.metric = metric
 
 
-    def load_api_config(self):
+    def _load_api_config(self):
         return {
             'lr': {'type': 'real', 'space': 'log', 'range': (1e-6, 0.1)},
             'momentum':{'type': 'real', 'space': 'linear', 'range': (0.8, 0.999)},
@@ -157,7 +157,7 @@ class Model(TestFunction):
             'batch_size': {'type': 'ord', 'space': 'linear', 'values': list(range(4, 129, 4))},
         }
 
-    def load_data(self, dataset, data_root=None):
+    def _load_data(self, dataset, data_root=None):
         if data_root is None:
             data_root = './data'
         transform = transforms.Compose(
@@ -202,9 +202,9 @@ class Model(TestFunction):
         assert np.isfinite(cv_loss), "loss not even finite"
 
 
-        generalization_loss = None
+        generalization_loss = 10 # TODO
         # For now, score with same objective. We can later add generalization error
         return cv_loss, generalization_loss
 
-    def load_base_model(self):
+    def _load_base_model(self):
         return BaseModel
