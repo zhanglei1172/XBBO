@@ -82,6 +82,20 @@ def parse_config(param):
             }
     # print(new_param)
 
+def postproc(params):
+    new_params = []
+    for param in params:
+        new_param = {'wid': None}
+        for name in sorted(param.keys()):
+            new_name, i = name.rsplit('_', maxsplit=1)
+            if new_name in new_param :
+                new_param[new_name].append(param[name])
+            else:
+                assert i == '0'
+                new_param[new_name] = [param[name]]
+        new_params.append(new_param)
+    return new_params
+
 def prepare(params, acc):
     new_params = []
     for param in params:
