@@ -9,6 +9,7 @@ import ConfigSpace.hyperparameters as CSH
 '''
 warp for dict
 '''
+M = 1e7
 
 WARPED_DTYPE = np.float_
 N_GRID_DEFAULT = 8
@@ -129,13 +130,17 @@ class Warp():
         elif dtype in ('float', 'int'): # discrete_method actually use, int
             assert (param_values is None)
             assert not (param_range is None)
-
+            param_range = np.asarray(param_range)
+            if not np.isfinite(param_range[0]):
+                param_range[0] = -M
+            if not np.isfinite(param_range[1]):
+                param_range[1] = M
 
             # self.all_round[param_name] = (discrete_method, None)
             # return self.space_warped[param_name]
             if dtype == 'float': # discrete_method can be round
                 warp_func = WARP_DICT[warp]
-                self.space_warped[param_name] = warp_func(np.asarray(param_range))
+                self.space_warped[param_name] = warp_func(param_range)
                 self.all_types[param_name] = 'float'
                 return CSH.UniformFloatHyperparameter(
                     name=param_name,
@@ -146,7 +151,7 @@ class Warp():
                 assert warp in ('linear', 'log'), "int type only support linear or log space"
                 self.all_warp[param_name] = 'linear' # 强制修改为'linear'
                 warp_func = WARP_DICT['linear']
-                self.space_warped[param_name] = warp_func(np.asarray(param_range))
+                self.space_warped[param_name] = warp_func((param_range))
                 # assert discrete_method == 'linear'
                 # assert warp == 'linear', 'type=int, configspace:{} must be "linear"'.format(warp)
                 self.all_types[param_name] = 'int'

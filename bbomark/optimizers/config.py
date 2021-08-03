@@ -27,6 +27,7 @@ CONFIG = {
     ],
     "Scikit-GP-Hedge": ["scikit_optimizer.py", {"acq_func": "gp_hedge", "base_estimator": "GP", "n_initial_points": 5}],
     "Scikit-GP-LCB": ["scikit_optimizer.py", {"acq_func": "LCB", "base_estimator": "GP", "n_initial_points": 5}],
+    "BORE": ["bore_optimizer.py", {}],
 }
 
 

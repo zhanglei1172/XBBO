@@ -22,7 +22,7 @@ from pySOT.strategy import SRBFStrategy
 from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
 
 from bbomark.configspace.space import Configurations
-from bbomark.optimizers.feature_space import FeatureSpace_pysot
+from bbomark.optimizers.feature_space import FeatureSpace_uniform
 from bbomark.core import AbstractOptimizer
 '''
 全【0，1】
@@ -178,4 +178,4 @@ class PySOTOptimizer(AbstractOptimizer):
 
 
 opt_wrapper = PySOTOptimizer
-feature_space = FeatureSpace_pysot
+feature_space = FeatureSpace_uniform

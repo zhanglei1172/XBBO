@@ -1,8 +1,14 @@
+import json
+import os
 import pickle
 import shelve
 
+from bbomark.constants import OPTIMIZERS_FILE, ARG_DELIM
 from bbomark.optimizers.config import CONFIG
 from bbomark.utils import cmd_parse as cmd
+from bbomark.utils.cmd_parse import infer_settings
+from bbomark.utils.path_util import absopen
+
 
 def load_optimizer_kwargs(optimizer_name, opt_root):  # pragma: io
     """Load the kwarg options for this optimizer being tested.
@@ -24,7 +30,7 @@ def load_optimizer_kwargs(optimizer_name, opt_root):  # pragma: io
     if optimizer_name in CONFIG:
         _, kwargs = CONFIG[optimizer_name]
     else:
-        settings = cmd.load_optimizer_settings(opt_root)
+        settings = load_optimizer_settings(opt_root)
         assert optimizer_name in settings, "optimizer %s not found in settings file %s" % optimizer_name
         _, kwargs = settings[optimizer_name]
     return kwargs
@@ -48,3 +54,15 @@ def save_history(filename, dct):
     # with shelve.open(filename) as db:
     #     for k in dct:
     #         db[k] = dct[k]
+
+def load_optimizer_settings(opt_root):
+    try:
+        with absopen(os.path.join(opt_root, OPTIMIZERS_FILE), "r") as f:
+            settings = json.load(f)
+    except FileNotFoundError:
+        # Search for optimizers instead
+        settings = infer_settings(opt_root)
+
+    assert isinstance(settings, dict)
+    assert not any((ARG_DELIM in opt) for opt in settings), "optimizer names violates name convention"
+    return settings

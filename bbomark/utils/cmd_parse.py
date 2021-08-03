@@ -17,15 +17,12 @@ represent all the options available in the experiments here.
 Not currently any doc strings in this file because it may become obsolete with the use of fire package.
 """
 import argparse
-import json
-import os.path
 import sys
 import uuid as pyuuid
 from enum import IntEnum, auto
 from pathlib import PosixPath
 
-import git
-from git.exc import InvalidGitRepositoryError
+
 from pathvalidate.argparse import sanitize_filename, validate_filename, validate_filepath
 
 from bbomark.optimizers.config import CONFIG
@@ -59,6 +56,7 @@ class CmdArgs(IntEnum):
     opt_rev = auto()
     timeout = auto()
     history = auto()
+    model_dir = auto()
     # history_dict = auto()
 
 
@@ -84,6 +82,7 @@ CMD_STR = {
     CmdArgs.rev: (None, "rev"),  # Will not be specified from CLI
     CmdArgs.opt_rev: (None, "opt_rev"),  # Will not be specified from CLI. Which version of optimizer.
     CmdArgs.history: ('-his', '--history-file'),
+    CmdArgs.model_dir: ("-md", "--model-dir"),
     # CmdArgs.history_dict: ('-hd', '--history-dict'),
 }
 
@@ -166,6 +165,8 @@ def base_parser():
         parser, CmdArgs.optimizer_root, default=".", type=filepath, help="Directory with optimization wrappers"
     )
     # Always a verbose flag option
+    add_argument(parser, CmdArgs.n_repeat, default=20, type=positive_int, help="number of repetitions of each study")
+
     add_argument(parser, CmdArgs.verbose, action="store_true", help="print the study logs to console")
     return parser
 
@@ -176,6 +177,7 @@ def launcher_parser(description):
     add_argument(parser, CmdArgs.uuid, type=uuid, help="length 32 hex UUID for this experiment")
     add_argument(parser, CmdArgs.data_root, type=filepath, help="root directory for all custom csv files")
     add_argument(parser, CmdArgs.db, type=filename, help="database ID of this benchmark experiment")
+    add_argument(parser, CmdArgs.model_dir, type=filepath, default='./custom_model/', help="root directory for custom model .py file")
 
     add_argument(parser, CmdArgs.optimizer, type=joinable, nargs="+", help="optimizers to use")
     add_argument(parser, CmdArgs.data, type=joinable, nargs="+", help="data sets to use")
@@ -187,8 +189,8 @@ def launcher_parser(description):
     add_argument(
         parser, CmdArgs.n_suggest, default=1, type=positive_int, help="number of suggestions to provide in parallel"
     )
-    add_argument(parser, CmdArgs.n_repeat, default=20, type=positive_int, help="number of repetitions of each study")
     add_argument(parser, CmdArgs.timeout, default=0, type=int, help="Timeout per experiment (0 = no timeout)")
+    add_argument(parser, CmdArgs.history, type=filepath, required=False, help="a file, contain history feature observation, features([np.ndarray.to_list()]), y(list 1-dim)") # TODO
 
     # Arguments for creating dry run jobs file
     add_argument(
@@ -208,6 +210,7 @@ def benchmark_opt_parser(description):
     parser = argparse.ArgumentParser(description=description, parents=[base_parser()])
 
     add_argument(parser, CmdArgs.uuid, type=uuid, help="length 32 hex UUID for this experiment")
+    add_argument(parser, CmdArgs.model_dir, type=filepath, default='./custom_model/', help="root directory for custom model .py file")
 
     add_argument(parser, CmdArgs.optimizer, type=joinable, nargs="+", help="optimizers to use")
     add_argument(parser, CmdArgs.data, required=True, type=joinable, help="data set to use")
@@ -221,6 +224,7 @@ def benchmark_opt_parser(description):
     add_argument(
         parser, CmdArgs.n_suggest, default=1, type=positive_int, help="number of suggestions to provide in parallel"
     )
+    add_argument(parser, CmdArgs.history, type=filepath, required=False, help="a file, contain history feature observation, features([np.ndarray.to_list()]), y(list 1-dim)") # TODO
 
     return parser
 
@@ -231,6 +235,8 @@ def experiment_parser(description):
 
     # This could be made simpler and use '.' default for dataroot, even if no custom data used.
     add_argument(parser, CmdArgs.data_root, type=filepath, help="root directory for all custom csv files")
+    add_argument(parser, CmdArgs.model_dir, type=filepath, default='./custom_model/', help="root directory for custom model .py file")
+
     add_argument(parser, CmdArgs.db, type=filename, required=False, help="database ID of this benchmark experiment") # TODO
     add_argument(parser, CmdArgs.optimizer, required=True, type=joinable, help="optimizer to use")
     add_argument(parser, CmdArgs.data, required=True, type=joinable, help="data set to use")
@@ -314,17 +320,7 @@ def infer_settings(opt_root, opt_pattern="**/optimizer.py"):
     return settings
 
 
-def load_optimizer_settings(opt_root):
-    try:
-        with absopen(os.path.join(opt_root, OPTIMIZERS_FILE), "r") as f:
-            settings = json.load(f)
-    except FileNotFoundError:
-        # Search for optimizers instead
-        settings = infer_settings(opt_root)
 
-    assert isinstance(settings, dict)
-    assert not any((ARG_DELIM in opt) for opt in settings), "optimizer names violates name convention"
-    return settings
 
 
 def cmd_str():

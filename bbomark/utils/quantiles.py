@@ -93,7 +93,7 @@ def quantile(X, q):
     estimate = o_stats[..., idx]
     return estimate
 
-
+# 中位数落在lb和ub之间的概率是95%
 def _quantile_CI(n, q, alpha):
     # Use in case there is -inf case from being at extreme of distn
     idx_lower = np.fmax(0, ss.binom.ppf(alpha / 2.0, n, q)).astype(int)
@@ -188,7 +188,7 @@ def max_quantile_CI(X, q, m, alpha=0.05):
     o_stats = order_stats(X)
 
     n = X.shape[-1]
-    idx = _quantile(n, q)
+    idx = _quantile(n, q) # median
     idx_lower, idx_upper = _quantile_CI(n, q, alpha=alpha)
 
     LB, UB = o_stats[..., idx_lower], o_stats[..., idx_upper]

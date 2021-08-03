@@ -1,11 +1,10 @@
-import importlib
+import importlib, sys
 
 from .innermodel import SklearnModel
-import bbomark.model.custom_model as custom_model
 from bbomark.utils.util import chomp
 
 
-def build_test_problem(model_name, dataset, scorer, path):
+def build_test_problem(model_name, dataset, scorer, path, custom_model_dir):
     """Build the class with the class to use an objective. Sort of a factory.
 
     Parameters
@@ -30,7 +29,9 @@ def build_test_problem(model_name, dataset, scorer, path):
         # Requires IO to test these, so will add the pargma here. Maybe that points towards a possible design change.
         # raise NotImplementedError()
         model_name = chomp(model_name, ".py")  # pragma: io
-        model = importlib.import_module('.'+model_name, __package__)
+        sys.path.append(custom_model_dir)
+        # model = importlib.import_module('..custom_model.'+model_name, __package__)
+        model = importlib.import_module(model_name)
         prob = model.Model(model_name, dataset, scorer, data_root=path)
         # prob = SklearnSurrogate(model_name, dataset, scorer, path=path)  # pragma: io
     else:

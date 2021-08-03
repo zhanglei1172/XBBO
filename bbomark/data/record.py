@@ -24,10 +24,18 @@ class Record:
     def append(self, x, y, timing, suggest_log, b=None):
         self.features.append(x)
         self.func_evals.append(y)
-        self.timing.update(timing)
+        for k in self.timing:
+            self.timing[k].append(timing[k])
         self.suggest_log.append(suggest_log)
         if b is not None:
             self.budgets.append(b)
+
+    def get_best(self):
+        idx = np.argmin(np.asarray(self.func_evals)[...,0].ravel())
+        return idx//len(self.func_evals[0]), \
+               np.asarray(self.features).ravel()[idx],\
+               np.asarray(self.func_evals)[...,0].ravel()[idx],\
+               np.asarray(self.suggest_log).ravel()[idx]
 
     # def load_feature_matrix(self):
     #     return np.vstack(self.features)

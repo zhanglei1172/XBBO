@@ -46,6 +46,8 @@
 
 ## 测试
 
+[实验记录点这里！](./实验记录.md)
+
 [comment]: <> (RandomSearch：)
 
 [comment]: <> (```bash)
@@ -75,3 +77,5 @@ python ./bbomark/demo.py -c lasso -d boston -o RandomSearch HyperOpt Scikit-GP-L
 - [x] Result visualize
 - [ ] Reproductable ( Random state )
 - [x] Extra data and model
+- [ ] log verbose
+- [x] BORE optimizer

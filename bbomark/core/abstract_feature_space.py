@@ -5,7 +5,7 @@ from scipy import stats
 
 class AbstractFeatureSpace(ABC):
     '''
-    for optimizer useing
+    for optimizer using
 
     sparse array => features
     '''
@@ -14,11 +14,17 @@ class AbstractFeatureSpace(ABC):
     def __init__(self):
         pass
 
+    # @abstractmethod
     def array_to_feature(self, array, dense_dim):
-        return array
+        '''
+        array: expressed by configspace
+        feature: expressed by optimizer
+        '''
+        pass
 
+    # @abstractmethod
     def feature_to_array(self, feature, sparse_dim):
-        return feature
+        pass
 
 class Identity(AbstractFeatureSpace):
     '''
@@ -33,9 +39,6 @@ class Identity(AbstractFeatureSpace):
         super().__init__()
 
     def sparse_array_to_feature(self, sparse_array):
-        '''
-        convert to Gaussian distribution
-        '''
 
         return sparse_array
 
@@ -43,20 +46,14 @@ class Identity(AbstractFeatureSpace):
         return feature
 
 class Cat2Onehot(AbstractFeatureSpace):
-    '''
-    uniform to Gaussian
-    '''
 
     def __init__(self):
-        '''
-        U(0, 1) to std gaussian feature
-        define target feature's mean and std
-        '''
         super().__init__()
 
     def sparse_array_to_feature(self, sparse_array, cat_num):
         '''
-        convert to Gaussian distribution
+        sparse_array: int, index of max value
+        return: one-hot code
         '''
         feat = np.zeros(cat_num)
         feat[int(sparse_array)] = 1
@@ -67,19 +64,16 @@ class Cat2Onehot(AbstractFeatureSpace):
 
 class Ord2Uniform(AbstractFeatureSpace):
     '''
-    uniform to Gaussian
+    ordinal to uniform(0, 1)
     '''
 
     def __init__(self):
-        '''
-        U(0, 1) to std gaussian feature
-        define target feature's mean and std
-        '''
         super().__init__()
 
     def sparse_array_to_feature(self, sparse_array, seqnum):
         '''
-        convert to Gaussian distribution
+        sparse_array: int , one of 0, 1, 2 ... (seqnum-1)
+        return a float in [0, 1]
         '''
 
         return sparse_array / (seqnum-1)
@@ -103,7 +97,6 @@ class U2gaussian(AbstractFeatureSpace):
         '''
         convert to Gaussian distribution
         '''
-
         return stats.norm.ppf(sparse_array)
 
     def feature_to_sparse_array(self, feature):
@@ -118,13 +111,14 @@ class Ordinal(AbstractFeatureSpace):
     
     def feature_to_sparse_array(self, feature, seq_num):
         '''
-        return a int
+        return int, one of 0, 1, 2 ... (seqnum-1)
         '''
         return threshold_discretization(feature, arity=seq_num)
 
     def sparse_array_to_feature(self, sparse_array, seq_num):
         '''
-        convert to Gaussian distribution
+        feature： int , one of 0, 1, 2 ... (seqnum-1)
+        return： N(0, 1)
         '''
         return inverse_threshold_discretization(sparse_array, arity=seq_num)
 

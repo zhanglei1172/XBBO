@@ -13,7 +13,7 @@
 # limitations under the License.
 # from bbomark import np_util
 from bbomark.core.abstract_optimizer import AbstractOptimizer
-from bbomark.optimizers.feature_space import FeatureSpace_nevergrad
+from bbomark.optimizers.feature_space import FeatureSpace_gaussian
 
 class RandomOptimizer(AbstractOptimizer):
     # Unclear what is best package to list for primary_import here.
@@ -77,4 +77,4 @@ class RandomOptimizer(AbstractOptimizer):
 # All optimizer wrappers need to assign their wrapper to the name opt_wrapper because experiment always tries to import
 # opt_wrapper regardless of the optimizer it is importing.
 opt_wrapper = RandomOptimizer
-feature_space = FeatureSpace_nevergrad
+feature_space = FeatureSpace_gaussian

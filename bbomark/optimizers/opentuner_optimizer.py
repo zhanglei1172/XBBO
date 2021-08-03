@@ -187,6 +187,7 @@ class OpentunerOptimizer(AbstractOptimizer):
             Bijective equivalent to dict that can be hashed.
         """
         hashable_object = frozenset(d.items())
+        # hashable_object = frozenset(d)
         return hashable_object
 
     def unorder_dict2ord_array(self, keys, dct):
@@ -194,6 +195,13 @@ class OpentunerOptimizer(AbstractOptimizer):
         for i, k in enumerate(keys):
             array[i] = dct[k]
         return array
+
+    # def inv_unorder_dict2ord_array(self, keys, array):
+    #     # array = np.zeros(len(keys))
+    #     dct = {}
+    #     for i, k in enumerate(keys):
+    #         dct[k] = array[i]
+    #     return dct
 
     def suggest(self, n_suggestions=1):
         """Make `n_suggestions` suggestions for what to evaluate next.

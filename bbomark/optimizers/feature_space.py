@@ -12,10 +12,10 @@ from bbomark.core.abstract_feature_space import (
     Ordinal
 )
 
-class FeatureSpace_pysot(AbstractFeatureSpace):
+class FeatureSpace_uniform(AbstractFeatureSpace):
     '''
-    dense array i.i.d ~ U(0, 1)
-    all variable i.i.d ~ Normal distribution N(0, 1)
+    sparse array <=> feature space
+    all variable i.i.d ~ U(0, 1)
     '''
 
     def __init__(self):
@@ -94,9 +94,9 @@ class FeatureSpace_pysot(AbstractFeatureSpace):
     def record_feature(self, feature):
         self.features.append(feature)
 
-class FeatureSpace_nevergrad(AbstractFeatureSpace):
+class FeatureSpace_gaussian(AbstractFeatureSpace):
     '''
-    dense array i.i.d ~ U(0, 1)
+    sparse array <=> feature space
     all variable i.i.d ~ Normal distribution N(0, 1)
     '''
 

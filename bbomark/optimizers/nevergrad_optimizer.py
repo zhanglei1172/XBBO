@@ -19,7 +19,7 @@ from scipy.stats import norm
 from bbomark.core import AbstractOptimizer
 
 from bbomark.configspace.space import Configurations
-from bbomark.optimizers.feature_space import FeatureSpace_nevergrad
+from bbomark.optimizers.feature_space import FeatureSpace_gaussian
 
 class NevergradOptimizer(AbstractOptimizer):
     primary_import = "nevergrad"
@@ -93,4 +93,4 @@ class NevergradOptimizer(AbstractOptimizer):
 
 
 opt_wrapper = NevergradOptimizer
-feature_space = FeatureSpace_nevergrad
+feature_space = FeatureSpace_gaussian

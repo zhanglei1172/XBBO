@@ -28,9 +28,10 @@ class BBO:
             n_suggestions,
             history=None,
             # history_dict=None,
+            custom_model_dir=None,
             data_root=None,
             callback=None):
-        self.function_instance = build_test_problem(model_name, dataset, scorer, data_root)
+        self.function_instance = build_test_problem(model_name, dataset, scorer, data_root, custom_model_dir)
         self.feature_spaces = feature_spaces
         # Setup optimizer
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
@@ -160,6 +161,14 @@ class BBO:
         self.minimum_history = np.minimum.accumulate(self.coord_y_multi, axis=0)
         self.coord_x = np.arange(start=1, stop=len(self.coord_y)+1)
         # self.stat_res = qt.quantile_and_CI(self.coord_y, EVAL_Q, alpha=ALPHA)
+        self.cal_history_best()
+
+    def cal_history_best(self):
+        idx, feat, res, param = self.record.get_best()
+        self.best_feature = feat
+        self.best_target = res
+        self.best_param = param
+        self.best_idx = idx
 
     def visualize(self, ax=None):
 
@@ -178,12 +187,21 @@ class BBO:
         #     # color=opt_name,
         #     alpha=0.5,
         # )
-        ax.plot(
+        line = ax.plot(
             self.coord_x,
             self.coord_y,
             # color=opt_name,
             label=opt_name,
             marker=".",
+            alpha=0.6
+        )
+
+        ax.scatter(
+            x=self.best_idx+1,
+            y=self.best_target,
+            s=20,
+            marker='*',
+            c=line[0].get_color()
         )
         ax.set_xlabel("evaluation", fontsize=10)
         # plt.ylabel("normalized median score", fontsize=10)
@@ -197,4 +215,3 @@ class BBO:
 
         return ax
         # ax.show()
-

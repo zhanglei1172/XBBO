@@ -34,6 +34,8 @@ def get_opt_class(opt_name):
         from bbomark.optimizers import random_optimizer as opt
     elif wrapper_file == "scikit_optimizer.py":
         from bbomark.optimizers import scikit_optimizer as opt
+    elif wrapper_file == "bore_optimizer.py":
+        from bbomark.optimizers import bore_optimizer as opt
     else:
         assert False, "CONFIG for built in optimizers has added a new optimizer, but not updated this function."
 
