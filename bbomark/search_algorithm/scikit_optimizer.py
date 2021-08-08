@@ -28,7 +28,7 @@ from bbomark.configspace.space import Configurations
 class ScikitOptimizer(AbstractOptimizer):
     primary_import = "scikit-optimize"
 
-    def __init__(self, config_spaces, feature_spaces, base_estimator="GP", acq_func="gp_hedge", n_initial_points=5, **kwargs):
+    def __init__(self, config_spaces, base_estimator="GP", acq_func="gp_hedge", n_initial_points=5, **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -43,7 +43,8 @@ class ScikitOptimizer(AbstractOptimizer):
             Number of points to sample randomly before actual Bayes opt.
         """
         self.opt_name = 'scikit-optimize'
-        super().__init__(config_spaces, feature_spaces)
+        AbstractOptimizer.__init__(self, config_spaces)
+        self.dtypes_idx_map = self.space.dtypes_idx_map
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         # self.param_names = self.space.get_hyperparameter_names()
@@ -138,5 +139,5 @@ class ScikitOptimizer(AbstractOptimizer):
                 self.skopt.tell(xx, yy)
 
 
-opt_wrapper = ScikitOptimizer
-feature_space = None
+opt_class = ScikitOptimizer
+# feature_space = None

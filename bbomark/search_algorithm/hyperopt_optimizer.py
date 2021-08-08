@@ -1,20 +1,6 @@
-# Copyright (c) 2019 Uber Technologies, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import numpy as np
 from hyperopt import hp, tpe
 from hyperopt.base import JOB_STATE_DONE, JOB_STATE_NEW, STATUS_OK, Domain, Trials
-from scipy.interpolate import interp1d
 from ConfigSpace.hyperparameters import (
     UniformIntegerHyperparameter,
     UniformFloatHyperparameter,
@@ -23,10 +9,9 @@ from ConfigSpace.hyperparameters import (
 )
 
 from bbomark.core import AbstractOptimizer
-from bbomark.utils.util import random as np_random
-from bbomark.utils.util import random_seed
 from bbomark.configspace.space import Configurations
 
+SEED_MAX_INCL = np.iinfo(np.uint32).max
 # Sklearn prefers str to unicode:
 DTYPE_MAP = {"real": float, "int": int, "bool": bool, "cat": str, "ordinal": str}
 
@@ -43,7 +28,7 @@ def only(x):
 class HyperoptOptimizer(AbstractOptimizer):
     primary_import = "hyperopt"
 
-    def __init__(self, config_spaces, feature_spaces, random=np_random):
+    def __init__(self, config_spaces):
         """Build wrapper class to use hyperopt optimizer in benchmark.
 
         Parameters
@@ -51,10 +36,11 @@ class HyperoptOptimizer(AbstractOptimizer):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        super().__init__(config_spaces, feature_spaces)
+        AbstractOptimizer.__init__(self, config_spaces)
+        self.dtypes_idx_map = self.space.dtypes_idx_map
         self.opt_name = 'hyperopt'
 
-        self.random = random
+        # self.random = random
         feature_space = {}
         configs = self.space.get_hyperparameters()
         for config in configs:
@@ -139,7 +125,7 @@ class HyperoptOptimizer(AbstractOptimizer):
         assert len(new_ids) == 1
         self.trials.refresh()
 
-        seed = random_seed(self.random)
+        seed=np.random.randint(0, SEED_MAX_INCL)
         new_trials = tpe.suggest(new_ids, self.domain, self.trials, seed)
         assert len(new_trials) == 1
 
@@ -228,5 +214,5 @@ class HyperoptOptimizer(AbstractOptimizer):
         self.trials.refresh()
 
 
-opt_wrapper = HyperoptOptimizer
-feature_space = None
+opt_class = HyperoptOptimizer
+# feature_space = None

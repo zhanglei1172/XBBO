@@ -13,13 +13,13 @@
 # limitations under the License.
 # from bbomark import np_util
 from bbomark.core.abstract_optimizer import AbstractOptimizer
-from bbomark.optimizers.feature_space import FeatureSpace_gaussian
+# from bbomark.search_algorithm.feature_space import FeatureSpace_gaussian
 
 class RandomOptimizer(AbstractOptimizer):
     # Unclear what is best package to list for primary_import here.
     primary_import = "bbomark"
 
-    def __init__(self, config_spaces, feature_spaces, random=None):
+    def __init__(self, config_spaces, **kwargs):
         self.opt_name = 'radom-search'
         """Build wrapper class to use random search function in benchmark.
 
@@ -30,8 +30,7 @@ class RandomOptimizer(AbstractOptimizer):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        super().__init__(config_spaces, feature_spaces)
-        self.random = random
+        AbstractOptimizer.__init__(self, config_spaces)
 
     def transform_sparseArray_to_optSpace(self, sparse_array):
         return sparse_array
@@ -76,5 +75,5 @@ class RandomOptimizer(AbstractOptimizer):
 
 # All optimizer wrappers need to assign their wrapper to the name opt_wrapper because experiment always tries to import
 # opt_wrapper regardless of the optimizer it is importing.
-opt_wrapper = RandomOptimizer
-feature_space = FeatureSpace_gaussian
+opt_class = RandomOptimizer
+# feature_space = FeatureSpace_gaussian

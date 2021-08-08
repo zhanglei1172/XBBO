@@ -6,15 +6,14 @@ from sklearn.ensemble import RandomForestClassifier
 
 import logging
 
-from bbomark.optimizers.feature_space import FeatureSpace_uniform
+from bbomark.core.feature_space import FeatureSpace_uniform
 from bbomark.core.abstract_optimizer import AbstractOptimizer
 from bbomark.configspace.space import Configurations
 
-class BORE(AbstractOptimizer):
+class BORE(AbstractOptimizer, FeatureSpace_uniform):
     opt_name = 'BORE'
     def __init__(self,
                  config_spaces,
-                 feature_spaces,
                  optimizer_kws = {},
                  num_random_init=10,
                  # num_starts=5,
@@ -23,7 +22,10 @@ class BORE(AbstractOptimizer):
                  logger=None,
                  ):
 
-        super().__init__(config_spaces, feature_spaces)
+        # super(AbstractOptimizer, self).__init__(config_spaces)
+        AbstractOptimizer.__init__(self, config_spaces)
+        FeatureSpace_uniform.__init__(self)
+        self.dtypes_idx_map = self.space.dtypes_idx_map
         # self.multi_start = multi_start(minimizer_fn=minimize)
         self.classifier = Classfify()
 
@@ -103,7 +105,7 @@ class BORE(AbstractOptimizer):
 
         x_guess = [None] * n_suggestions
         for ii, xx in enumerate(loc):
-            x_array = self.feature_spaces.feature_to_array(xx, self.sparse_dimension)
+            x_array = self.feature_to_array(xx, self.sparse_dimension)
             dict_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
             x_guess[ii] = dict_unwarped
 
@@ -120,7 +122,7 @@ class BORE(AbstractOptimizer):
         self.classifier.fit(self.history.features, z)
 
     def transform_sparseArray_to_optSpace(self, sparse_array):
-        return [self.feature_spaces.array_to_feature(x, self.dense_dimension) for x in sparse_array]
+        return [self.array_to_feature(x, self.dense_dimension) for x in sparse_array]
 
     def _is_unique(self, res):
         is_duplicate = self.history.is_duplicate(res.x)
@@ -194,7 +196,7 @@ class Classfify():
         return new_minimizer
 
     def fit(self, X, z):
-        self.model.fit(X, z)
+        self.model.fit(X, z.ravel())
 
     def predict(self, x):
         if x.ndim == 1:
@@ -263,5 +265,5 @@ def from_bounds(bounds):
     return (low, high), dim
 
 
-opt_wrapper = BORE
-feature_space = FeatureSpace_uniform
+opt_class = BORE
+# feature_space = FeatureSpace_uniform

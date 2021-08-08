@@ -22,15 +22,15 @@ from pySOT.strategy import SRBFStrategy
 from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
 
 from bbomark.configspace.space import Configurations
-from bbomark.optimizers.feature_space import FeatureSpace_uniform
+from bbomark.core.feature_space import FeatureSpace_uniform
 from bbomark.core import AbstractOptimizer
 '''
 全【0，1】
 '''
-class PySOTOptimizer(AbstractOptimizer):
+class PySOTOptimizer(AbstractOptimizer, FeatureSpace_uniform):
     primary_import = "pysot"
 
-    def __init__(self, config_spaces, feature_spaces):
+    def __init__(self, config_spaces):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -38,7 +38,9 @@ class PySOTOptimizer(AbstractOptimizer):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        super().__init__(config_spaces, feature_spaces)
+        AbstractOptimizer.__init__(self, config_spaces)
+        FeatureSpace_uniform.__init__(self)
+        self.dtypes_idx_map = self.space.dtypes_idx_map
         self.opt_name = 'pysot'
         # self.space_x = JointSpace(api_config)
         self.bounds = self.space.get_bounds()
@@ -51,7 +53,7 @@ class PySOTOptimizer(AbstractOptimizer):
         self.proposals = []
 
     def transform_sparseArray_to_optSpace(self, sparse_array):
-        return [self.feature_spaces.array_to_feature(x, self.dense_dimension) for x in sparse_array]
+        return [self.array_to_feature(x, self.dense_dimension) for x in sparse_array]
 
     def create_opt_prob(self):
         """Create an optimization problem object."""
@@ -133,7 +135,7 @@ class PySOTOptimizer(AbstractOptimizer):
             # when all variables are integers, so we just abort in this case
             # since we have likely converged anyway. See PySOT issue #30.
             x_guess_data = (proposal.record.params)[0]  # From tuple to list
-            x_array = self.feature_spaces.feature_to_array(x_guess_data, self.sparse_dimension)
+            x_array = self.feature_to_array(x_guess_data, self.sparse_dimension)
             x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
             if x_unwarped in self.history:
                 warnings.warn("pySOT proposed the same point twice")
@@ -177,5 +179,5 @@ class PySOTOptimizer(AbstractOptimizer):
                 self._observe(x_, y_)
 
 
-opt_wrapper = PySOTOptimizer
-feature_space = FeatureSpace_uniform
+opt_class = PySOTOptimizer
+# feature_space = FeatureSpace_uniform

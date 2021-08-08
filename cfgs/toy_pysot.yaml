@@ -1,0 +1,22 @@
+GENERAL:
+  pipeline: BBO
+  exp_dir_root: "../exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+
+OPTM:
+  name: pysot_optimizer
+  n_suggestions: 2
+  kwargs: {}
+
+TEST_PROBLEM:
+  SEARCH_SPACE:
+    hp:
+      cat_dim: 2
+  kwargs:
+    func_name: rosenbrock
+    noise_std: 0.1

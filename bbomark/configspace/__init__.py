@@ -2,7 +2,6 @@
 
 from .space import Space
 from ConfigSpace import ConfigurationSpace
-import ConfigSpace.hyperparameters as CSH
 from .warp import Warp
 
 def build_space(meta):
@@ -13,7 +12,7 @@ def build_space(meta):
     meta : dict(str, dict)
         Configuration of variables in joint configspace. See API description.
     """
-    cs = ConfigurationSpace(seed=1234, meta=meta)
+    cs = ConfigurationSpace(meta=meta)
     warp = Warp()
     param_list = sorted(meta.keys())
     # all_warp = {}
@@ -45,7 +44,7 @@ def build_space(meta):
                    warp=param_space,)
             # arg = CSH.OrdinalHyperparameter(name=param_name, sequence=param_values)
         elif param_values is not None:
-            assert param_type in ("int", "ord", "real") # TODO 有些优化器能直接处理Ordinal？现在直接转为real，warp取整
+            assert param_type in ("int", "ord", "float") # TODO 有些优化器能直接处理Ordinal？现在直接转为real，warp取整
             assert param_space == 'linear'
             arg = warp.warp_space('ord',
                    param_name,
@@ -62,7 +61,7 @@ def build_space(meta):
                                   param_values=None,
                                   warp=param_space, )
             # We are throwing away information here, but OrderedDiscrete appears to be invariant to monotonic transformation anyway.
-        elif param_type == "real":
+        elif param_type == "float":
             assert param_values is None
             assert param_range is not None
             arg = warp.warp_space('float',

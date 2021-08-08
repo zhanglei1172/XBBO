@@ -1,0 +1,21 @@
+#BBO:
+#  DATASETS:
+#    name: ''
+
+GENERAL:
+  pipeline: BBO
+  exp_dir_root: "../exp"
+  random_seed: 0
+
+
+OPTM:
+  name: random_optimizer
+  n_suggestions: 2
+
+TEST_PROBLEM:
+  SEARCH_SPACE:
+    hp:
+      cat_dim: 2
+  kwargs:
+    func_name: rosenbrock
+    noise_std: 0.1

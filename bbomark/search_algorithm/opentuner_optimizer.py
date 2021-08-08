@@ -81,7 +81,7 @@ opentuner.tuningrunmain.init_logging = lambda: None
 class OpentunerOptimizer(AbstractOptimizer):
     primary_import = "opentuner"
 
-    def __init__(self, config_spaces, feature_spaces, techniques=DEFAULT_TECHNIQUES, n_suggestions=1):
+    def __init__(self, config_spaces, techniques=DEFAULT_TECHNIQUES, n_suggestions=1):
         """Build wrapper class to use opentuner optimizer in benchmark.
 
         Parameters
@@ -98,7 +98,7 @@ class OpentunerOptimizer(AbstractOptimizer):
         n_suggestions : int
             Default number of suggestions to be made in parallel.
         """
-        super().__init__(config_spaces, feature_spaces)
+        AbstractOptimizer.__init__(self, config_spaces)
         self.opt_name = 'opentuner'
         # Opentuner requires DesiredResult to reference suggestion when making
         # its observation. x_to_dr maps the dict suggestion to DesiredResult.
@@ -307,5 +307,5 @@ class OpentunerOptimizer(AbstractOptimizer):
             self.api.report_result(dr, result)
 
 
-opt_wrapper = OpentunerOptimizer
-feature_space = None
+opt_class = OpentunerOptimizer
+# feature_space = None

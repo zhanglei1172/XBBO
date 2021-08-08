@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import nevergrad.optimization as optimization
-import numpy as np
 # from nevergrad import instrumentation as inst
-from scipy.stats import norm
 
 from bbomark.core import AbstractOptimizer
 
 from bbomark.configspace.space import Configurations
-from bbomark.optimizers.feature_space import FeatureSpace_gaussian
+from bbomark.core.feature_space import FeatureSpace_gaussian
 
-class NevergradOptimizer(AbstractOptimizer):
+class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
     primary_import = "nevergrad"
 
-    def __init__(self, config_spaces, feature_spaces, tool, budget):
+    def __init__(self, config_spaces, tool, budget):
         """Build wrapper class to use nevergrad optimizer in benchmark.
 
         Parameters
@@ -34,7 +32,9 @@ class NevergradOptimizer(AbstractOptimizer):
         budget : int
             Expected number of max function evals
         """
-        super().__init__(config_spaces, feature_spaces)
+        AbstractOptimizer.__init__(self, config_spaces)
+        FeatureSpace_gaussian.__init__(self)
+        self.dtypes_idx_map = self.space.dtypes_idx_map
         # self.random = random
         self.opt_name = 'nevergrad'
 
@@ -45,7 +45,7 @@ class NevergradOptimizer(AbstractOptimizer):
         self.x = []
 
     def transform_sparseArray_to_optSpace(self, sparse_array):
-        return [self.feature_spaces.array_to_feature(x, self.dense_dimension) for x in sparse_array]
+        return [self.array_to_feature(x, self.dense_dimension) for x in sparse_array]
 
     def suggest(self, n_suggestions=1):
         """Get suggestion from nevergrad.
@@ -66,7 +66,7 @@ class NevergradOptimizer(AbstractOptimizer):
 
         x_guess = [None] * n_suggestions
         for ii, xx in enumerate(x_guess_data):
-            x_array = self.feature_spaces.feature_to_array(xx, self.sparse_dimension)
+            x_array = self.feature_to_array(xx, self.sparse_dimension)
 
 
 
@@ -92,5 +92,5 @@ class NevergradOptimizer(AbstractOptimizer):
             self.optim.tell(xx, yy)
 
 
-opt_wrapper = NevergradOptimizer
-feature_space = FeatureSpace_gaussian
+opt_class = NevergradOptimizer
+# feature_space = FeatureSpace_gaussian

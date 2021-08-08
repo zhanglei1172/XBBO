@@ -6,7 +6,7 @@ import torchvision
 import torchvision.transforms as transforms
 import torch.optim as optim
 
-from bbomark.constants import VISIBLE_TO_OPT
+from bbomark.core.constants import VISIBLE_TO_OPT
 from bbomark.core import TestFunction, AbstractBaseModel
 
 METRICS = tuple(sorted(['acc', 'loss']))
