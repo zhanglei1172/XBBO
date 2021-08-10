@@ -41,7 +41,7 @@ class Model(TestFunction):
         f = self.func(np.asarray(input_x))
         random_noise = np.random.randn() * self.noise_std + 1.
         res_out = {
-            'row': f,
+            'raw': f,
             'noise': f*random_noise,
         }
         res_loss = {
