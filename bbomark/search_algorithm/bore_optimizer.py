@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 
 import logging
 
-from bbomark.core.feature_space import FeatureSpace_uniform
+from bbomark.configspace.feature_space import FeatureSpace_uniform
 from bbomark.core.abstract_optimizer import AbstractOptimizer
 from bbomark.configspace.space import Configurations
 
@@ -24,8 +24,8 @@ class BORE(AbstractOptimizer, FeatureSpace_uniform):
 
         # super(AbstractOptimizer, self).__init__(config_spaces)
         AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_uniform.__init__(self)
-        self.dtypes_idx_map = self.space.dtypes_idx_map
+        FeatureSpace_uniform.__init__(self, self.space.dtypes_idx_map)
+
         # self.multi_start = multi_start(minimizer_fn=minimize)
         self.classifier = Classfify()
 

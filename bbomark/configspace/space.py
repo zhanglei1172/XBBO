@@ -16,6 +16,8 @@ import numpy as np
 from scipy.optimize import Bounds
 
 from bbomark.configspace.warp import WARP_DICT, UNWARP_DICT
+
+# RERANGE_TYPES_SEQ = ['float', 'int', 'ord', 'cat']
 # def array_from_dict(config_space, dct):
 #     '''
 #     hp_dict
@@ -31,10 +33,13 @@ from bbomark.configspace.warp import WARP_DICT, UNWARP_DICT
 #     return config.get_dictionary()
 
 class Array_idx_map():
-    src_ids = None
-    trg_ids = None
+    src_ids = None # 对应于configspace 的array索引
+    trg_ids = None # 对应于array_dense的索引（trg_ids >= src_ids）
     cat_sizes = None
     cats = None
+
+    def __len__(self):
+        return len(self.src_ids) if self.src_ids else 0
 
 class Space(CS.ConfigurationSpace):
     def __init__(self, other, warp, *args, **kwargs):
@@ -67,13 +72,26 @@ class Space(CS.ConfigurationSpace):
             self.dtypes_idx_map['cat'].src_ids, self.dtypes_idx_map['cat'].trg_ids, self.dtypes_idx_map['cat'].cat_sizes = \
                 map(np.uintp, zip(*cats))
             self.dtypes_idx_map['cat'].cats = cats
-
+        # re range ordinal
+        # self.rerangeIDX = []
+        # for dtype in RERANGE_TYPES_SEQ:
+        #     src_ids = self.dtypes_idx_map[dtype].src_ids
+        #     if src_ids is None:
+        #         continue
+        #     self.rerangeIDX.append(src_ids)
+        # self.rerangeIDX = np.asarray(self.rerangeIDX).ravel()
+        # self.rererangeIDX = self.rerangeIDX.argsort()
+        
         # self.nums = nums
         # self.cats = cats
         self.size_sparse = size_sparse
         self.size_dense = size_dense
 
     def get_dimensions(self, sparse=False):
+        '''
+        size_dense = size_sparse - cat_var_num + catOnehot_encoding_length
+        so: size_dense >= size_sparse
+        '''
         return self.size_sparse if sparse else self.size_dense
 
     def sample_configuration(self, size=1):
@@ -139,7 +157,8 @@ class Space(CS.ConfigurationSpace):
 
         return (nums_int, nums_float), ords, cats, size_sparse, size_dense
 
-
+    # def add_hyperparameters(self):
+    #     raise NotImplementedError("cannot modify space")
 
 
     # def get_hyperparameters_dict(self, *args, **kwargs): # meta hp?
@@ -189,6 +208,7 @@ class Configurations(CS.Configuration):
         需要转换成sparse array(*) => dict => unwarp dict
         '''
         assert isinstance(configuration_space, Space)
+        # array_sparse = array_sparse[configuration_space.rererangeIDX]
 
         return cls(configuration_space=configuration_space, vector=array_sparse)
 
@@ -217,6 +237,6 @@ class Configurations(CS.Configuration):
         dict_warped = cs.warp.warp(dict_unwarped) # 1->2
         config = Configurations(cs, warped_values=dict_warped) # dict构造config类
         array_sparse = config.get_array() # ->4
-        return array_sparse
+        return array_sparse#[cs.rerangeIDX]
 
 

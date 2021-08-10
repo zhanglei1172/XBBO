@@ -22,7 +22,7 @@ from pySOT.strategy import SRBFStrategy
 from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
 
 from bbomark.configspace.space import Configurations
-from bbomark.core.feature_space import FeatureSpace_uniform
+from bbomark.configspace.feature_space import FeatureSpace_uniform
 from bbomark.core import AbstractOptimizer
 '''
 全【0，1】
@@ -39,8 +39,8 @@ class PySOTOptimizer(AbstractOptimizer, FeatureSpace_uniform):
             Configuration of the optimization variables. See API description.
         """
         AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_uniform.__init__(self)
-        self.dtypes_idx_map = self.space.dtypes_idx_map
+        FeatureSpace_uniform.__init__(self, self.space.dtypes_idx_map)
+        # self.dtypes_idx_map = self.space.dtypes_idx_map
         self.opt_name = 'pysot'
         # self.space_x = JointSpace(api_config)
         self.bounds = self.space.get_bounds()

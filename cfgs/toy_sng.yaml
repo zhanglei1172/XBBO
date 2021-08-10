@@ -1,0 +1,25 @@
+GENERAL:
+  pipeline: NAS
+  exp_dir_root: "../exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+
+OPTM:
+  name: sng_optimizer
+  n_suggestions: 1
+  max_call: 1000
+  kwargs:
+    lam: 2
+    discrete_degree: 21
+
+TEST_PROBLEM:
+  SEARCH_SPACE:
+    hp:
+      cat_dim: 30
+  kwargs:
+    func_name: indexsum
+    noise_std: 0.1

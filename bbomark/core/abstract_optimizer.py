@@ -27,7 +27,7 @@ class AbstractOptimizer(ABC):
         # else:
         #     self.logger = logger
 
-    @abstractmethod
+    # @abstractmethod
     def transform_sparseArray_to_optSpace(self, sparse_array):
         return sparse_array
 

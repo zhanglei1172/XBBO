@@ -6,16 +6,30 @@ class Model(TestFunction):
     def __init__(self, cfg, **kwargs):
         # np.random.seed(cfg.GENERAL.random_seed)
         self.cfg = cfg
-        self.dim = 30
+        # self.dim = 30
         # assert self.dim % 2 == 0
         super().__init__()
 
 
-        assert cfg.TEST_PROBLEM.kwargs.func_name in ('rosenbrock')
+        assert cfg.TEST_PROBLEM.kwargs.func_name in (
+            'rosenbrock',
+            'rastrigin',
+            'indexsum',
+            'toyrebar'
+        )
         # func_name = cfg.TEST_PROBLEM.kwargs.func_name
         func_name = kwargs.get('func_name')
         if func_name == 'rosenbrock':
             self.func = Rosenbrock(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+        elif func_name == 'rastrigin':
+            self.func = Rastrigin(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+        elif func_name == 'indexsum':
+            self.func = IndexSum(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+        elif func_name == 'toyrebar':
+            self.func = ToyREBAR(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim,
+                                 self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.t)
+        else:
+            assert False
         self.noise_std = kwargs.get('noise_std')
         self.api_config = self._load_api_config()
 
@@ -43,6 +57,69 @@ class Model(TestFunction):
         return self.func._load_api_config()
 
 
+class Rastrigin():
+
+    def __init__(self, dim):
+        self.dim = dim
+    def __call__(self, input_x):
+        f_x = 10. * input_x.shape[0]
+        for i in input_x:
+            f_x += i**2 - 10 * np.cos(2*np.pi*i)
+        return f_x
+
+    def _load_api_config(self):
+        return {
+            'x_{}'.format(k): {'type': 'float', 'range': (-5.12, 5.12)} for k in range(self.dim)
+        }
+
+
+class IndexSum():
+
+    def __init__(self, dim):
+        self.dim = dim
+    def __call__(self, input_x):
+        f_x = 0
+        for i in input_x:
+            f_x += i # cat都取第一个类最优
+        return f_x
+
+    def _load_api_config(self):
+        return {
+            'x_{}'.format(k): {'type': 'cat', 'values': list(range(10))} for k in range(self.dim)
+        }
+
+class ToyREBAR():
+    # min
+    def __init__(self, dim, t=0.45):
+        # self.a = 1
+        # self.b = 100
+        self.dim = dim
+        self.t = t
+        pass
+
+    def __call__(self, input_x):
+        """
+        Rosenbrock function
+        """
+        f_x = 0
+        for i in input_x:
+            f_x += (i - self.t) ** 2
+
+
+        return f_x / input_x.shape[0]
+
+    # def _load_api_config(self):
+    #     return {
+    #         'x_{}'.format(k): {'type': 'cat', 'values': list(range(-5,6))} for k in range(self.dim)
+    #     }
+
+    def _load_api_config(self):
+        '''
+        参数是b的value
+        '''
+        return {
+            'b_{}'.format(k): {'type': 'cat', 'values': (0, 1)} for k in range(self.dim)
+        }
 
 class Rosenbrock():
     # min
@@ -62,6 +139,11 @@ class Rosenbrock():
 
 
         return f_x
+
+    # def _load_api_config(self):
+    #     return {
+    #         'x_{}'.format(k): {'type': 'cat', 'values': list(range(-5,6))} for k in range(self.dim)
+    #     }
 
     def _load_api_config(self):
         return {

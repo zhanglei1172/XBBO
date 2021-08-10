@@ -17,7 +17,7 @@ import nevergrad.optimization as optimization
 from bbomark.core import AbstractOptimizer
 
 from bbomark.configspace.space import Configurations
-from bbomark.core.feature_space import FeatureSpace_gaussian
+from bbomark.configspace.feature_space import FeatureSpace_gaussian
 
 class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
     primary_import = "nevergrad"
@@ -33,8 +33,8 @@ class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
             Expected number of max function evals
         """
         AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_gaussian.__init__(self)
-        self.dtypes_idx_map = self.space.dtypes_idx_map
+        FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
+        # self.dtypes_idx_map = self.space.dtypes_idx_map
         # self.random = random
         self.opt_name = 'nevergrad'
 

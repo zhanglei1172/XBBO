@@ -9,7 +9,7 @@ from bbomark.configspace import build_space
 from bbomark.utils.record import Record
 
 
-class BBO:
+class NAS:
 
     def __init__(self, cfg):
         # setup TestProblem
@@ -90,7 +90,7 @@ class BBO:
             tt = time()
             for next_point in (next_points):
                 try:
-                    f_current_eval, loss =  self.evaluate(next_point) # TODO 2
+                    f_current_eval, loss = self.evaluate(next_point) # TODO 2
                 except Exception as e:
                     f_current_eval = np.full((len(self.cfg.TEST_PROBLEM.func_evals),), np.inf, dtype=float)
                     loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
@@ -121,12 +121,3 @@ class BBO:
 
 
 
-class BBO_REBAR(BBO):
-    def __init__(self):
-        BBO.__init__(self)
-    
-    def evaluate(self,params):
-        return BBO.evaluate(self, params)
-    
-    def run(self):
-        pass

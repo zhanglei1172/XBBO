@@ -1,7 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import numpy as np
 import warnings
 from scipy import stats
+
+
 
 class AbstractFeatureSpace(ABC):
     '''
@@ -26,7 +28,7 @@ class AbstractFeatureSpace(ABC):
     def feature_to_array(self, feature, sparse_dim):
         pass
 
-class Identity(AbstractFeatureSpace):
+class Identity():
     '''
     uniform to Gaussian
     '''
@@ -45,7 +47,7 @@ class Identity(AbstractFeatureSpace):
     def feature_to_sparse_array(self, feature):
         return feature
 
-class Cat2Onehot(AbstractFeatureSpace):
+class Cat2Onehot():
 
     def __init__(self):
         super().__init__()
@@ -62,7 +64,7 @@ class Cat2Onehot(AbstractFeatureSpace):
     def feature_to_sparse_array(self, feature, cat_num):
         return np.argmax(feature).item()
 
-class Ord2Uniform(AbstractFeatureSpace):
+class Ord2Uniform():
     '''
     ordinal to uniform(0, 1)
     '''
@@ -81,7 +83,7 @@ class Ord2Uniform(AbstractFeatureSpace):
     def feature_to_sparse_array(self, feature, seqnum):
         return np.rint(feature * (seqnum-1))
 
-class U2gaussian(AbstractFeatureSpace):
+class U2gaussian():
     '''
     uniform to Gaussian
     '''
@@ -102,8 +104,24 @@ class U2gaussian(AbstractFeatureSpace):
     def feature_to_sparse_array(self, feature):
         return stats.norm.cdf(feature)
 
-class Ordinal(AbstractFeatureSpace):
+class U2Onehot():
+    def __init__(self):
+        AbstractFeatureSpace.__init__(self)
 
+    def sparse_array_to_feature(self, sparse_array, cat_num):
+        '''
+        sparse_array: 0~1
+        return: one-hot code
+        '''
+        feat = np.zeros(cat_num)
+        feat[np.uintp(sparse_array*cat_num)] = 1
+        return feat
+
+    def feature_to_sparse_array(self, feature, cat_num):
+        return np.argmax(feature, -1).item() / (cat_num-1)
+
+
+class Ordinal():
 
     def __init__(self):
         super().__init__()
@@ -123,7 +141,7 @@ class Ordinal(AbstractFeatureSpace):
         return inverse_threshold_discretization(sparse_array, arity=seq_num)
 
 
-class Gaussian(AbstractFeatureSpace):
+class Gaussian():
 
     def __init__(self, mean=0, std=1):
         '''
@@ -143,7 +161,7 @@ class Gaussian(AbstractFeatureSpace):
     def feature_to_sparse_array(self, feature):
         return (feature - self.mean) / self.std
 
-class Category(AbstractFeatureSpace):
+class Category():
 
     def __init__(self, deterministic=False):
         super().__init__()

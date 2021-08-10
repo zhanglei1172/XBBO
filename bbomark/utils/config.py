@@ -11,7 +11,7 @@ cfg = _C
 _C.GENERAL = CfgNode()
 _C.GENERAL.gpu = ''
 _C.GENERAL.random_seed = 42
-_C.GENERAL.exp_dir_root = '../exp'
+_C.GENERAL.exp_dir_root = './exp'
 _C.GENERAL.pipeline = 'BBO'
 
 _C.BBO = CfgNode()
@@ -33,7 +33,7 @@ _C.NAS = CfgNode() # TODO
 _C.TEST_PROBLEM = CfgNode()
 _C.TEST_PROBLEM.name = 'toy_function' # filename
 _C.TEST_PROBLEM.kwargs = CfgNode(new_allowed=True)
-_C.TEST_PROBLEM.func_evals = ('row', 'noise') # 放非优化器优化目标的结果、metrics
+_C.TEST_PROBLEM.func_evals = ('raw', 'noise') # 放非优化器优化目标的结果、metrics
 _C.TEST_PROBLEM.losses = ('val', 'test') # 必须前n_obj个为opt的优化目标
 # _C.TEST_PROBLEM.metrics = ()
 # _C.TEST_PROBLEM.kwargs.func_name = 'rosenbrock'

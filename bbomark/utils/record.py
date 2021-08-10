@@ -12,6 +12,12 @@ class Record:
         self.features = [] # n_call * n_suggest * dim # 单独存储
         self.func_evals = [] # n_call * n_suggest * dim
         self.losses = [] # n_call * n_suggest * 2
+        self.cum_min = {
+            'cum_min_suggest_dict': [],
+            'cum_min_losses': [],
+            'cum_min_func_evals': []
+        }
+        self.current_best = np.inf
         # self.metrics = [] # n_call * n_suggest * dim
         # self.budgets = []
         self.timing = { # 用来评估优化器的性能，如果是把model推理时间作为评估，应该放在loss、func_evals中
@@ -36,15 +42,29 @@ class Record:
         for k in self.timing:
             self.timing[k].append(timing[k])
         self.suggest_dict.append(suggest_point)
+        best_id = None
+        for i in range(len(loss)):
+            if loss[i][0] < self.current_best:
+                self.current_best = loss[i][0]
+                best_id = i
+        if best_id is None:
+            self.cum_min['cum_min_suggest_dict'].append(self.cum_min['cum_min_suggest_dict'][-1])
+            self.cum_min['cum_min_losses'].append(self.cum_min['cum_min_losses'][-1])
+            self.cum_min['cum_min_func_evals'].append(self.cum_min['cum_min_func_evals'][-1])
+        else:
+            self.cum_min['cum_min_suggest_dict'].append(suggest_point[best_id])
+            self.cum_min['cum_min_losses'].append(loss[best_id])
+            self.cum_min['cum_min_func_evals'].append(y[best_id])
+
         # if b is not None:
         #     self.budgets.append(b)
 
-    def get_best(self):
-        idx = np.argmin(np.asarray(self.func_evals)[...,0].ravel())
-        return idx//len(self.func_evals[0]), \
-               np.asarray(self.features).ravel()[idx],\
-               np.asarray(self.func_evals)[...,0].ravel()[idx],\
-               np.asarray(self.suggest_dict).ravel()[idx]
+    # def get_best(self):
+    #     idx = np.argmin(np.asarray(self.func_evals)[...,0].ravel())
+    #     return idx//len(self.func_evals[0]), \
+    #            np.asarray(self.features).ravel()[idx],\
+    #            np.asarray(self.func_evals)[...,0].ravel()[idx],\
+    #            np.asarray(self.suggest_dict).ravel()[idx]
 
 
 
@@ -89,8 +109,12 @@ class Record:
 
         self.time_df = pd.DataFrame(self.timing)
         self.time_df.index.set_names(['call'], inplace=True)
+
+        self.cum_min_df = pd.DataFrame(self.cum_min)
+        self.cum_min_df.index.set_names(['call'], inplace=True)
         self.df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/res_{r}.csv')
         self.time_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/time_{r}.csv')
+        self.cum_min_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/cum_min_{r}.csv')
 
         self.features = np.asarray(self.features)
         np.savez(self.cfg.GENERAL.exp_dir + f'/res/array_{r}.npz', features=self.features)
