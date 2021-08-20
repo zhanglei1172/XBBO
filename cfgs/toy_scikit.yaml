@@ -1,17 +1,16 @@
 GENERAL:
   pipeline: BBO
-  exp_dir_root: "../exp"
+  exp_dir_root: "./exp"
   random_seed: 0
 
 #BBO:
 #  DATASETS:
 #    name: ''
 
-
 OPTM:
   name: scikit_optimizer
-  n_suggestions: 2
-  kwargs: {"acq_func": "LCB", "base_estimator": "GP", "n_initial_points": 5}
+  n_suggestions: 1
+  kwargs: { "acq_func": "LCB", "base_estimator": "GP", "n_initial_points": 5 }
 #  Scikit-GP-LCB
 
 TEST_PROBLEM:
@@ -19,5 +18,5 @@ TEST_PROBLEM:
     hp:
       cat_dim: 2
   kwargs:
-    func_name: rosenbrock
+    func_name: branin
     noise_std: 0.1

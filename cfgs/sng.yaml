@@ -1,12 +1,11 @@
 GENERAL:
   pipeline: NAS
-  exp_dir_root: "../exp"
+  exp_dir_root: "./exp"
   random_seed: 0
 
 #BBO:
 #  DATASETS:
 #    name: ''
-
 
 OPTM:
   name: sng_optimizer
@@ -21,5 +20,5 @@ TEST_PROBLEM:
     hp:
       cat_dim: 30
   kwargs:
-    func_name: indexsum
+    func_name: branin
     noise_std: 0.1

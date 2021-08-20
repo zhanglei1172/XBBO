@@ -5,10 +5,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+
 def load_csv(exp_dir):
     res_l = []
     tim_l = []
-    for file in sorted(glob.glob(exp_dir+'/res/res*.csv')):
+    for file in sorted(glob.glob(exp_dir + '/res/res*.csv')):
         res = pd.read_csv(file, index_col=[0, 1], header=[0, 1])
         res = res.groupby(by='call', axis=0).median()
         res_l.append(res.reset_index())
@@ -18,8 +19,9 @@ def load_csv(exp_dir):
         tim_l.append(tim.reset_index())
     # res = pd.read_csv(exp_dir+'/res/res*.csv', index_col=[0, 1], header=[0, 1])
     # tim = pd.read_csv(exp_dir+'/res/time*.csv', index_col=[0], header=[0])
-    name = glob.glob(exp_dir+'/*.yaml')
+    name = glob.glob(exp_dir + '/*.yaml')
     return pd.concat(res_l), pd.concat(tim_l), os.path.basename(name[0])[:-5]
+
 
 def load_all_exp(exp_dir_root):
     df_res = {}
@@ -34,6 +36,7 @@ def load_all_exp(exp_dir_root):
     # df_tim = pd.concat(df_tim)
     return pd.concat(df_res.values(), axis=1, keys=df_res.keys()), \
            pd.concat(df_tim.values(), axis=1, keys=df_tim.keys())
+
 
 def visualize(df_res, df_tim):
     # df_res.groupby(by='call', axis=1).median()
@@ -50,16 +53,22 @@ def visualize(df_res, df_tim):
     df_test['call'] = df_test.index.values
     df_val = df_val.set_index('call').stack().reset_index()
     df_test = df_test.set_index('call').stack().reset_index()
-    df_val = df_val.rename(columns={0:'val_loss'})
+    df_val = df_val.rename(columns={0: 'val_loss'})
     df_test = df_test.rename(columns={0: 'test_loss'})
     df = pd.merge(df_val.reset_index(), df_test.reset_index())
-    df = df.drop(['index'], axis=1).set_index(['search alg', 'call']).stack().reset_index()
+    df = df.drop(['index'], axis=1).set_index(['search alg',
+                                               'call']).stack().reset_index()
 
     df = df.rename(columns={0: 'loss', 'level_2': 'loss_type'})
     df['log loss'] = np.log(df['loss'].values)
 
-    g = sns.FacetGrid(df, col="loss_type", hue="search alg", height=4.5,
-                      sharex=False, sharey=True, despine=False)
+    g = sns.FacetGrid(df,
+                      col="loss_type",
+                      hue="search alg",
+                      height=4.5,
+                      sharex=False,
+                      sharey=True,
+                      despine=False)
     g.map(sns.lineplot, 'call', 'log loss')
     # sns.lineplot(x="call", y="log loss",
     #              hue="search alg", style="loss_type",
@@ -68,25 +77,38 @@ def visualize(df_res, df_tim):
     plt.legend(bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
 
     plt.tight_layout()
-    plt.savefig('../out/ana_res{}.png'.format(time.time()))
+    plt.savefig('./out/ana_res{}.png'.format(time.time()))
     # plt.tight_layout()
     plt.show()
 
-    df_ = df.groupby(['search alg', 'call', 'loss_type']).median().reset_index()
-    tmp = pd.concat([df_.loc[1::2, ['loss', 'log loss']].cummin(), df_.loc[::2, ['loss', 'log loss']].cummin()]).sort_index()
+    df_ = df.groupby(['search alg', 'call',
+                      'loss_type']).median().reset_index()
+    tmp = pd.concat([
+        df_.loc[1::2, ['loss', 'log loss']].cummin(),
+        df_.loc[::2, ['loss', 'log loss']].cummin()
+    ]).sort_index()
     df_.loc[:, ['loss', 'log loss']] = tmp
 
-    g = sns.FacetGrid(df_, col="loss_type", hue="search alg", height=4.5,
-                      sharex=False, sharey=True, despine=False)
+    g = sns.FacetGrid(df_,
+                      col="loss_type",
+                      hue="search alg",
+                      height=4.5,
+                      sharex=False,
+                      sharey=True,
+                      despine=False)
     g.map(sns.lineplot, 'call', 'log loss')
     # sns.lineplot(x="call", y="log loss",
     #              hue="search alg", style="loss_type",
     #              data=df_)
-    plt.legend(labels=plt.gca().get_legend_handles_labels()[1][:len(np.unique(df['search alg'].values))],bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
+    plt.legend(labels=plt.gca().get_legend_handles_labels()[1]
+               [:len(np.unique(df['search alg'].values))],
+               bbox_to_anchor=(1.05, 0.5),
+               loc='center left',
+               borderaxespad=0)
     plt.legend(bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
 
     plt.tight_layout()
-    plt.savefig('../out/ana_res{}.png'.format(time.time()))
+    plt.savefig('./out/ana_res{}.png'.format(time.time()))
     # plt.tight_layout()
     plt.show()
     # # ax = experiment_main(args=args)
@@ -97,9 +119,11 @@ def visualize(df_res, df_tim):
     # fig2.show()
     # fig2.savefig('../out/ana_res{}.png'.format(time.time()))
 
+
 def main():
-    df_res, df_tim = load_all_exp('../exp')
+    df_res, df_tim = load_all_exp('./exp')
     visualize(df_res, df_tim)
+
 
 if __name__ == '__main__':
     main()

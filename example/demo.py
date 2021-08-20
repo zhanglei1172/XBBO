@@ -7,9 +7,7 @@ from bbomark.bbo import BBO
 from bbomark.utils.config import cfg, load_cfg_fom_args
 from bbomark.nas import NAS
 
-
 # cfg.freeze()
-
 
 
 def experiment_main(cfg_clone):  # pragma: main
@@ -41,31 +39,28 @@ def experiment_main(cfg_clone):  # pragma: main
         raise NotImplementedError
 
 
-
-
-
 def main(cfg_clone):
     # load_cfg_fom_args()
 
     experiment_main(cfg_clone)
 
 
-
 if __name__ == '__main__':
 
-    # for file in glob.iglob('../cfgs/*.yaml'):
+    # for file in glob.iglob('./cfgs/toy*.yaml'):
     #     cfg_clone = cfg.clone()
     #     cfg.freeze()
     #     load_cfg_fom_args(cfg_clone, argv=['-c', file, '-r', '3'])
     #     main(cfg_clone)
     #     cfg.defrost()
 
-    cfg_clone = cfg.clone()
-    cfg.freeze()
-    # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', '3'])
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_sng.yaml', '-r', '1'])
-    main(cfg_clone)
-    cfg.defrost()
+    # cfg_clone = cfg.clone()
+    # cfg.freeze()
+    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', '3'])
+    # # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_sng.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_hyperopt.yaml', '-r', '1'])
+    # main(cfg_clone)
+    # cfg.defrost()
 
     # cfg_clone = cfg.clone()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_rs.yaml', '-r', 1])
@@ -73,13 +68,16 @@ if __name__ == '__main__':
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_bore.yaml', '-r', 1])
     # cfg_clone = cfg.clone()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_hyperopt.yaml', '-r', 1])
-    # cfg_clone = cfg.clone()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_nevergrad.yaml', '-r', 1])
+    cfg_clone = cfg.clone()
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nevergrad.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_tpe.yaml', '-r', '1'])
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cem.yaml', '-r', '1'])
+
     # cfg_clone = cfg.clone()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_opentuner.yaml', '-r', 1])
     # cfg_clone = cfg.clone()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_pysot.yaml', '-r', 1])
     # cfg_clone = cfg.clone()
     # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', 1])
-    # main(cfg_clone)
+    main(cfg_clone)
     # benchmark_opt()

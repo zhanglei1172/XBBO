@@ -1,16 +1,15 @@
 GENERAL:
   pipeline: BBO
-  exp_dir_root: "../exp"
+  exp_dir_root: "./exp"
   random_seed: 0
 
 #BBO:
 #  DATASETS:
 #    name: ''
 
-
 OPTM:
   name: nevergrad_optimizer
-  n_suggestions: 2
+  n_suggestions: 1
   kwargs:
     budget: 300
     tool: OnePlusOne
@@ -20,5 +19,5 @@ TEST_PROBLEM:
     hp:
       cat_dim: 2
   kwargs:
-    func_name: rosenbrock
+    func_name: branin
     noise_std: 0.1

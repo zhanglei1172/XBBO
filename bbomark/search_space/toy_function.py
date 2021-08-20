@@ -2,7 +2,11 @@ import numpy as np
 
 from bbomark.core import TestFunction
 
+
 class Model(TestFunction):
+    _SUPPORT_FUNCTIONS = ('rosenbrock', 'rastrigin', 'indexsum', 'toyrebar',
+                          'branin')
+
     def __init__(self, cfg, **kwargs):
         # np.random.seed(cfg.GENERAL.random_seed)
         self.cfg = cfg
@@ -10,24 +14,22 @@ class Model(TestFunction):
         # assert self.dim % 2 == 0
         super().__init__()
 
-
-        assert cfg.TEST_PROBLEM.kwargs.func_name in (
-            'rosenbrock',
-            'rastrigin',
-            'indexsum',
-            'toyrebar'
-        )
+        assert cfg.TEST_PROBLEM.kwargs.func_name in self._SUPPORT_FUNCTIONS
         # func_name = cfg.TEST_PROBLEM.kwargs.func_name
         func_name = kwargs.get('func_name')
         if func_name == 'rosenbrock':
-            self.func = Rosenbrock(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+            self.func = Rosenbrock(
+                self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
         elif func_name == 'rastrigin':
-            self.func = Rastrigin(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+            self.func = Rastrigin(
+                self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
         elif func_name == 'indexsum':
             self.func = IndexSum(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
         elif func_name == 'toyrebar':
             self.func = ToyREBAR(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim,
                                  self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.t)
+        elif func_name == 'branin':
+            self.func = Branin()
         else:
             assert False
         self.noise_std = kwargs.get('noise_std')
@@ -42,51 +44,58 @@ class Model(TestFunction):
         random_noise = np.random.randn() * self.noise_std + 1.
         res_out = {
             'raw': f,
-            'noise': f*random_noise,
+            'noise': f * random_noise,
         }
         res_loss = {
             'test': f,
             'val': f * random_noise,
         }
-        return (
-            [res_out[k] for k in self.cfg.TEST_PROBLEM.func_evals],
-            [res_loss[k] for k in self.cfg.TEST_PROBLEM.losses]
-        )
+        return ([res_out[k] for k in self.cfg.TEST_PROBLEM.func_evals],
+                [res_loss[k] for k in self.cfg.TEST_PROBLEM.losses])
 
     def _load_api_config(self):
         return self.func._load_api_config()
 
 
 class Rastrigin():
-
     def __init__(self, dim):
         self.dim = dim
+
     def __call__(self, input_x):
         f_x = 10. * input_x.shape[0]
         for i in input_x:
-            f_x += i**2 - 10 * np.cos(2*np.pi*i)
+            f_x += i**2 - 10 * np.cos(2 * np.pi * i)
         return f_x
 
     def _load_api_config(self):
         return {
-            'x_{}'.format(k): {'type': 'float', 'range': (-5.12, 5.12)} for k in range(self.dim)
+            'x_{}'.format(k): {
+                'type': 'float',
+                'range': (-5.12, 5.12)
+            }
+            for k in range(self.dim)
         }
 
 
 class IndexSum():
-
     def __init__(self, dim):
         self.dim = dim
+
     def __call__(self, input_x):
         f_x = 0
         for i in input_x:
-            f_x += i # cat都取第一个类最优
+            f_x += i  # cat都取第一个类最优
         return f_x
 
     def _load_api_config(self):
         return {
-            'x_{}'.format(k): {'type': 'cat', 'values': list(range(10))} for k in range(self.dim)
+            'x_{}'.format(k): {
+                'type': 'cat',
+                'values': list(range(10))
+            }
+            for k in range(self.dim)
         }
+
 
 class ToyREBAR():
     # min
@@ -103,8 +112,7 @@ class ToyREBAR():
         """
         f_x = 0
         for i in input_x:
-            f_x += (i - self.t) ** 2
-
+            f_x += (i - self.t)**2
 
         return f_x / input_x.shape[0]
 
@@ -118,8 +126,13 @@ class ToyREBAR():
         参数是b的value
         '''
         return {
-            'b_{}'.format(k): {'type': 'cat', 'values': (0, 1)} for k in range(self.dim)
+            'b_{}'.format(k): {
+                'type': 'cat',
+                'values': (0, 1)
+            }
+            for k in range(self.dim)
         }
+
 
 class Rosenbrock():
     # min
@@ -135,8 +148,8 @@ class Rosenbrock():
         """
         f_x = 0
         for i in range(input_x.shape[0] - 1):
-            f_x += 100 * (input_x[i + 1] - input_x[i] ** 2) ** 2 + (1 - input_x[i]) ** 2
-
+            f_x += 100 * (input_x[i + 1] - input_x[i]**2)**2 + (1 -
+                                                                input_x[i])**2
 
         return f_x
 
@@ -147,5 +160,46 @@ class Rosenbrock():
 
     def _load_api_config(self):
         return {
-            'x_{}'.format(k): {'type': 'float', 'range': (-10, 10)} for k in range(self.dim)
+            'x_{}'.format(k): {
+                'type': 'float',
+                'range': (-10, 10)
+            }
+            for k in range(self.dim)
+        }
+
+
+class Branin():
+    '''
+    The Branin, or Branin-Hoo, function has three global minima. The recommended values of a, b, c, r, s and t are: a = 1, b = 5.1 ⁄ (4π2), c = 5 ⁄ π, r = 6, s = 10 and t = 1 ⁄ (8π).
+    https://www.sfu.ca/~ssurjano/branin.html
+    global minimum:
+    f(x*) = 0.397887
+    x* = (-pi, 12.275)、(pi, 2.275)、(9.42478, 2.475)
+    '''
+    def __init__(self, ):
+        self.a = 1
+        self.b = 5.1 / (4 * np.pi**2)
+        self.c = 5 / np.pi
+        self.r = 6
+        self.s = 10
+        self.t = 1 / (8 * np.pi)
+
+    def __call__(self, input_x):
+        x1, x2 = input_x
+        term1 = self.a * (x2 - self.b * x1**2 + self.c * x1 - self.r)**2
+        term2 = self.s * (1 - self.t) * np.cos(x1)
+
+        y = term1 + term2 + self.s
+        return y
+
+    def _load_api_config(self):
+        return {
+            "x1": {
+                "type": "float",
+                "range": [-5, 10]
+            },
+            "x2": {
+                "type": "float",
+                "range": [0, 15]
+            }
         }

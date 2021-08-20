@@ -8,8 +8,9 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: bore_optimizer
+  name: toy_tpe_optimizer
   n_suggestions: 1
+  max_call: 50
 
 TEST_PROBLEM:
   SEARCH_SPACE:
