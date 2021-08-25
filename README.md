@@ -29,10 +29,41 @@ PYTHONPATH='./' python ./example/analysis.py
 
 ## TODO
 
-- [x] Transfer
+- [ ] Transfer
+  - [ ] TST-R
+  - [ ] TAF
+  - [ ] TAF(RGPE)
+  - [ ] RMoGP
+  - [ ] RGPE(mean)
+  
+- [ ] Optimizer
+  - [x] BORE optimizer
+  - [x] Anneal
+  - [ ] DE
+  - [ ] CMA
+  - [ ] NSGA
+  - [ ] Regularized EA
+  - [ ] PBT
+  
+- [ ] condition config
 - [ ] Parallelizing
 - [x] Result visualize
 - [ ] Reproductable ( Random state )
-- [x] Extra data and model
 - [ ] log verbose
-- [x] BORE optimizer
+
+## 进度
+
+### Anneal 
+   
+在 branin 黑盒函数测试
+
+![](./out/bbomark-anneal-noise.png)
+best_loss: 0.36538257770050925
+
+![](./out/bbomark-anneal.png)
+best_loss: 0.398102262920645
+
+![](./out/hyperopt-anneal.png)
+best_loss: 0.4024387250287731
+
+---

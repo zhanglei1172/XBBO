@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class Record:
@@ -66,7 +67,8 @@ class Record:
     #            np.asarray(self.func_evals)[...,0].ravel()[idx],\
     #            np.asarray(self.suggest_dict).ravel()[idx]
 
-
+    # def plot(self):
+    #     plt.plot(self.history)
 
     def is_duplicate(self, x, rtol=1e-5, atol=1e-8):
         return any(np.allclose(x_prev, x, rtol=rtol, atol=atol)
