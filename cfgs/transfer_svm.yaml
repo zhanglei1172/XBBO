@@ -1,0 +1,22 @@
+GENERAL:
+  pipeline: transfer
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: transfer_tst_optimizer
+  n_suggestions: 1
+  max_call: 50
+
+TEST_PROBLEM:
+  name: 'transfer_search_function' # filename
+
+  kwargs:
+    data_path: '/home/zhang/PycharmProjects/MAC/TST/data/'
+    func_name: svm
+    noise_std: 0.0
+    test_data: A9A

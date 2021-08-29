@@ -36,7 +36,7 @@ def experiment_main(cfg_clone):  # pragma: main
             nas.run()
             nas.record.save_to_file(r)
             print(nas.record)
-    elif cfg_clone.GENERAL.pipeline == 'transfer_bbo':
+    elif cfg_clone.GENERAL.pipeline == 'transfer':
 
         for r in range(cfg_clone.repeat_num):
             SEED = cfg_clone.GENERAL.random_seed + r
@@ -60,37 +60,10 @@ def main(cfg_clone):
 
 if __name__ == '__main__':
 
-    # for file in glob.iglob('./cfgs/toy*.yaml'):
-    #     cfg_clone = cfg.clone()
-    #     cfg.freeze()
-    #     load_cfg_fom_args(cfg_clone, argv=['-c', file, '-r', '3'])
-    #     main(cfg_clone)
-    #     cfg.defrost()
 
-    # cfg_clone = cfg.clone()
-    # cfg.freeze()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', '3'])
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_sng.yaml', '-r', '1'])
-    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_hyperopt.yaml', '-r', '1'])
-    # main(cfg_clone)
-    # cfg.defrost()
-
-    # cfg_clone = cfg.clone()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_rs.yaml', '-r', 1])
-    # cfg_clone = cfg.clone()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_bore.yaml', '-r', 1])
-    # cfg_clone = cfg.clone()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_hyperopt.yaml', '-r', 1])
     cfg_clone = cfg.clone()
-    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nevergrad.yaml', '-r', '1'])
-    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_tpe.yaml', '-r', '1'])
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cem.yaml', '-r', '1'])
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_svm.yaml', '-r', '1'])
 
-    # cfg_clone = cfg.clone()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_opentuner.yaml', '-r', 1])
-    # cfg_clone = cfg.clone()
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_pysot.yaml', '-r', 1])
-    # cfg_clone = cfg.clone()
-    # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', 1])
     main(cfg_clone)
+
     # benchmark_opt()
