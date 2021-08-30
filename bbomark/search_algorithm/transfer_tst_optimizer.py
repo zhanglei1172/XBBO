@@ -2,193 +2,17 @@ from _curses import meta
 import glob
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.linalg import solve_triangular, cholesky
-from scipy import stats
-import tqdm, random
-# import hashlib
-from ConfigSpace.hyperparameters import (UniformIntegerHyperparameter,
-                                         UniformFloatHyperparameter,
-                                         CategoricalHyperparameter,
-                                         OrdinalHyperparameter)
 
+import tqdm, random
+
+from bbomark.acquisition_function.ei import EI
 from bbomark.configspace.feature_space import FeatureSpace_uniform
 from bbomark.core import AbstractOptimizer
 from bbomark.configspace.space import Configurations
-from bbomark.core.stochastic import Category, Uniform
+
 from bbomark.core.trials import Trials
+from bbomark.surrogate.tst import TST_surrogate
 
-
-class EI():
-    def __init__(self):
-        self.xi = 0.1
-
-    def _getEI(self, mu, sigma, y_best): #
-        z = (-y_best + mu - self.xi) / sigma
-        ei = (-y_best + mu -
-              self.xi) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
-        return ei
-
-    # def argmax(self, y_best, surrogate, candidates):
-    #     best_ei = -1
-    #     best_candidate = []
-    #     for candidate in candidates:
-    #         y_hat = surrogate.predict(candidate)
-    #         ei = self._getEI(y_hat[0], y_hat[1], y_best)
-    #         if ei > best_ei:
-    #             best_ei = ei
-    #             best_candidate = [candidate]
-    #         elif ei == best_ei:
-    #             best_candidate.append(candidate)
-    #     return np.random.choice(best_candidate)
-
-    def argmax(self, y_best, surrogate, candidates):
-        best_ei = -1
-        best_candidate = []
-        candidates_rm_id = []
-        for i, candidate in enumerate(candidates):
-            y_hat = surrogate.predict(candidate)
-            ei = self._getEI(y_hat[0], y_hat[1], y_best)
-            if ei > best_ei:
-                best_ei = ei
-                best_candidate = [candidate]
-                candidates_rm_id = [i]
-            elif ei == best_ei:
-                best_candidate.append(candidate)
-                candidates_rm_id.append(i)
-
-        assert best_candidate
-        idx = np.random.choice(len(best_candidate))
-        return (best_candidate)[idx], candidates_rm_id[idx]
-
-
-class SEkernel():
-    def __init__(self):
-        self.initialize()
-
-    def initialize(self):
-        # self.sumF = 0.001
-        # self.sumL = 0.001
-        # self.sumY = 0.001
-        self.sigma_f = 1
-        self.sigma_l = 1
-        self.sigma_y = 0.001
-
-
-
-    def compute_kernel(self, x1, x2=None):
-        if x2 is None:
-            x2 = x1
-            # noise = np.diag([self.sigma_y**2 for _ in range(x1.shape[0])])
-            noise = np.eye(x1.shape[0]) * self.sigma_y**2
-        else:
-            noise = 0
-        x2 = np.atleast_2d(x2)
-        x1 = np.atleast_2d(x1)
-        dist_matrix = np.sum(x1 ** 2, 1).reshape(-1, 1) + np.sum(x2 ** 2, 1) - 2 * (x1 @ x2.T)
-        return self.sigma_f ** 2 * np.exp(-0.5 / self.sigma_l ** 2 * dist_matrix) + noise
-
-
-class Surrogate():
-    def __init__(self, dim):
-        self.dim = dim
-
-    def predict(self, newX):
-        pass
-
-    def fit(self, x, y):
-        pass
-
-
-class GaussianProcessRegressor(Surrogate):
-    def __init__(self, dim):
-        super().__init__(dim)
-        self.kernel = SEkernel()
-        self.cached = {}
-
-    def fit(self, x, y):
-        self.X = x
-        kernel = self.kernel.compute_kernel(x)
-        self.L = cholesky(kernel, lower=True)
-        _part = solve_triangular(self.L, y, lower=True)
-        self.KinvY = solve_triangular(self.L.T, _part, lower=False)
-
-    def predict(self, newX):
-        # Kstar = np.squeeze(self.kernel.compute_kernel(self.X, newX))
-        Kstar = (self.kernel.compute_kernel(self.X, newX))
-        return (Kstar.T @ self.KinvY).item()
-
-    def cached_predict(self, newX):
-        key = hash(newX.data.tobytes())
-        if key not in self.cached:
-            self.cached[key] = self.predict(newX)
-        return self.cached[key]
-
-    def predict_with_sigma(self, newX):
-        if not hasattr(self, 'X'):
-            return 0, np.inf
-        else:
-            Kstar = self.kernel.compute_kernel(self.X, newX)
-            _LinvKstar = solve_triangular(self.L, Kstar, lower=True)
-            return (Kstar.T @ self.KinvY).item(), np.sqrt(self.kernel.compute_kernel(newX, newX) - _LinvKstar.T @ _LinvKstar)
-
-class TST_surrogate(Surrogate):
-    rho = 0.75
-    def __init__(self, dim, bandwidth=0.1):
-        super().__init__(dim)
-
-        self.new_gp = GaussianProcessRegressor(dim)
-        # self.candidates = None
-        self.bandwidth = bandwidth
-        # self.history_x = []
-        # self.history_y = []
-
-    def get_knowledge(self, old_D_x, old_D_y, new_D_x=None):
-        self.old_D_num = len(old_D_x)
-        self.gps = []
-        for d in range(self.old_D_num):
-            self.gps.append(GaussianProcessRegressor(self.dim))
-            self.gps[d].fit(old_D_x[d], old_D_y[d])
-        if new_D_x is not None:
-            candidates = new_D_x
-        else: #
-            raise NotImplemented
-        self.similarity = [self.rho for _ in range(self.old_D_num)]
-        return candidates
-
-    def fit(self, x, y):
-        x = np.asarray(x)
-        y = np.asarray(y)
-        self.new_gp.fit(x, y)
-        self.similarity = [self.kendallTauCorrelation(d, x, y) for d in range(self.old_D_num)]
-
-    def predict(self, newX):
-        denominator = self.rho
-        mu, sigma = self.new_gp.predict_with_sigma(newX)
-        for d in range(self.old_D_num):
-            mu += self.similarity[d] * self.gps[d].cached_predict(newX)
-            denominator += self.similarity[d]
-        mu /= denominator
-        if sigma == np.inf:
-            sigma = 1000
-        return mu, sigma
-
-    
-    def kendallTauCorrelation(self, d, x, y):
-        '''
-        计算第d个datasets与new datasets的 相关性
-        (x, y) 为newdatasets上的history结果
-        '''
-        if y is None or len(y) < 2:
-            return self.rho
-        disordered_pairs = total_pairs = 0
-        for i in range(len(y)):
-            for j in range(len(y)):
-                if (y[i] < y[j] != self.gps[d].cached_predict(
-                        x[i]) < self.gps[d].cached_predict(x[j])):
-                    disordered_pairs += 1
-                total_pairs += 1
-        t = disordered_pairs / total_pairs / self.bandwidth
-        return self.rho * (1 - t * t) if t < 1 else 0
 
 class SMBO_test():
 
@@ -363,20 +187,6 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         #                                           np.asarray(sa)) for sa in sas]
         self.trials.params_history.extend(x_unwarpeds)
         return x_unwarpeds, sas
-
-
-
-    # def _random_suggest(self, n_suggestions=1):
-    #     sas = []
-    #     for n in range(n_suggestions):
-    #         suggest_array = [node.random_sample() for node in self.nodes]
-    #         for i in range(self.hp_num):
-    #             self.node_trial_num[i] += 1
-    #         sas.append(suggest_array)
-    #     x = [Configurations.array_to_dictUnwarped(self.space,
-    #                                               np.array(sa)) for sa in sas]
-    #     self.trials.params_history.extend(x)
-    #     return x, sas
 
 
     def observe(self, x, y):
