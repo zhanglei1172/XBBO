@@ -38,6 +38,7 @@ class TST_surrogate(Surrogate):
     def predict(self, newX):
         denominator = self.rho
         mu, sigma = self.new_gp.predict_with_sigma(newX)
+        # mu *= self.rho
         for d in range(self.old_D_num):
             mu += self.similarity[d] * self.gps[d].cached_predict(newX)
             denominator += self.similarity[d]

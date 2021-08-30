@@ -16,6 +16,8 @@ Result:
 
 ![](./out/TST-R.png)
 
+![](./out/TST-R-correct.png)
+
 Output:
 
 

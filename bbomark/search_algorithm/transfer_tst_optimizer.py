@@ -196,12 +196,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.surrogate.fit(self.trials.history, self.trials.history_y)
 
 
-
-opt_class = SMBO
-
-if __name__ == '__main__':
-    try_num = 30
-    SEED = 0
+def test_tst_r(try_num, SEED=0):
     np.random.seed(SEED)
     random.seed(SEED)
     smbo = SMBO_test()
@@ -210,10 +205,9 @@ if __name__ == '__main__':
     rank = []
     best_rank = []
     for t in range(try_num):
-        print('-'*10)
-        print('iter {}: '.format(t+1))
+        print('-' * 10)
+        print('iter {}: '.format(t + 1))
         x = smbo.suggest()[0]
-
 
         key = hash(x.data.tobytes())
         y = smbo.cached_new_res[key]
@@ -223,18 +217,65 @@ if __name__ == '__main__':
         print(y)
         rank.append(smbo.print_rank())
         best_rank.append(smbo.print_best_rank())
+    return smbo.trials.history_y, np.maximum.accumulate(smbo.trials.history_y), rank, best_rank
+
+def test_gpbo(try_num, SEED=0):
+    np.random.seed(SEED)
+    random.seed(SEED)
+    smbo = SMBO_test()
+    smbo.candidates = smbo.surrogate.get_knowledge(smbo.old_D_x, smbo.old_D_y, smbo.new_D_x)
+    smbo.cache_compute()
+    rank = []
+    best_rank = []
+    for t in range(try_num):
+        print('-' * 10)
+        print('iter {}: '.format(t + 1))
+        x = smbo.suggest()[0]
+
+        key = hash(x.data.tobytes())
+        y = smbo.cached_new_res[key]
+
+        smbo.observe(x, y)
+
+        smbo.surrogate.similarity = [0 for _ in smbo.old_D_x]
+        print(y)
+        rank.append(smbo.print_rank())
+        best_rank.append(smbo.print_best_rank())
+    return smbo.trials.history_y, np.maximum.accumulate(smbo.trials.history_y), rank, best_rank
+
+
+opt_class = SMBO
+
+if __name__ == '__main__':
+    try_num = 30
+    SEED = 0
+    acc,acc_best, rank, rank_best = test_tst_r(try_num, SEED)
+    acc_,acc_best_, rank_, rank_best_ = test_gpbo(try_num, SEED)
     plt.subplot(211)
-    plt.plot(np.array(smbo.trials.history_y), label='ACC')
-    plt.plot(np.maximum.accumulate(smbo.trials.history_y), label='ACC_best')
+    plt.plot(acc, 'b-', label='TST-R')
+    plt.plot(acc_best, 'b:', label='TST-R_best')
+
+    plt.plot(acc_, 'r-', label='GP-BO')
+    plt.plot(acc_best_, 'r:', label='GP-BO_best')
     plt.legend()
     plt.ylabel('ACC')
+    # plt.title
+
     plt.subplot(212)
-    plt.plot(rank, label='rank')
-    plt.plot(best_rank, label='best_rank')
+    plt.plot(rank, 'b-', label='TST-R')
+    plt.plot(rank_best, 'b:', label='TST-R_best')
+
+    plt.plot(rank_, 'r-', label='GP-BO')
+    plt.plot(rank_best_, 'r:', label='GP-BO_best')
 
     plt.legend()
     plt.ylabel('Rank')
     plt.xlabel('iter')
+
+    plt.suptitle('TST-R in A9A datasets(svm)')
     plt.savefig('./out/TST-R.png')
+
+    # plt.suptitle('TST-R in A9A datasets(svm)-correct')
+    # plt.savefig('./out/TST-R-correct.png')
     plt.show()
 
