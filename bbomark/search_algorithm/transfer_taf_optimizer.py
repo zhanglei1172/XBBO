@@ -1,3 +1,4 @@
+from _curses import meta
 import glob
 import numpy as np
 from matplotlib import pyplot as plt
@@ -5,20 +6,24 @@ from matplotlib import pyplot as plt
 import tqdm, random
 
 from bbomark.acquisition_function.ei import EI
+from bbomark.acquisition_function.taf import TAF
 from bbomark.configspace.feature_space import FeatureSpace_uniform
 from bbomark.core import AbstractOptimizer
 from bbomark.configspace.space import Configurations
 
 from bbomark.core.trials import Trials
 from bbomark.surrogate.tst import TST_surrogate
+from bbomark.surrogate.gaussian_process import GaussianProcessRegressorARD_sklearn, GaussianProcessRegressor
 
 
 class SMBO_test():
 
     def __init__(self,dim=6,
-                 min_sample=0,
+                 min_sample=1,
                  data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
-                 test_data_name='A9A',
+                 test_data_name='abalone',
+                 bandwidth=0.1,
+                 rho=0.75
                  # avg_best_idx=2.0,
                  # meta_data_path=None,
                  ):
@@ -28,9 +33,18 @@ class SMBO_test():
         # self.dim = dim
         self.hp_num = dim
         self.trials = Trials()
-        self.surrogate = TST_surrogate()
-        self.acq_func = EI()
+        self.surrogate = GaussianProcessRegressor()
+        self.new_gp = self.surrogate
+        self.bandwidth = bandwidth
+        self.rho = rho
         self._prepare()
+        self.get_knowledge(self.old_D_x, self.old_D_y, self.new_D_x)
+
+        old_ybests = [np.maximum.accumulate(insts) for insts in self.old_D_y] # TODO
+        self.old_ybests = [-1 for _ in old_ybests]
+        self.acq_func = TAF(self.gps)
+        self.cache_compute()
+
 
     def cache_compute(self):
         self.cached_new_res = {
@@ -42,9 +56,22 @@ class SMBO_test():
             key = hash(inst.data.tobytes())
             self.cached_new_res[key] = self.new_D_y[i]
 
-
-    # def get_knowledge(self):
-    #     pass
+    def kendallTauCorrelation(self, d, x, y):
+        '''
+        计算第d个datasets与new datasets的 相关性
+        (x, y) 为newdatasets上的history结果
+        '''
+        if y is None or len(y) < 2:
+            return self.rho
+        disordered_pairs = total_pairs = 0
+        for i in range(len(y)):
+            for j in range(len(y)):
+                if (y[i] < y[j] != self.gps[d].cached_predict(
+                        x[i]) < self.gps[d].cached_predict(x[j])):
+                    disordered_pairs += 1
+                total_pairs += 1
+        t = disordered_pairs / total_pairs / self.bandwidth
+        return self.rho * (1 - t * t) if t < 1 else 0
 
     def _prepare(self):
         (datasets_hp, datasets_label), filenames = self._load_meta_data()
@@ -56,9 +83,26 @@ class SMBO_test():
             # inst_y = - inst_y_ # minimize problem
             _min = np.min(inst_y)
             _max = np.max(inst_y)
-            self.old_D_y[d] = (inst_y - _min) / (_max - _min)
+            self.old_D_y[d] = (inst_y - _min) / (_max - _min) # TODO
 
         self.candidates = self.new_D_x
+
+
+    def get_knowledge(self, old_D_x, old_D_y, new_D_x=None):
+        self.old_D_num = len(old_D_x)
+        self.gps = []
+        for d in range(self.old_D_num):
+            self.gps.append(GaussianProcessRegressor())
+            # self.gps.append(GaussianProcessRegressorARD_sklearn(self.dim))
+            self.gps[d].fit(old_D_x[d], old_D_y[d])
+        if new_D_x is not None:
+            candidates = new_D_x
+        else:  #
+            raise NotImplemented
+        self.similarity = [self.rho for _ in range(self.old_D_num)]
+        self.candidates = candidates
+    # def get_knowledge(self):
+    #     pass
 
 
 
@@ -91,10 +135,12 @@ class SMBO_test():
         else:
             sas = []
             for n in range(n_suggestions):
-                suggest_array, rm_id = self.acq_func.argmax(max(self.trials.history_y+[-1]), self.surrogate, self.candidates)
+                suggest_array, rm_id = self.acq_func.argmax(max(self.trials.history_y+[-1]), self.surrogate, self.candidates, self.similarity, self.old_ybests,self.rho)
                 self.candidates = np.delete(self.candidates, rm_id, axis=0)
                 sas.append(suggest_array)
         return sas
+
+
 
     def _random_suggest(self, n_suggestions=1):
         sas = []
@@ -104,14 +150,19 @@ class SMBO_test():
             self.candidates = np.delete(self.candidates, rm_id, axis=0)
         return sas
 
-
     def observe(self, x, y):
         self.trials.history.append(x)
         self.trials.history_y.append(y)
         if self.trials.best_y is None or self.trials.best_y < y:
             self.trials.best_y = y
         self.trials.trials_num += 1
-        self.surrogate.fit(self.trials.history, self.trials.history_y)
+        x_ = np.asarray(self.trials.history)
+        y_ = np.asarray(self.trials.history_y)
+        self.new_gp.fit(x_, y_)
+        self.similarity = [self.kendallTauCorrelation(d, x_, y_) for d in range(self.old_D_num)]
+        for d in range(len(self.old_ybests)): # TODO
+            # self.old_ybests[d] = max(self.old_ybests[d], y)
+            self.old_ybests[d] = max(self.old_ybests[d], self.gps[d].cached_predict(x))
 
     def print_rank(self):
         rank = 1
@@ -137,6 +188,8 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
     def __init__(self,
                  config_spaces,
                  min_sample=0,
+                 bandwidth=0.1,
+                 rho=0.75
                  # avg_best_idx=2.0,
                  # meta_data_path=None,
                  ):
@@ -149,10 +202,13 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
 
+        self.surrogate = GaussianProcessRegressor()
+        self.new_gp = self.surrogate
+        self.bandwidth = bandwidth
+        self.rho = rho
         self.hp_num = len(configs)
         self.trials = Trials()
-        self.surrogate = TST_surrogate()
-        self.acq_func = EI()
+
 
     def prepare(self, old_D_x_params, old_D_y, new_D_x_param):
         old_D_x = []
@@ -168,8 +224,21 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             insts_feature.append(self.array_to_feature(array, self.dense_dimension))
         new_D_x = (np.asarray(insts_feature))
 
-        self.candidates = self.surrogate.get_knowledge(old_D_x, old_D_y, new_D_x)
+        self.old_D_num = len(old_D_x)
+        self.gps = []
+        for d in range(self.old_D_num):
+            self.gps.append(GaussianProcessRegressor())
+            # self.gps.append(GaussianProcessRegressorARD_sklearn(self.dim))
+            self.gps[d].fit(old_D_x[d], old_D_y[d])
+        if new_D_x is not None:
+            candidates = new_D_x
+        else:  #
+            raise NotImplemented
+        self.similarity = [self.rho for _ in range(self.old_D_num)]
+        self.candidates = candidates
 
+        self.old_ybests = [-1 for _ in self.similarity]
+        self.acq_func = TAF(self.gps)
 
     def suggest(self, n_suggestions=1):
         # 只suggest 一个
@@ -180,7 +249,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             x_unwarpeds = []
             sas = []
             for n in range(n_suggestions):
-                suggest_array, rm_id = self.acq_func.argmax(max(self.trials.history_y+[-1]), self.surrogate, self.candidates)
+                suggest_array, rm_id = self.acq_func.argmax(max(self.trials.history_y+[-1]), self.surrogate, self.candidates, self.similarity, self.old_ybests,self.rho)
                 self.candidates = np.delete(self.candidates, rm_id, axis=0)
                 x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
                 x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
@@ -194,19 +263,41 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         return x_unwarpeds, sas
 
 
+    def kendallTauCorrelation(self, d, x, y):
+        '''
+        计算第d个datasets与new datasets的 相关性
+        (x, y) 为newdatasets上的history结果
+        '''
+        if y is None or len(y) < 2:
+            return self.rho
+        disordered_pairs = total_pairs = 0
+        for i in range(len(y)):
+            for j in range(len(y)):
+                if (y[i] < y[j] != self.gps[d].cached_predict(
+                        x[i]) < self.gps[d].cached_predict(x[j])):
+                    disordered_pairs += 1
+                total_pairs += 1
+        t = disordered_pairs / total_pairs / self.bandwidth
+        return self.rho * (1 - t * t) if t < 1 else 0
+
     def observe(self, x, y):
         self.trials.history.extend(x)
         self.trials.history_y.extend(y)
+        if self.trials.best_y is None or self.trials.best_y < y:
+            self.trials.best_y = y
         self.trials.trials_num += 1
-        self.surrogate.fit(self.trials.history, self.trials.history_y)
+        x_ = np.asarray(self.trials.history)
+        y_ = np.asarray(self.trials.history_y)
+        self.new_gp.fit(x_, y_)
+        self.similarity = [self.kendallTauCorrelation(d, x_, y_) for d in range(self.old_D_num)]
+        for d in range(len(self.old_ybests)): # TODO
+            # self.old_ybests[d] = max(self.old_ybests[d], y)
+            self.old_ybests[d] = max(self.old_ybests[d], self.gps[d].cached_predict(np.asarray(x)))
 
-
-def test_tst_r(try_num, SEED=0):
+def test_taf_r(try_num, SEED=0):
     np.random.seed(SEED)
     random.seed(SEED)
     smbo = SMBO_test()
-    smbo.candidates = smbo.surrogate.get_knowledge(smbo.old_D_x, smbo.old_D_y, smbo.new_D_x)
-    smbo.cache_compute()
     rank = []
     best_rank = []
     for t in range(try_num):
@@ -228,8 +319,6 @@ def test_gpbo(try_num, SEED=0):
     np.random.seed(SEED)
     random.seed(SEED)
     smbo = SMBO_test()
-    smbo.candidates = smbo.surrogate.get_knowledge(smbo.old_D_x, smbo.old_D_y, smbo.new_D_x)
-    smbo.cache_compute()
     rank = []
     best_rank = []
     for t in range(try_num):
@@ -242,7 +331,7 @@ def test_gpbo(try_num, SEED=0):
 
         smbo.observe(x, y)
 
-        smbo.surrogate.similarity = [0 for _ in smbo.old_D_x]
+        smbo.similarity = [0 for _ in smbo.old_D_x]
         print(y)
         rank.append(smbo.print_rank())
         best_rank.append(smbo.print_best_rank())
@@ -254,11 +343,11 @@ opt_class = SMBO
 if __name__ == '__main__':
     try_num = 30
     SEED = 0
-    acc,acc_best, rank, rank_best = test_tst_r(try_num, SEED)
+    acc,acc_best, rank, rank_best = test_taf_r(try_num, SEED)
     acc_,acc_best_, rank_, rank_best_ = test_gpbo(try_num, SEED)
     plt.subplot(211)
-    plt.plot(acc, 'b-', label='TST-R')
-    plt.plot(acc_best, 'b:', label='TST-R_best')
+    plt.plot(acc, 'b-', label='TAF-R')
+    plt.plot(acc_best, 'b:', label='TAF-R_best')
 
     plt.plot(acc_, 'r-', label='GP-BO')
     plt.plot(acc_best_, 'r:', label='GP-BO_best')
@@ -267,8 +356,8 @@ if __name__ == '__main__':
     # plt.title
 
     plt.subplot(212)
-    plt.plot(rank, 'b-', label='TST-R')
-    plt.plot(rank_best, 'b:', label='TST-R_best')
+    plt.plot(rank, 'b-', label='TAF-R')
+    plt.plot(rank_best, 'b:', label='TAF-R_best')
 
     plt.plot(rank_, 'r-', label='GP-BO')
     plt.plot(rank_best_, 'r:', label='GP-BO_best')
@@ -277,8 +366,8 @@ if __name__ == '__main__':
     plt.ylabel('Rank')
     plt.xlabel('iter')
 
-    plt.suptitle('TST-R in A9A datasets(svm)')
-    plt.savefig('./out/TST-R.png')
+    # plt.suptitle('TST-R in A9A datasets(svm)')
+    # plt.savefig('./out/TST-R.png')
 
     # plt.suptitle('TST-R in A9A datasets(svm)-correct')
     # plt.savefig('./out/TST-R-correct.png')

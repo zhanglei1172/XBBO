@@ -10,6 +10,7 @@ from bbomark.core import AbstractOptimizer
 from bbomark.configspace.space import Configurations
 
 from bbomark.core.trials import Trials
+from bbomark.surrogate.gaussian_process import GaussianProcessRegressor
 from bbomark.surrogate.tst import TST_surrogate
 
 
@@ -136,7 +137,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
 
     def __init__(self,
                  config_spaces,
-                 min_sample=0,
+                 min_sample=1,
                  # avg_best_idx=2.0,
                  # meta_data_path=None,
                  ):
@@ -151,7 +152,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
 
         self.hp_num = len(configs)
         self.trials = Trials()
-        self.surrogate = TST_surrogate()
+        self.surrogate = GaussianProcessRegressor()
         self.acq_func = EI()
 
     def prepare(self, old_D_x_params, old_D_y, new_D_x_param):
@@ -168,14 +169,25 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             insts_feature.append(self.array_to_feature(array, self.dense_dimension))
         new_D_x = (np.asarray(insts_feature))
 
-        self.candidates = self.surrogate.get_knowledge(old_D_x, old_D_y, new_D_x)
+        self.old_D_num = len(old_D_x)
+        self.gps = []
+        for d in range(self.old_D_num):
+            self.gps.append(GaussianProcessRegressor())
+            # self.gps.append(GaussianProcessRegressorARD_sklearn(self.dim))
+            self.gps[d].fit(old_D_x[d], old_D_y[d])
+        if new_D_x is not None:
+            candidates = new_D_x
+        else:  #
+            raise NotImplemented
+        self.candidates = candidates
+
 
 
     def suggest(self, n_suggestions=1):
         # 只suggest 一个
         if (self.trials.trials_num) < self.min_sample :
-            raise NotImplemented
-            # return self._random_suggest()
+            # raise NotImplemented
+            return self._random_suggest()
         else:
             x_unwarpeds = []
             sas = []
@@ -198,31 +210,20 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.trials.history.extend(x)
         self.trials.history_y.extend(y)
         self.trials.trials_num += 1
-        self.surrogate.fit(self.trials.history, self.trials.history_y)
+        self.surrogate.fit(np.array(self.trials.history), np.array(self.trials.history_y))
 
 
-def test_tst_r(try_num, SEED=0):
-    np.random.seed(SEED)
-    random.seed(SEED)
-    smbo = SMBO_test()
-    smbo.candidates = smbo.surrogate.get_knowledge(smbo.old_D_x, smbo.old_D_y, smbo.new_D_x)
-    smbo.cache_compute()
-    rank = []
-    best_rank = []
-    for t in range(try_num):
-        print('-' * 10)
-        print('iter {}: '.format(t + 1))
-        x = smbo.suggest()[0]
-
-        key = hash(x.data.tobytes())
-        y = smbo.cached_new_res[key]
-
-        smbo.observe(x, y)
-
-        print(y)
-        rank.append(smbo.print_rank())
-        best_rank.append(smbo.print_best_rank())
-    return smbo.trials.history_y, np.maximum.accumulate(smbo.trials.history_y), rank, best_rank
+    def _random_suggest(self, n_suggestions=1):
+        sas = []
+        x_unwarpeds = []
+        for n in range(n_suggestions):
+            rm_id = np.random.choice(len(self.candidates))
+            sas.append(self.candidates[rm_id])
+            x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
+            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarpeds.append(x_unwarped)
+            self.candidates = np.delete(self.candidates, rm_id, axis=0)
+        return x_unwarpeds, sas
 
 def test_gpbo(try_num, SEED=0):
     np.random.seed(SEED)
@@ -254,11 +255,8 @@ opt_class = SMBO
 if __name__ == '__main__':
     try_num = 30
     SEED = 0
-    acc,acc_best, rank, rank_best = test_tst_r(try_num, SEED)
     acc_,acc_best_, rank_, rank_best_ = test_gpbo(try_num, SEED)
-    plt.subplot(211)
-    plt.plot(acc, 'b-', label='TST-R')
-    plt.plot(acc_best, 'b:', label='TST-R_best')
+    plt.subplot(111)
 
     plt.plot(acc_, 'r-', label='GP-BO')
     plt.plot(acc_best_, 'r:', label='GP-BO_best')
@@ -267,9 +265,6 @@ if __name__ == '__main__':
     # plt.title
 
     plt.subplot(212)
-    plt.plot(rank, 'b-', label='TST-R')
-    plt.plot(rank_best, 'b:', label='TST-R_best')
-
     plt.plot(rank_, 'r-', label='GP-BO')
     plt.plot(rank_best_, 'r:', label='GP-BO_best')
 
@@ -277,8 +272,8 @@ if __name__ == '__main__':
     plt.ylabel('Rank')
     plt.xlabel('iter')
 
-    plt.suptitle('TST-R in A9A datasets(svm)')
-    plt.savefig('./out/TST-R.png')
+    plt.suptitle('transfer-beseline in A9A datasets(svm)')
+    plt.savefig('./out/Transfer-beseline.png')
 
     # plt.suptitle('TST-R in A9A datasets(svm)-correct')
     # plt.savefig('./out/TST-R-correct.png')

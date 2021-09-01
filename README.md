@@ -4,6 +4,12 @@
 
 ## 更新
 
+### TAF-R(2021年9月1日)
+
+![](./out/ana_tranfer_res1630487971.2002113.png)
+
+![](./out/ana_tranfer_res_best1630487978.2151673.png)
+
 ### TST-R (2021年8月29日)
 
 测试运行：
@@ -11,6 +17,8 @@
 ```bash
 PYTHONPATH='./' python ./bbomark/search_algorithm/transfer_tst_optimizer.py
 ```
+
+
 
 Result:
 

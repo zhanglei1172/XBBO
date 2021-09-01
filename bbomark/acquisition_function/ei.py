@@ -29,7 +29,7 @@ class EI():
         best_candidate = []
         candidates_rm_id = []
         for i, candidate in enumerate(candidates):
-            y_hat = surrogate.predict(candidate)
+            y_hat = surrogate.predict_with_sigma(candidate)
             ei = self._getEI(y_hat[0], y_hat[1], y_best)
             if ei > best_ei:
                 best_ei = ei

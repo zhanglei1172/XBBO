@@ -36,8 +36,9 @@ class Model(TestFunction):
         f = self.func(params)
         random_noise = np.random.randn() * self.noise_std + 1.
         res_out = {
-            'raw': f,
-            'noise': f * random_noise,
+            # 'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1)/len(self.func.sorted_new_D_y),
+            'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1),
+            'regret': (self.func.best_acc-f ) / self.func.acc_range,
         }
         res_loss = {
             'test': f,
@@ -62,18 +63,21 @@ class SVM():
             raise NotImplemented
 
         self._prepare()
+        self.best_acc = max(self.new_D_y)
+        self.acc_range = self.best_acc - min(self.new_D_y)
+        self.sorted_new_D_y = np.sort(-self.new_D_y, )
         self.api_config = self._load_api_config()
 
     def __call__(self, hp_param):
         key = tuple(np.round(hp_param[k], 5) for k in self.api_config)
         ret = self.cached_new_res[key]
-        print(key)
+        # print(key)
         rank = 1
-        if True:
-            for y in self.new_D_y:
-                if y > ret:
-                    rank += 1
-        print('rank: ', rank)
+        # if True:
+        #     for y in self.new_D_y:
+        #         if y > ret:
+        #             rank += 1
+        # print('rank: ', rank)
         return ret
 
     def cache(self, new_D_x_param):
@@ -92,7 +96,7 @@ class SVM():
         new_D_idx = filenames.index(self.test_data_name)
         self.new_D_x, self.new_D_y = datasets_hp.pop(new_D_idx), datasets_label.pop(new_D_idx)
         self.old_D_x, self.old_D_y = datasets_hp, datasets_label
-        # sclae -acc
+        # scale -acc
         for d, inst_y in enumerate(self.old_D_y):
             # inst_y = - inst_y_ # minimize problem
             _min = np.min(inst_y)
