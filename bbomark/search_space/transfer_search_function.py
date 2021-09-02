@@ -54,7 +54,7 @@ class Model(TestFunction):
 
 class SVM():
     def __init__(self, data_path, test_data_name=''):
-        self.hp_num = 6
+        self.hp_num = 3
         self.hp_indicator_num = [3]
         self.data_path = data_path
         if test_data_name:
@@ -139,24 +139,29 @@ class SVM():
                     line_array_raw = list(map(float, line.strip().split(' ')))
                     idx_start = 1
                     line_array = [line_array_raw[0]]
-                    for ind_num in self.hp_indicator_num:
-                        line_array.append(line_array_raw[idx_start:idx_start+ind_num].index(1))
-                        idx_start += ind_num
-                    line_array.extend(line_array_raw[idx_start:self.hp_num+1])
+                    # for ind_num in self.hp_indicator_num:
+                    #     line_array.append(line_array_raw[idx_start:idx_start+ind_num].index(1))
+                    #     idx_start += ind_num
+
+                    # line_array.extend(line_array_raw[idx_start:self.hp_num+1])
+                    line_array.extend(line_array_raw[idx_start:self.hp_num+4])
                     insts.append(line_array)
 
             datasets = np.asarray(insts, dtype=np.float)
             datasets_hp.append(datasets[:, 1:])
             datasets_label.append(datasets[:, 0])
+            mask = datasets_hp[-1][:, 0].astype(np.bool_)  # TODO
+            datasets_hp[-1] = datasets_hp[-1][mask, 3:]
+            datasets_label[-1] = datasets_label[-1][mask]
         return (datasets_hp, datasets_label), filenames
 
     def _load_api_config(self):
         return {
-            'kernel': {
-                'type': 'cat',
-                # 'values': ['linear', 'Polynomial', 'RBF']
-                'values': [0, 1, 2]
-            },
+            # 'kernel': {
+            #     'type': 'cat',
+            #     # 'values': ['linear', 'Polynomial', 'RBF']
+            #     'values': [0, 1, 2]
+            # },
             'C': {
                 'type': 'float',
                 'range':[-1, 1]

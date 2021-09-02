@@ -6,15 +6,30 @@
 
 ### TAF-R(2021年9月1日)
 
+```bash
+cd ${PROJECT_ROOT_PATH}
+PYTHONPATH='./' python ./bbomark/example/test_tst2.py
+PYTHONPATH='./' python ./bbomark/example/analysis_transfer.py
+```
+
 ![](./out/ana_tranfer_res1630487971.2002113.png)
 
 ![](./out/ana_tranfer_res_best1630487978.2151673.png)
+
+(2021年9月2号) *TST使用rho=0.75, TAF使用rho=0.75（高斯过程model使用GPy，SEkernel，输入3dim，去除类别变量）xi=0*：
+
+![](./out/ana_tranfer_res1630581536.7476084.png)
+
+![](./out/ana_tranfer_res_best1630581568.4403806.png)
+
+---
 
 ### TST-R (2021年8月29日)
 
 测试运行：
 
 ```bash
+cd ${PROJECT_ROOT_PATH}
 PYTHONPATH='./' python ./bbomark/search_algorithm/transfer_tst_optimizer.py
 ```
 
@@ -208,6 +223,8 @@ best_loss: 0.4024387250287731
 
 ## 测试
 
+***详细实验记录后续存放在飞书***
+
 [实验记录点这里！](./实验记录.md)
 
 跑benchmark实验运行示例：
@@ -230,7 +247,7 @@ PYTHONPATH='./' python ./example/analysis.py
 
 - [ ] Transfer
   - [x] TST-R
-  - [ ] TAF
+  - [x] TAF
   - [ ] TAF(RGPE)
   - [ ] RMoGP
   - [ ] RGPE(mean)

@@ -18,7 +18,8 @@ class TAF():
         best_candidate = []
         candidates_rm_id = []
         for i, candidate in enumerate(candidates):
-            if not hasattr(surrogate, 'X'):
+            # if not hasattr(surrogate, 'X'):
+            if not surrogate.is_fited:
                 y_hat = 0, 1000
             else:
                 y_hat = surrogate.predict_with_sigma(candidate)

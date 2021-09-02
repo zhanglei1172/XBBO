@@ -1,6 +1,7 @@
 from scipy.linalg import solve_triangular, cholesky
 from scipy import stats
 import numpy as np
+import GPy
 from sklearn import gaussian_process
 
 from bbomark.surrogate.base import Surrogate
@@ -33,10 +34,43 @@ class SEkernel():
         return self.sigma_f ** 2 * np.exp(-0.5 / self.sigma_l ** 2 * dist_matrix) + noise
 
 
+class GaussianProcessRegressorARD_gpy(Surrogate):
+    def __init__(self, dim):
+        super(GaussianProcessRegressorARD_gpy, self).__init__(dim)
+        self.cached = {}
+        self.kernel = GPy.kern.RBF(input_dim=self.dim,
+                              # variance=None,
+                              lengthscale=0.5,
+                              ARD=True)
+
+        self.is_fited = False
+
+    def fit(self, x, y):
+        self.is_fited = True
+
+        self.gpr = GPy.models.gp_regression.GPRegression(x, y[:, None],kernel=self.kernel)
+        self.gpr.optimize()
+
+    def predict(self, newX):
+        return self.gpr.predict(np.atleast_2d(newX))[0]
+
+    def cached_predict(self, newX):
+
+        key = hash(newX.data.tobytes())
+        if key not in self.cached:
+            self.cached[key] = self.predict(newX)
+        return self.cached[key]
+
+    def predict_with_sigma(self, newX):
+        if not self.is_fited:
+            return 0, np.inf
+        else:
+            mu, std = self.gpr.predict(np.atleast_2d(newX))
+            return mu, np.sqrt(std)
 
 class GaussianProcessRegressorARD_sklearn(Surrogate):
-    def __init__(self, ):
-        super(GaussianProcessRegressorARD_sklearn, self).__init__()
+    def __init__(self, dim):
+        super(GaussianProcessRegressorARD_sklearn, self).__init__(dim)
         self.cached = {}
         kernel = gaussian_process.kernels.ConstantKernel(
             constant_value=1#, constant_value_bounds=(1e-4, 1e4)
@@ -69,8 +103,8 @@ class GaussianProcessRegressorARD_sklearn(Surrogate):
 
 
 class GaussianProcessRegressor(Surrogate):
-    def __init__(self, ):
-        super().__init__()
+    def __init__(self, dim):
+        super().__init__(dim)
         self.kernel = SEkernel()
         self.cached = {}
         self.cached_mu_sigma = {}

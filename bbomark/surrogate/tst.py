@@ -4,18 +4,19 @@ import numpy as np
 from bbomark.surrogate.base import Surrogate
 from bbomark.surrogate.gaussian_process import (
     GaussianProcessRegressor,
-    GaussianProcessRegressorARD_sklearn
+    GaussianProcessRegressorARD_sklearn,
+    GaussianProcessRegressorARD_gpy
 )
 
 
 class TST_surrogate(Surrogate):
     rho = 0.75
 
-    def __init__(self, bandwidth=0.1):
-        super().__init__()
+    def __init__(self, dim, bandwidth=0.1):
+        super().__init__(dim)
 
-        self.new_gp = GaussianProcessRegressor()
-        # self.new_gp = GaussianProcessRegressorARD_sklearn(dim)
+        # self.new_gp = GaussianProcessRegressor()
+        self.new_gp = GaussianProcessRegressorARD_gpy(dim)
         # self.candidates = None
         self.bandwidth = bandwidth
         # self.history_x = []
@@ -25,8 +26,8 @@ class TST_surrogate(Surrogate):
         self.old_D_num = len(old_D_x)
         self.gps = []
         for d in range(self.old_D_num):
-            self.gps.append(GaussianProcessRegressor())
-            # self.gps.append(GaussianProcessRegressorARD_sklearn(self.dim))
+            # self.gps.append(GaussianProcessRegressor())
+            self.gps.append(GaussianProcessRegressorARD_gpy(self.dim))
             self.gps[d].fit(old_D_x[d], old_D_y[d])
         if new_D_x is not None:
             candidates = new_D_x
@@ -44,7 +45,7 @@ class TST_surrogate(Surrogate):
     def predict_with_sigma(self, newX):
         denominator = self.rho
         mu, sigma = self.new_gp.predict_with_sigma(newX)
-        # mu *= self.rho
+        mu *= self.rho
         for d in range(self.old_D_num):
             mu += self.similarity[d] * self.gps[d].cached_predict(newX)
             denominator += self.similarity[d]

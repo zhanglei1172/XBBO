@@ -13,12 +13,16 @@ from bbomark.configspace.space import Configurations
 
 from bbomark.core.trials import Trials
 from bbomark.surrogate.tst import TST_surrogate
-from bbomark.surrogate.gaussian_process import GaussianProcessRegressorARD_sklearn, GaussianProcessRegressor
+from bbomark.surrogate.gaussian_process import (
+    GaussianProcessRegressorARD_sklearn,
+    GaussianProcessRegressor,
+    GaussianProcessRegressorARD_gpy
+)
 
 
 class SMBO_test():
 
-    def __init__(self,dim=6,
+    def __init__(self,dim=3,
                  min_sample=1,
                  data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
                  test_data_name='abalone',
@@ -33,7 +37,8 @@ class SMBO_test():
         # self.dim = dim
         self.hp_num = dim
         self.trials = Trials()
-        self.surrogate = GaussianProcessRegressor()
+        # self.surrogate = GaussianProcessRegressor()
+        self.surrogate = GaussianProcessRegressorARD_gpy(self.hp_num)
         self.new_gp = self.surrogate
         self.bandwidth = bandwidth
         self.rho = rho
@@ -92,8 +97,8 @@ class SMBO_test():
         self.old_D_num = len(old_D_x)
         self.gps = []
         for d in range(self.old_D_num):
-            self.gps.append(GaussianProcessRegressor())
-            # self.gps.append(GaussianProcessRegressorARD_sklearn(self.dim))
+            # self.gps.append(GaussianProcessRegressor())
+            self.gps.append(GaussianProcessRegressorARD_gpy(self.hp_num))
             self.gps[d].fit(old_D_x[d], old_D_y[d])
         if new_D_x is not None:
             candidates = new_D_x
@@ -119,11 +124,15 @@ class SMBO_test():
                 insts = [] # 2dim
                 for line in f.readlines(): # convet categories
                     line_array = list(map(float, line.strip().split(' ')))
-                    insts.append(line_array[:1+self.hp_num])
+                    # insts.append(line_array[:1+self.hp_num])
+                    insts.append(line_array[:1+3+self.hp_num])
 
             datasets = np.asarray(insts, dtype=np.float)
             datasets_hp.append(datasets[:, 1:])
             datasets_label.append(datasets[:, 0])
+            mask = datasets_hp[-1][:, 0].astype(np.bool_)  # TODO
+            datasets_hp[-1] = datasets_hp[-1][mask, 3:]
+            datasets_label[-1] = datasets_label[-1][mask]
         return (datasets_hp, datasets_label), filenames
 
 
@@ -202,11 +211,12 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
 
-        self.surrogate = GaussianProcessRegressor()
+        self.hp_num = len(configs)
+        # self.surrogate = GaussianProcessRegressor()
+        self.surrogate = GaussianProcessRegressorARD_gpy(self.hp_num)
         self.new_gp = self.surrogate
         self.bandwidth = bandwidth
         self.rho = rho
-        self.hp_num = len(configs)
         self.trials = Trials()
 
 
@@ -227,8 +237,8 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.old_D_num = len(old_D_x)
         self.gps = []
         for d in range(self.old_D_num):
-            self.gps.append(GaussianProcessRegressor())
-            # self.gps.append(GaussianProcessRegressorARD_sklearn(self.dim))
+            # self.gps.append(GaussianProcessRegressor())
+            self.gps.append(GaussianProcessRegressorARD_gpy(self.hp_num))
             self.gps[d].fit(old_D_x[d], old_D_y[d])
         if new_D_x is not None:
             candidates = new_D_x

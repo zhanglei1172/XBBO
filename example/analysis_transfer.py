@@ -19,7 +19,7 @@ def load_csv(exp_dir):
         res = pd.read_csv(file, index_col=[0, 1], header=[0, 1])
         res = res.groupby(by='call', axis=0).median()
 
-        res[('func_evals', 'rank')] += 1
+        # res[('func_evals', 'rank')] += 1
         res[('func_evals', 'rank')] /= rank_max
         # res[('func_evals', 'rank')] += 1
 
@@ -79,7 +79,7 @@ def visualize(df_res):
                       hue="search alg",
                       height=4.5,
                       sharex=False,
-                      sharey=True,
+                      sharey=False,
                       despine=False)
     g.map(sns.lineplot, 'call', 'metric')
     # sns.lineplot(x="call", y="log loss",
@@ -136,9 +136,9 @@ def visualize(df_res):
 
 
 def main():
-    df_res_beseline = load_all_exp('./exp', st=-50, ed=None)
+    df_res_beseline = load_all_exp('./exp', st=-150, ed=-100)
     df_res_TAF = load_all_exp('./exp', st=-100, ed=-50)
-    df_res_TST = load_all_exp('./exp', st=-150, ed=-100)
+    df_res_TST = load_all_exp('./exp', st=-50, ed=None)
     visualize(pd.concat([df_res_beseline, df_res_TST, df_res_TAF],
                         axis=1,
                         keys=[

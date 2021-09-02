@@ -28,7 +28,7 @@ class SMBO_test():
         # self.dim = dim
         self.hp_num = dim
         self.trials = Trials()
-        self.surrogate = TST_surrogate()
+        self.surrogate = TST_surrogate(self.hp_num)
         self.acq_func = EI()
         self._prepare()
 
@@ -151,7 +151,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
 
         self.hp_num = len(configs)
         self.trials = Trials()
-        self.surrogate = TST_surrogate()
+        self.surrogate = TST_surrogate(self.hp_num)
         self.acq_func = EI()
 
     def prepare(self, old_D_x_params, old_D_y, new_D_x_param):
@@ -277,8 +277,8 @@ if __name__ == '__main__':
     plt.ylabel('Rank')
     plt.xlabel('iter')
 
-    plt.suptitle('TST-R in A9A datasets(svm)')
-    plt.savefig('./out/TST-R.png')
+    # plt.suptitle('TST-R in A9A datasets(svm)')
+    # plt.savefig('./out/TST-R.png')
 
     # plt.suptitle('TST-R in A9A datasets(svm)-correct')
     # plt.savefig('./out/TST-R-correct.png')
