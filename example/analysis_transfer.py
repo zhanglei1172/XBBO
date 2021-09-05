@@ -109,11 +109,11 @@ def visualize(df_res):
     df = df.drop(['index'], axis=1).set_index(['search alg',
                                                'call']).stack().reset_index()
 
-    df = df.rename(columns={0: 'metric', 'level_2': 'metric: '})
+    df = df.rename(columns={0: 'metric', 'level_2': 'metric:'})
     # df['log loss'] = np.log(df['loss'].values)
 
     g = sns.FacetGrid(df,
-                      col="metric: ",
+                      col="metric:",
                       hue="search alg",
                       height=4.5,
                       sharex=False,
@@ -136,15 +136,17 @@ def visualize(df_res):
 
 
 def main():
-    df_res_beseline = load_all_exp('./exp', st=-150, ed=-100)
-    df_res_TAF = load_all_exp('./exp', st=-100, ed=-50)
-    df_res_TST = load_all_exp('./exp', st=-50, ed=None)
-    visualize(pd.concat([df_res_beseline, df_res_TST, df_res_TAF],
+    df_res_beseline = load_all_exp('./exp', st=-200, ed=-150)
+    df_res_TAF = load_all_exp('./exp', st=-150, ed=-100)
+    df_res_TST = load_all_exp('./exp', st=-100, ed=-50)
+    df_res_RGPE = load_all_exp('./exp', st=-50, ed=None)
+    visualize(pd.concat([df_res_beseline, df_res_TST, df_res_TAF, df_res_RGPE],
                         axis=1,
                         keys=[
                             'baseline',
                             'TST-R',
-                            'TAF-R'
+                            'TAF-R',
+                            'RGPE'
                         ]))
 
 

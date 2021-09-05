@@ -15,7 +15,7 @@ from bbomark.surrogate.tst import TST_surrogate
 
 class SMBO_test():
 
-    def __init__(self,dim=6,
+    def __init__(self,dim=3,
                  min_sample=0,
                  data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
                  test_data_name='A9A',
@@ -75,12 +75,18 @@ class SMBO_test():
                 insts = [] # 2dim
                 for line in f.readlines(): # convet categories
                     line_array = list(map(float, line.strip().split(' ')))
-                    insts.append(line_array[:1+self.hp_num])
+                    # insts.append(line_array[:1+self.hp_num])
+                    insts.append(line_array[:1+3+self.hp_num])
 
             datasets = np.asarray(insts, dtype=np.float)
+            # datasets_hp.append(datasets[:, 1:])
             datasets_hp.append(datasets[:, 1:])
             datasets_label.append(datasets[:, 0])
+            mask = datasets_hp[-1][:, 0].astype(np.bool_) # TODO
+            datasets_hp[-1] = datasets_hp[-1][mask, 3:]
+            datasets_label[-1] = datasets_label[-1][mask]
         return (datasets_hp, datasets_label), filenames
+
 
 
     def suggest(self, n_suggestions=1, enable_random=False):

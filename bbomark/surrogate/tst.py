@@ -15,7 +15,7 @@ class TST_surrogate(Surrogate):
     def __init__(self, dim, bandwidth=0.1):
         super().__init__(dim)
 
-        # self.new_gp = GaussianProcessRegressor()
+        # self.new_gp = GaussianProcessRegressor(dim)
         self.new_gp = GaussianProcessRegressorARD_gpy(dim)
         # self.candidates = None
         self.bandwidth = bandwidth
@@ -26,7 +26,7 @@ class TST_surrogate(Surrogate):
         self.old_D_num = len(old_D_x)
         self.gps = []
         for d in range(self.old_D_num):
-            # self.gps.append(GaussianProcessRegressor())
+            # self.gps.append(GaussianProcessRegressor(self.dim))
             self.gps.append(GaussianProcessRegressorARD_gpy(self.dim))
             self.gps[d].fit(old_D_x[d], old_D_y[d])
         if new_D_x is not None:
@@ -63,7 +63,7 @@ class TST_surrogate(Surrogate):
             return self.rho
         disordered_pairs = total_pairs = 0
         for i in range(len(y)):
-            for j in range(len(y)):
+            for j in range(i+1, len(y)): # FIXME
                 if (y[i] < y[j] != self.gps[d].cached_predict(
                         x[i]) < self.gps[d].cached_predict(x[j])):
                     disordered_pairs += 1

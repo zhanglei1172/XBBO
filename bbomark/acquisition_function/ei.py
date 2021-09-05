@@ -3,7 +3,7 @@ from scipy import stats
 
 class EI():
     def __init__(self):
-        self.xi = 0.1
+        self.xi = 0.0
 
     def _getEI(self, mu, sigma, y_best): #
         z = (-y_best + mu - self.xi) / sigma

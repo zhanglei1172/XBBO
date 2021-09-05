@@ -63,6 +63,7 @@ def main(cfg_clone):
 
 if __name__ == '__main__':
 
+
     for filename in os.listdir("/home/zhang/PycharmProjects/MAC/TST/data/svm/"):
         cfg_clone = cfg.clone()
         load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_baseline_svm.yaml', '-r', '1',
@@ -70,7 +71,7 @@ if __name__ == '__main__':
         SEED = cfg_clone.GENERAL.random_seed
         main(cfg_clone)
 
-    time.sleep(1)
+    # time.sleep(1)
     for filename in os.listdir("/home/zhang/PycharmProjects/MAC/TST/data/svm/"):
         cfg_clone = cfg.clone()
         load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_taf_svm.yaml', '-r', '1',
@@ -78,7 +79,7 @@ if __name__ == '__main__':
         SEED = cfg_clone.GENERAL.random_seed
         main(cfg_clone)
 
-    time.sleep(1)
+    # time.sleep(1)
     for filename in os.listdir("/home/zhang/PycharmProjects/MAC/TST/data/svm/"):
         cfg_clone = cfg.clone()
         load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_svm.yaml', '-r', '1',
@@ -87,6 +88,12 @@ if __name__ == '__main__':
         main(cfg_clone)
 
 
+    for filename in os.listdir("/home/zhang/PycharmProjects/MAC/TST/data/svm/"):
+        cfg_clone = cfg.clone()
+        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_rgpe_svm.yaml', '-r', '1',
+                                           "TEST_PROBLEM.kwargs.test_data", filename])
+        SEED = cfg_clone.GENERAL.random_seed
+        main(cfg_clone)
     # opt_class = get_opt_class(cfg.OPTM.name)
     # optimizer_instance = opt_class(None)
 
