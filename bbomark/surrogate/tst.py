@@ -1,24 +1,64 @@
 import numpy as np
-
+import torch
+from botorch.models.gpytorch import GPyTorchModel
+from gpytorch.distributions import MultivariateNormal
+from gpytorch.models import GP
+from gpytorch.likelihoods import LikelihoodList
+from torch.nn import ModuleList
 
 from bbomark.surrogate.base import Surrogate
 from bbomark.surrogate.gaussian_process import (
     GaussianProcessRegressor,
     GaussianProcessRegressorARD_sklearn,
-    GaussianProcessRegressorARD_gpy
+    GaussianProcessRegressorARD_gpy, GaussianProcessRegressorARD_torch
 )
+
+
+class TST_surrogate_(GP, GPyTorchModel):
+    num_outputs = 1
+    def __init__(self, models, weights):
+        super().__init__()
+        self.models = ModuleList(models)
+        for m in models:
+            if not hasattr(m, "likelihood"):
+                raise ValueError(
+                    "RGPE currently only supports models that have a likelihood (e.g. ExactGPs)"
+                )
+        self.likelihood = LikelihoodList(*[m.likelihood for m in models])
+        self.weights = weights
+        self.to(weights)
+        # self.candidates = None
+        # self.bandwidth = bandwidth
+
+    def forward(self, x):
+        weighted_means = []
+        non_zero_weight_indices = (self.weights ** 2 > 0).nonzero()
+        non_zero_weights = self.weights[non_zero_weight_indices]
+        for m_id in range(non_zero_weight_indices.shape[0]):
+            model = self.models[non_zero_weight_indices[m_id]]
+            posterior = model.posterior(x)
+            # posterior_mean = posterior.mean.squeeze(-1) * model.Y_std + model.Y_mean
+            posterior_mean = posterior.mean.squeeze(-1)
+            # apply weight
+            weight = non_zero_weights[m_id]
+            weighted_means.append(weight * posterior_mean)
+        mean_x = torch.stack(weighted_means).sum(dim=0)/non_zero_weights.sum()
+        posterior_cov = posterior.mvn.lazy_covariance_matrix * model.Y_std.pow(2)
+        return MultivariateNormal(mean_x, posterior_cov)
+
 
 
 class TST_surrogate(Surrogate):
     rho = 0.75
 
     def __init__(self, dim, bandwidth=0.1):
-        super().__init__(dim)
+        super().__init__(dim, min_sample=3)
 
         # self.new_gp = GaussianProcessRegressor(dim)
         self.new_gp = GaussianProcessRegressorARD_gpy(dim)
         # self.candidates = None
         self.bandwidth = bandwidth
+        self.is_fited = False
         # self.history_x = []
         # self.history_y = []
 
@@ -39,10 +79,14 @@ class TST_surrogate(Surrogate):
     def fit(self, x, y):
         x = np.asarray(x)
         y = np.asarray(y)
+        if x.shape[0] < self.min_sample:
+            return
+        self.is_fited = True
         self.new_gp.fit(x, y)
         self.similarity = [self.kendallTauCorrelation(d, x, y) for d in range(self.old_D_num)]
 
     def predict_with_sigma(self, newX):
+        assert self.is_fited
         denominator = self.rho
         mu, sigma = self.new_gp.predict_with_sigma(newX)
         mu *= self.rho

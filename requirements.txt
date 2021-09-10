@@ -1,4 +1,4 @@
-scipy==1.6.2
+# scipy==1.6.2
 opentuner==0.8.4
 pathvalidate==2.4.1
 POAP==0.1.26

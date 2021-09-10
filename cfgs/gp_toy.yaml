@@ -1,0 +1,36 @@
+GENERAL:
+  pipeline: transfer
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: transfer_tst_optimizer_
+  n_suggestions: 1
+  max_call: 30
+
+TEST_PROBLEM:
+  name: 'transfer_toy' # filename
+  func_evals:
+    - 'f_v'
+
+  kwargs:
+    data_path: '/home/zhang/PycharmProjects/MAC/TST/data/svm/'
+#    data_path: '/home/zhang/Downloads/Compressed/5882230/OpenMLRandomBotResultsFinal_mlr.classif.svm.csv'
+    func_name: surrogate
+    noise_std: 0.0
+    test_task: 3
+#  name: 'offline_hp' # filename
+#  func_evals:
+#    - log_regret
+#    - regret
+#
+#  kwargs:
+##    data_path: '/home/zhang/PycharmProjects/MAC/TST/data/svm/'
+#    data_path: '/home/zhang/Downloads/Compressed/5882230/OpenMLRandomBotResultsFinal_mlr.classif.svm.csv'
+#    func_name: surrogate
+#    noise_std: 0.0
+#    test_task: 3

@@ -29,6 +29,10 @@ class Model(TestFunction):
         self.noise_std = kwargs.get('noise_std', 0)
         self.api_config = self._load_api_config()
 
+    def array_to_config(self):
+        return self.func.array_to_config()
+
+
     def evaluate(self, params: dict):
 
         # input_x = []
@@ -37,7 +41,7 @@ class Model(TestFunction):
         random_noise = np.random.randn() * self.noise_std + 1.
         res_out = {
             # 'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1)/len(self.func.sorted_new_D_y),
-            'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1),
+            'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1)/ len(self.func.sorted_new_D_y),
             'regret': (self.func.best_acc-f ) / self.func.acc_range,
         }
         res_loss = {
@@ -72,7 +76,7 @@ class SVM():
         key = tuple(np.round(hp_param[k], 5) for k in self.api_config)
         ret = self.cached_new_res[key]
         # print(key)
-        rank = 1
+        # rank = 1
         # if True:
         #     for y in self.new_D_y:
         #         if y > ret:
@@ -119,7 +123,7 @@ class SVM():
             self.old_D_x_params.append([self._inst_to_config(inst) for inst in self.old_D_x[d]])
 
         self.new_D_x_param = [self._inst_to_config(inst) for inst in self.new_D_x]
-
+        self.cache(self.new_D_x_param)
         return self.old_D_x_params, self.old_D_y, self.new_D_x_param
 
 

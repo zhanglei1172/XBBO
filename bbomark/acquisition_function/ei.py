@@ -6,8 +6,8 @@ class EI():
         self.xi = 0.0
 
     def _getEI(self, mu, sigma, y_best): #
-        z = (-y_best + mu - self.xi) / sigma
-        ei = (-y_best + mu -
+        z = (y_best - mu - self.xi) / sigma
+        ei = (y_best - mu -
               self.xi) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
         return ei
 
@@ -28,6 +28,7 @@ class EI():
         best_ei = -1
         best_candidate = []
         candidates_rm_id = []
+        # y_hats = list(zip(*surrogate.predict_with_sigma(candidates)))
         for i, candidate in enumerate(candidates):
             y_hat = surrogate.predict_with_sigma(candidate)
             ei = self._getEI(y_hat[0], y_hat[1], y_best)

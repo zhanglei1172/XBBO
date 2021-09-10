@@ -32,7 +32,20 @@ def get_opt_class(opt_name):
         from bbomark.search_algorithm import transfer_baseline_optimizer as opt
     elif opt_name == "transfer_rgpe_optimizer":
         from bbomark.search_algorithm import transfer_rgpe_optimizer as opt
-
+    elif opt_name == "transfer_rs_optimizer":
+        from bbomark.search_algorithm import transfer_rs_optimizer as opt
+    elif opt_name == "transfer_baseline_optimizer_":
+        from bbomark.search_algorithm import transfer_baseline_optimizer_ as opt
+    elif opt_name == "transfer_tst_optimizer_":
+        from bbomark.search_algorithm import transfer_tst_optimizer_ as opt
+    elif opt_name == "transfer_taf_optimizer_":
+        from bbomark.search_algorithm import transfer_taf_optimizer_ as opt
+    elif opt_name == "transfer_rgpe_mean_optimizer_":
+        from bbomark.search_algorithm import transfer_rgpe_mean_optimizer_ as opt
+    elif opt_name == "transfer_taf_rgpe_optimizer_":
+        from bbomark.search_algorithm import transfer_taf_rgpe_optimizer_ as opt
+    elif opt_name == "transfer_RMoGP_optimizer_":
+        from bbomark.search_algorithm import transfer_RMoGP_optimizer_ as opt
     else:
         assert False, f"{opt_name} is not in bbomark/search_algorithm or not change bbomark/search_algorithm/__init__.py"
 

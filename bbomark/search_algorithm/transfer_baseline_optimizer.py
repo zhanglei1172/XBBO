@@ -16,8 +16,8 @@ from bbomark.surrogate.tst import TST_surrogate
 
 class SMBO_test():
 
-    def __init__(self,dim=3,
-                 min_sample=0,
+    def __init__(self,dim=6,
+                 min_sample=3,
                  data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
                  test_data_name='A9A',
                  # avg_best_idx=2.0,
@@ -29,7 +29,8 @@ class SMBO_test():
         # self.dim = dim
         self.hp_num = dim
         self.trials = Trials()
-        self.surrogate = TST_surrogate(self.hp_num)
+        # self.surrogate = GaussianProcessRegressor(self.hp_num)
+        self.surrogate = GaussianProcessRegressorARD_gpy(self.hp_num)
         self.acq_func = EI()
         self._prepare()
 
@@ -76,16 +77,16 @@ class SMBO_test():
                 insts = [] # 2dim
                 for line in f.readlines(): # convet categories
                     line_array = list(map(float, line.strip().split(' ')))
-                    # insts.append(line_array[:1+self.hp_num])
-                    insts.append(line_array[:1+3+self.hp_num])
+                    insts.append(line_array[:1+self.hp_num])
+                    # insts.append(line_array[:1+3+self.hp_num])
 
             datasets = np.asarray(insts, dtype=np.float)
             # datasets_hp.append(datasets[:, 1:])
             datasets_hp.append(datasets[:, 1:])
             datasets_label.append(datasets[:, 0])
-            mask = datasets_hp[-1][:, 0].astype(np.bool_) # TODO
-            datasets_hp[-1] = datasets_hp[-1][mask, 3:]
-            datasets_label[-1] = datasets_label[-1][mask]
+            # mask = datasets_hp[-1][:, 0].astype(np.bool_) # TODO
+            # datasets_hp[-1] = datasets_hp[-1][mask, 3:]
+            # datasets_label[-1] = datasets_label[-1][mask]
         return (datasets_hp, datasets_label), filenames
 
 
@@ -142,7 +143,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
 
     def __init__(self,
                  config_spaces,
-                 min_sample=1,
+                 min_sample=3,
                  # avg_best_idx=2.0,
                  # meta_data_path=None,
                  ):
@@ -218,6 +219,17 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.trials.trials_num += 1
         self.surrogate.fit(np.array(self.trials.history), np.array(self.trials.history_y))
 
+    def _random_suggest_explore(self, n_suggestions=1):
+        sas = []
+        x_unwarpeds = []
+        for n in range(n_suggestions):
+            rm_id = np.random.choice(len(self.candidates))
+            sas.append(self.candidates[rm_id])
+            x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
+            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarpeds.append(x_unwarped)
+            self.candidates = np.delete(self.candidates, rm_id, axis=0)
+        return x_unwarpeds, sas
 
     def _random_suggest(self, n_suggestions=1):
         sas = []
@@ -235,7 +247,7 @@ def test_gpbo(try_num, SEED=0):
     np.random.seed(SEED)
     random.seed(SEED)
     smbo = SMBO_test()
-    smbo.candidates = smbo.surrogate.get_knowledge(smbo.old_D_x, smbo.old_D_y, smbo.new_D_x)
+    # smbo.candidates = smbo.surrogate.get_knowledge(smbo.old_D_x, smbo.old_D_y, smbo.new_D_x)
     smbo.cache_compute()
     rank = []
     best_rank = []
@@ -262,7 +274,7 @@ if __name__ == '__main__':
     try_num = 30
     SEED = 0
     acc_,acc_best_, rank_, rank_best_ = test_gpbo(try_num, SEED)
-    plt.subplot(111)
+    plt.subplot(211)
 
     plt.plot(acc_, 'r-', label='GP-BO')
     plt.plot(acc_best_, 'r:', label='GP-BO_best')

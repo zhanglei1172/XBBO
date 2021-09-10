@@ -24,10 +24,18 @@ class Transfer_BBO:
         opt_class = get_opt_class(cfg.OPTM.name)
         self.optimizer_instance = opt_class(self.config_spaces, **dict(cfg.OPTM.kwargs))
 
-        old_D_x_params, old_D_y, new_D_x_param = self.function_instance.func.array_to_config()
-        self.function_instance.func.cache(new_D_x_param)
+        old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config(ret_param=False)
+        # old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config()
+        # self.function_instance.cache(new_D_x_param)
 
-        self.optimizer_instance.prepare(old_D_x_params, old_D_y, new_D_x_param)
+        self.optimizer_instance.prepare(old_D_x_params, old_D_y, new_D_x_param,
+                                        np.argsort(list(self.api_config.keys())), params=False)
+        # self.optimizer_instance.prepare(old_D_x_params, old_D_y, new_D_x_param,
+        #                                 np.argsort(list(self.api_config.keys())))
+        # old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config()
+        # # self.function_instance.cache(new_D_x_param)
+        #
+        # self.optimizer_instance.prepare(old_D_x_params, old_D_y, new_D_x_param, np.argsort(list(self.api_config.keys())))
 
         self.n_suggestions = cfg.OPTM.n_suggestions
         self.n_obj = cfg.OPTM.n_obj
@@ -71,9 +79,10 @@ class Transfer_BBO:
         pbar.set_description(f"Optimizer {self.cfg.OPTM.name} is running:")
         
         for ii in pbar:
-            next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
 
             tt = time()
+            next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
+
             # try:
             #     next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
             # except Exception as e:
@@ -94,11 +103,11 @@ class Transfer_BBO:
             losses = []
             tt = time()
             for next_point in (next_points):
-                try:
-                    f_current_eval, loss =  self.evaluate(next_point) # TODO 2
-                except Exception as e:
-                    f_current_eval = np.full((len(self.cfg.TEST_PROBLEM.func_evals),), np.inf, dtype=float)
-                    loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
+                # try:
+                f_current_eval, loss =  self.evaluate(next_point) # TODO 2
+                # except Exception as e:
+                #     f_current_eval = np.full((len(self.cfg.TEST_PROBLEM.func_evals),), np.inf, dtype=float)
+                #     loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
 
 
 

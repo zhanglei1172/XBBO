@@ -189,7 +189,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
 
     def __init__(self,
                  config_spaces,
-                 min_sample=0,
+                 min_sample=4,
                  bandwidth=0.1,
                  rho=0.75
                  # avg_best_idx=2.0,
@@ -245,8 +245,8 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
     def suggest(self, n_suggestions=1):
         # 只suggest 一个
         if (self.trials.trials_num) < self.min_sample:
-            raise NotImplemented
-            # return self._random_suggest()
+            # raise NotImplemented
+            return self._random_suggest()
         else:
             x_unwarpeds = []
             sas = []
@@ -294,6 +294,17 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         for d in range(len(self.old_ybests)):  # TODO
             # self.old_ybests[d] = max(self.old_ybests[d], y)
             self.old_ybests[d] = max(self.old_ybests[d], self.gps[d].cached_predict(np.asarray(x)))
+    def _random_suggest(self, n_suggestions=1):
+        sas = []
+        x_unwarpeds = []
+        for n in range(n_suggestions):
+            rm_id = np.random.choice(len(self.candidates))
+            sas.append(self.candidates[rm_id])
+            x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
+            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarpeds.append(x_unwarped)
+            self.candidates = np.delete(self.candidates, rm_id, axis=0)
+        return x_unwarpeds, sas
 
 
 def test_taf_r(try_num, SEED=0):

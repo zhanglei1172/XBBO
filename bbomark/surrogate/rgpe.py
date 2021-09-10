@@ -1,6 +1,13 @@
 import numpy as np
 
 import GPy
+import torch
+from botorch.models.gpytorch import GPyTorchModel
+from gpytorch.distributions import MultivariateNormal
+from gpytorch.lazy import PsdSumLazyTensor
+from gpytorch.likelihoods import LikelihoodList
+from gpytorch.models import GP
+from torch.nn import ModuleList
 
 from bbomark.surrogate.base import Surrogate
 from bbomark.surrogate.gaussian_process import (
@@ -8,6 +15,74 @@ from bbomark.surrogate.gaussian_process import (
     GaussianProcessRegressorARD_sklearn,
     GaussianProcessRegressorARD_gpy
 )
+
+class RGPE_mean_surrogate_(GP, GPyTorchModel):
+    num_outputs = 1
+    def __init__(self, models, weights):
+        super().__init__()
+        self.models = ModuleList(models)
+        for m in models:
+            if not hasattr(m, "likelihood"):
+                raise ValueError(
+                    "RGPE currently only supports models that have a likelihood (e.g. ExactGPs)"
+                )
+        self.likelihood = LikelihoodList(*[m.likelihood for m in models])
+        self.weights = weights
+        self.to(weights)
+        # self.candidates = None
+        # self.bandwidth = bandwidth
+
+    def forward(self, x):
+        weighted_means = []
+        non_zero_weight_indices = (self.weights ** 2 > 0).nonzero()
+        non_zero_weights = self.weights[non_zero_weight_indices]
+        for m_id in range(non_zero_weight_indices.shape[0]):
+            model = self.models[non_zero_weight_indices[m_id]]
+            posterior = model.posterior(x)
+            # posterior_mean = posterior.mean.squeeze(-1) * model.Y_std + model.Y_mean
+            posterior_mean = posterior.mean.squeeze(-1)
+            # apply weight
+            weight = non_zero_weights[m_id]
+            weighted_means.append(weight * posterior_mean)
+        mean_x = torch.stack(weighted_means).sum(dim=0)/non_zero_weights.sum()
+        posterior_cov = posterior.mvn.lazy_covariance_matrix * model.Y_std.pow(2)
+        return MultivariateNormal(-mean_x, posterior_cov) # convert to maximize problem
+
+class RGPE_surrogate_(GP, GPyTorchModel):
+    num_outputs = 1
+    def __init__(self, models, weights):
+        super().__init__()
+        self.models = ModuleList(models)
+        for m in models:
+            if not hasattr(m, "likelihood"):
+                raise ValueError(
+                    "RGPE currently only supports models that have a likelihood (e.g. ExactGPs)"
+                )
+        self.likelihood = LikelihoodList(*[m.likelihood for m in models])
+        self.weights = weights
+        self.to(weights)
+        # self.candidates = None
+        # self.bandwidth = bandwidth
+
+    def forward(self, x):
+        weighted_means = []
+        weighted_covs = []
+        non_zero_weight_indices = (self.weights ** 2 > 0).nonzero()
+        non_zero_weights = self.weights[non_zero_weight_indices]
+        for m_id in range(non_zero_weight_indices.shape[0]):
+            model = self.models[non_zero_weight_indices[m_id]]
+            posterior = model.posterior(x)
+            # posterior_mean = posterior.mean.squeeze(-1) * model.Y_std + model.Y_mean
+            posterior_mean = posterior.mean.squeeze(-1)
+            posterior_cov = posterior.mvn.lazy_covariance_matrix
+            # apply weight
+            weight = non_zero_weights[m_id]
+            weighted_means.append(weight * posterior_mean)
+            weighted_covs.append(weight*weight * posterior_cov)
+        mean_x = torch.stack(weighted_means).sum(dim=0)/non_zero_weights.sum()
+        posterior_cov = PsdSumLazyTensor(*weighted_covs)
+        return MultivariateNormal(-mean_x, posterior_cov)
+
 
 
 class RGPE_surrogate(Surrogate):

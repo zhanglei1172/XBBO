@@ -23,7 +23,7 @@ class SMBO_test():
     def __init__(
             self,
             dim=3,
-            min_sample=0,
+            min_sample=3,
             data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
             test_data_name='A9A',
             # avg_best_idx=2.0,

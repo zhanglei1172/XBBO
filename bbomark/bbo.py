@@ -66,9 +66,10 @@ class BBO:
         pbar.set_description(f"Optimizer {self.cfg.OPTM.name} is running:")
         
         for ii in pbar:
-            next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
 
             tt = time()
+            next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
+
             # try:
             #     next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
             # except Exception as e:

@@ -3,6 +3,8 @@ import glob
 import numpy as np
 import random
 
+import torch
+
 from bbomark.bbo import BBO
 from bbomark.transfer_bbo import Transfer_BBO
 from bbomark.utils.config import cfg, load_cfg_fom_args
@@ -42,6 +44,8 @@ def experiment_main(cfg_clone):  # pragma: main
             SEED = cfg_clone.GENERAL.random_seed + r
             np.random.seed(SEED)
             random.seed(SEED)
+            torch.manual_seed(SEED)
+            # torch.seed()
             bbo = Transfer_BBO(cfg_clone)
 
             bbo.run()
@@ -62,8 +66,33 @@ if __name__ == '__main__':
 
 
     cfg_clone = cfg.clone()
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_svm.yaml', '-r', '1'])
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/gp.yaml', '-r', '15'])
 
     main(cfg_clone)
 
+    cfg_clone = cfg.clone()
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/bo_tst.yaml', '-r', '15'])
+
+    main(cfg_clone)
+
+    cfg_clone = cfg.clone()
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/bo_taf.yaml', '-r', '15'])
+    main(cfg_clone)
+
+
+    cfg_clone = cfg.clone()
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/bo_rgpe_mean.yaml', '-r', '15'])
+    main(cfg_clone)
+
+    cfg_clone = cfg.clone()
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/bo_taf_rgpe.yaml', '-r', '15'])
+    main(cfg_clone)
+
+    cfg_clone = cfg.clone()
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/bo_RMoGP.yaml', '-r', '15'])
+    main(cfg_clone)
     # benchmark_opt()
+
+    # cfg_clone = cfg.clone()
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/transfer_taf_svm.yaml', '-r', '1'])
+    # main(cfg_clone)

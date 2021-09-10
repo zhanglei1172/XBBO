@@ -16,7 +16,7 @@ from bbomark.surrogate.tst import TST_surrogate
 class SMBO_test():
 
     def __init__(self,dim=3,
-                 min_sample=0,
+                 min_sample=3,
                  data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
                  test_data_name='A9A',
                  # avg_best_idx=2.0,
@@ -91,7 +91,7 @@ class SMBO_test():
 
     def suggest(self, n_suggestions=1, enable_random=False):
         # 只suggest 一个
-        if (self.trials.trials_num) < self.min_sample and enable_random :
+        if (self.trials.trials_num) < self.min_sample  :
             # raise NotImplemented
             return self._random_suggest()
         else:
@@ -142,7 +142,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
 
     def __init__(self,
                  config_spaces,
-                 min_sample=0,
+                 min_sample=4,
                  # avg_best_idx=2.0,
                  # meta_data_path=None,
                  ):

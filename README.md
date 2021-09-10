@@ -4,6 +4,14 @@
 
 ## 更新
 
+### 2021年9月10日
+
+![](./out/ana_tranfer_res1631231813.3034675.png)
+
+![](./out/ana_tranfer_res_best1631231831.6156223.png)
+
+![](./out/ana_tranfer_res_best1631232144.4691868_point_plot.png)
+
 ---
 
 ### RGPE (2021年9月5日)
