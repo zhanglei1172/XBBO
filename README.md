@@ -4,7 +4,20 @@
 
 ## 更新
 
+### 2021年9月15日
+
+meta-data的label全部scale至0-1、cross validation结果
+
+![](./out/ana_tranfer_res1631717775.59908.png)
+
+![](./out/ana_tranfer_res_best1631717784.1796744.png)
+
+![](./out/ana_tranfer_res_best1631717786.3442688_point_plot.png)
+
+
 ### 2021年9月10日
+
+没有将task label scale至0-1
 
 ![](./out/ana_tranfer_res1631231813.3034675.png)
 
@@ -263,12 +276,12 @@ PYTHONPATH='./' python ./example/analysis.py
 
 ## TODO
 
-- [ ] Transfer
+- [x] Transfer
   - [x] TST-R
   - [x] TAF
-  - [ ] TAF(RGPE)
-  - [ ] RMoGP
-  - [ ] RGPE(mean)
+  - [x] TAF(RGPE)
+  - [x] RMoGP
+  - [x] RGPE(mean)
   
 - [ ] Optimizer
   - [x] BORE optimizer

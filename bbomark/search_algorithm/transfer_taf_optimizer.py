@@ -24,7 +24,7 @@ class SMBO_test():
     def __init__(self, dim=3,
                  min_sample=1,
                  data_path='/home/zhang/PycharmProjects/MAC/TST/data/svm',
-                 test_data_name='A9A',
+                 test_data_name='spambase',
                  bandwidth=0.1,
                  rho=0.75
                  # avg_best_idx=2.0,
@@ -81,8 +81,8 @@ class SMBO_test():
         self.new_D_x, self.new_D_y = datasets_hp.pop(new_D_idx), datasets_label.pop(new_D_idx)
         self.old_D_x, self.old_D_y = datasets_hp, datasets_label
         # sclae -acc
-        for d, inst_y in enumerate(self.old_D_y):
-            # inst_y = - inst_y_ # minimize problem
+        for d, inst_y_ in enumerate(self.old_D_y):
+            inst_y = - inst_y_ # minimize problem
             _min = np.min(inst_y)
             _max = np.max(inst_y)
             self.old_D_y[d] = (inst_y - _min) / (_max - _min)  # TODO
@@ -92,6 +92,9 @@ class SMBO_test():
     def get_knowledge(self, old_D_x, old_D_y, new_D_x=None):
         self.old_D_num = len(old_D_x)
         self.gps = []
+        # from sklearn.preprocessing import MinMaxScaler
+        # scaler = MinMaxScaler().fit(np.vstack(old_D_x))
+        # old_D_x = [scaler.transform(X) for X in old_D_x]
         for d in range(self.old_D_num):
             # self.gps.append(GaussianProcessRegressor())
             self.gps.append(GaussianProcessRegressorARD_gpy(self.hp_num))
@@ -357,7 +360,7 @@ opt_class = SMBO
 if __name__ == '__main__':
     try_num = 30
     SEED = 0
-    acc, acc_best, rank, rank_best = test_taf_r(try_num, SEED)
+    # acc, acc_best, rank, rank_best = test_taf_r(try_num, SEED)
     acc_, acc_best_, rank_, rank_best_ = test_gpbo(try_num, SEED)
     plt.subplot(211)
     plt.plot(acc, 'b-', label='TAF-R')

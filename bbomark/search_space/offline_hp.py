@@ -66,7 +66,7 @@ tasks = [task for bb, tasks in blackbox_tasks.items() for task in tasks]
 CACHE_DATA = {}
 
 
-def load_surrogate_benchmark_data(data_path, test_task_name, min_max_features=True):
+def load_surrogate_benchmark_data(data_path, test_task_name, min_max_features=False):
     res = CACHE_DATA.get(test_task_name, False)
     if res:
         return res
@@ -102,7 +102,7 @@ def load_surrogate_benchmark_data(data_path, test_task_name, min_max_features=Tr
     return CACHE_DATA[test_task_name]
 
 
-def load_svm_data(data_path, test_task_name, hp_num=6, min_max_features=True, sparse=True):
+def load_svm_data(data_path, test_task_name, hp_num=3, min_max_features=False, sparse=False):
     res = CACHE_DATA.get(test_task_name, False)
     if res:
         return res
@@ -126,18 +126,21 @@ def load_svm_data(data_path, test_task_name, hp_num=6, min_max_features=True, sp
                 #     idx_start += ind_num
 
                 # line_array.extend(line_array_raw[idx_start:self.hp_num+1])
-                line_array.extend(line_array_raw[idx_start:hp_num + 1])
+                line_array.extend(line_array_raw[idx_start:hp_num + 1+3])
                 insts.append(line_array)
 
         datasets = np.asarray(insts, dtype=np.float)
         if sparse:
-            datasets_hp.append(datasets[:, 1+3:])
+            mask = datasets[:, 1] == 1
+            datasets_hp.append(datasets[mask, 1+3:])
+            # datasets_hp[-1] = datasets_hp[-1][mask]
+            datasets_label.append(-datasets[mask, 0:1])  # TODO convet to minimize problem (regret)
         else:
             datasets_hp.append(datasets[:, 1:])
-        datasets_label.append(-datasets[:, 0:1]) # TODO convet to minimize problem (regret)
-        # mask = datasets_hp[-1][:, 0].astype(np.bool_)  # TODO
-        # datasets_hp[-1] = datasets_hp[-1][mask, 3:]
-        # datasets_label[-1] = datasets_label[-1][mask]
+            datasets_label.append(-datasets[:, 0:1]) # TODO convet to minimize problem (regret)
+        mask = datasets_hp[-1][:, 0].astype(np.bool_)  # TODO
+        datasets_hp[-1] = datasets_hp[-1][mask, 3:]
+        datasets_label[-1] = datasets_label[-1][mask]
         # if True:
         #     datasets_label[-1] = datasets_label[-1]
     if min_max_features:
@@ -148,8 +151,21 @@ def load_svm_data(data_path, test_task_name, hp_num=6, min_max_features=True, sp
     test_idx = filenames.index(test_task_name)
     test_task = datasets_hp.pop(test_idx)
     test_task_label = datasets_label.pop(test_idx)
-    CACHE_DATA[test_task_name] = (datasets_hp, datasets_label, test_task, test_task_label, [f'hp_{i}' for i in
-                                                                                            range(test_task.shape[1])])
+    hp_config = {'C': {
+                'type': 'float',
+                'range':[-1, 1]
+            },
+            'gamma':{
+                'type': 'float',
+                'range':[-1, 1]
+            },
+            'd':{
+                'type': 'float',
+                'range':[0, 1]
+            }}
+    CACHE_DATA[test_task_name] = (datasets_hp, datasets_label, test_task, test_task_label, hp_config)
+    # CACHE_DATA[test_task_name] = (datasets_hp, datasets_label, test_task, test_task_label, [f'hp_{i}' for i in
+    #                                                                                         range(test_task.shape[1])])
     return CACHE_DATA[test_task_name]
 
 
@@ -236,17 +252,22 @@ class Model(TestFunction):
             )
             self.old_D_x, self.old_D_y = list(zip(*Xys_train))
             self.new_D_x, self.new_D_y = Xy_test
+            self.api_config = self._load_api_config()
         elif name == 'svm':
-            self.old_D_x, self.old_D_y, self.new_D_x, self.new_D_y, self.hp_names = load_svm_data(
+            self.old_D_x, self.old_D_y, self.new_D_x, self.new_D_y, self.hp_config = load_svm_data(
                 kwargs.get('data_path'), kwargs.get('test_task'))
+            self.api_config = self.hp_config
         elif name == 'surrogate':
 
             self.old_D_x, self.old_D_y, self.new_D_x, self.new_D_y, self.hp_names = load_surrogate_benchmark_data(
                 kwargs.get('data_path'), kwargs.get('test_task'))
+            self.api_config = self._load_api_config()
         else:
             raise NotImplemented
+        if kwargs.get('normalize_old', False) == True:
+            self.old_D_y = [(y - y.min())/(y.max()-y.min()) for y in self.old_D_y]
         self.noise_std = kwargs.get('noise_std', 0)
-        self.api_config = self._load_api_config()
+
 
         self.bbfunc = BlackboxOffline(self.new_D_x, self.new_D_y)
         self.best_err = min(self.new_D_y).item()
@@ -257,7 +278,7 @@ class Model(TestFunction):
 
         # input_x = []
 
-        f = self.bbfunc(np.asarray([params[k] for k in self.hp_names])).item()
+        f = self.bbfunc(np.asarray([params[k] for k in self.api_config.keys()])).item()
         if self.noise_std == 0:
             random_noise = 1
         else:

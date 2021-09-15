@@ -103,7 +103,8 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             # self.gps.append(GaussianProcessRegressor())
             # observed_idx = np.random.randint(0, len(old_D_y[d]), size=50)
             # observed_idx = np.random.randint(0, len(old_D_y[d]), size=len())
-            observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
+            observed_idx = list(range(len(old_D_y[d])))
+            # observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
             x = torch.Tensor(old_D_x[d][observed_idx, :])  # TODO
             y = torch.Tensor(old_D_y[d][observed_idx])
             train_yvar = torch.full_like(y, self.noise_std ** 2)

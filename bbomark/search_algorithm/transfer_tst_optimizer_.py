@@ -26,7 +26,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
                  min_sample=4,
                  noise_std=0.01,
                  rho=0.75,
-                 bandwidth=0.9,
+                 bandwidth=0.1,
                  mc_samples=256,
                  raw_samples=100
                  # avg_best_idx=2.0,
@@ -93,14 +93,15 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             # self.gps.append(GaussianProcessRegressor())
             # observed_idx = np.random.randint(0, len(old_D_y[d]), size=50)
             # observed_idx = np.random.randint(0, len(old_D_y[d]), size=len())
-            observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
+            observed_idx = list(range(len(old_D_y[d])))
+            # observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
             x = torch.Tensor(old_D_x[d][observed_idx,:]) # TODO
             y = torch.Tensor(old_D_y[d][observed_idx])
             train_yvar = torch.full_like(y, self.noise_std ** 2)
             self.gps.append(get_fitted_model(x, y, train_yvar))
             # g = GaussianProcessRegressorARD_torch(self.hp_num)
             # self.gps.append(g.fit(x, y.squeeze()))
-        print(1)
+        # print(1)
         # if new_D_x is not None:
         #     candidates = new_D_x
         # else:  #

@@ -77,7 +77,8 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         for d in range(self.old_D_num):
             # self.gps.append(GaussianProcessRegressor())
             # observed_idx = np.random.randint(0, len(old_D_y[d]), size=50)
-            observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
+            # observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
+            observed_idx = list(range(len(old_D_y[d])))
         # self.gps = []
         # for d in range(self.old_D_num):
         #     # self.gps.append(GaussianProcessRegressor())

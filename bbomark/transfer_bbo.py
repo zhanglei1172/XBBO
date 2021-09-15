@@ -24,12 +24,12 @@ class Transfer_BBO:
         opt_class = get_opt_class(cfg.OPTM.name)
         self.optimizer_instance = opt_class(self.config_spaces, **dict(cfg.OPTM.kwargs))
 
-        old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config(ret_param=False)
+        old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config(ret_param=True)
         # old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config()
         # self.function_instance.cache(new_D_x_param)
 
         self.optimizer_instance.prepare(old_D_x_params, old_D_y, new_D_x_param,
-                                        np.argsort(list(self.api_config.keys())), params=False)
+                                        np.argsort(list(self.api_config.keys())), params=True)
         # self.optimizer_instance.prepare(old_D_x_params, old_D_y, new_D_x_param,
         #                                 np.argsort(list(self.api_config.keys())))
         # old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config()

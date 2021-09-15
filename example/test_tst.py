@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
 
     cfg_clone = cfg.clone()
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/gp.yaml', '-r', '15'])
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/bo_gp.yaml', '-r', '15'])
 
     main(cfg_clone)
 

@@ -2,10 +2,11 @@ import gpytorch
 import torch
 from gpytorch.constraints import GreaterThan
 from gpytorch.likelihoods import GaussianLikelihood
-from gpytorch.mlls import ExactMarginalLogLikelihood
+from gpytorch.mlls import ExactMarginalLogLikelihood, DeepApproximateMLL, GammaRobustVariationalELBO
 from botorch.models import FixedNoiseGP, SingleTaskGP
 from botorch.fit import fit_gpytorch_model
 import numpy as np
+
 
 class StandardTransform:
 
@@ -25,11 +26,12 @@ def get_fitted_model(train_X, train_Y, train_Yvar, state_dict=None):
     Get a single task GP. The model will be fit unless a state_dict with model
         hyperparameters is provided.
     """
-    Y_mean = torch.Tensor([[0]]) # train_Y.mean(dim=-2, keepdim=True)
-    Y_std = torch.Tensor([[1]]) # train_Y.std(dim=-2, keepdim=True)
-    # model = FixedNoiseGP(train_X, (train_Y - Y_mean)/Y_std, train_Yvar)
-    model = SingleTaskGP(train_X, (train_Y - Y_mean) / torch.clip(Y_std, min=0.001),
-                         likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)))
+    train_Yvar = torch.full_like(train_Y, 1)
+    Y_mean = torch.Tensor([[0]])  # train_Y.mean(dim=-2, keepdim=True)
+    Y_std = torch.Tensor([[1]])  # train_Y.std(dim=-2, keepdim=True)
+    model = FixedNoiseGP(train_X, (train_Y - Y_mean)/torch.clip(Y_std, min=0.001), train_Yvar)
+    # model = SingleTaskGP(train_X, (train_Y - Y_mean) / torch.clip(Y_std, min=0.001),)
+                         # likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-1)))
     # model = SingleTaskGP(train_X, train_Y,
     #                      likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)))
 
@@ -38,11 +40,13 @@ def get_fitted_model(train_X, train_Y, train_Yvar, state_dict=None):
     if state_dict is None:
 
         mll = ExactMarginalLogLikelihood(model.likelihood, model).to(train_X)
+
+        # mll = GammaRobustVariationalELBO(model.likelihood, model, num_data=1000).to(train_X)
         # with gpytorch.settings.cholesky_jitter(1e-1):
-        try:
-            fit_gpytorch_model(mll)
-        except:
-            print(1)
+            # try:
+        fit_gpytorch_model(mll)
+            # except:
+            # print(1)
     else:
         model.load_state_dict(state_dict)
     return model

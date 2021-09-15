@@ -1,3 +1,4 @@
+import gpytorch
 import torch
 from scipy.linalg import solve_triangular, cholesky
 from scipy import stats
@@ -120,6 +121,7 @@ class GaussianProcessRegressorARD_gpy(Surrogate):
         #                       ARD=True)
 
         self.is_fited = False
+        self.standardlize = False
 
 
     def fit(self, x, y):
@@ -127,16 +129,23 @@ class GaussianProcessRegressorARD_gpy(Surrogate):
         if x.shape[0] < self.min_sample:
             return
         self.is_fited = True
-
         y = np.asarray(y)
-        self.gpr = GPy.models.gp_regression.GPRegression(x, y[:, None], self.kernel)
+        if self.standardlize:
+            self.Y_mean = y.mean()
+            self.Y_std = y.std()
+        else:
+            self.Y_mean = 0
+            self.Y_std = 1
+
+        y = (y-self.Y_mean) / self.Y_std
+        self.gpr = GPy.models.gp_regression.GPRegression(x, y, self.kernel)
         self.gpr.optimize(max_iters=100)
         # self.kernel = self.gpr.kern
 
 
     def predict(self, newX):
         assert self.is_fited
-        return np.squeeze(self.gpr.predict(np.atleast_2d(newX))[0])
+        return np.squeeze(self.gpr.predict(np.atleast_2d(newX))[0])*self.Y_std + self.Y_mean
 
     def cached_predict(self, newX):
 
@@ -153,7 +162,7 @@ class GaussianProcessRegressorARD_gpy(Surrogate):
             return 0, np.inf
         else:
             mu, std = self.gpr.predict(np.atleast_2d(newX), full_cov=True)
-            return np.squeeze(mu), np.squeeze(np.sqrt(std))
+            return np.squeeze(mu)*self.Y_std + self.Y_mean, np.squeeze(np.sqrt(std))*self.Y_std
 
     def cached_predict_with_sigma(self, newX):
         key = hash(newX.data.tobytes())
@@ -167,7 +176,7 @@ class GaussianProcessRegressorARD_gpy(Surrogate):
             return 0, np.inf
         else:
             mu, cov = self.gpr.predict(np.atleast_2d(newX), full_cov=True)
-            return np.squeeze(mu), np.squeeze(cov)
+            return np.squeeze(mu)*self.Y_std + self.Y_mean, np.squeeze(cov)*self.Y_std**2
 
     def cached_predict_with_cov(self, newX):
         key = hash(newX.data.tobytes())
@@ -316,23 +325,24 @@ class GaussianProcessRegressorARD_torch(Surrogate):
         # if y.ndim == 1:
         #     y = y[..., None]
         self.z_observed = torch.Tensor(self.transform_outputs(self.y_observed.cpu().numpy()))
-        self.gpr = SingleTaskGP(
-            train_X=self.X_observed,
-            train_Y=self.z_observed,
-            # special likelihood for numerical Cholesky errors, following advice from
-            # https://www.gitmemory.com/issue/pytorch/botorch/179/506276521
-            likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)),
-        )
-        # self.gpr = FixedNoiseGP(
+        # self.gpr = SingleTaskGP(
         #     train_X=self.X_observed,
         #     train_Y=self.z_observed,
-        #     train_Yvar=torch.full_like(self.z_observed, 0.05**2)
         #     # special likelihood for numerical Cholesky errors, following advice from
         #     # https://www.gitmemory.com/issue/pytorch/botorch/179/506276521
         #     # likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)),
         # )
+        self.gpr = FixedNoiseGP(
+            train_X=self.X_observed,
+            train_Y=self.z_observed,
+            train_Yvar=torch.full_like(self.z_observed, 1)
+            # special likelihood for numerical Cholesky errors, following advice from
+            # https://www.gitmemory.com/issue/pytorch/botorch/179/506276521
+            # likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)),
+        )
 
         mll = ExactMarginalLogLikelihood(self.gpr.likelihood, self.gpr)
+        # with gpytorch.settings.cholesky_jitter(1e-1):
         fit_gpytorch_model(mll)
 
 
