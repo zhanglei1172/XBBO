@@ -27,8 +27,10 @@ def get_fitted_model(train_X, train_Y, train_Yvar, state_dict=None):
         hyperparameters is provided.
     """
     train_Yvar = torch.full_like(train_Y, 1)
-    Y_mean = torch.Tensor([[0]])  # train_Y.mean(dim=-2, keepdim=True)
-    Y_std = torch.Tensor([[1]])  # train_Y.std(dim=-2, keepdim=True)
+    Y_mean = torch.Tensor([[0]])
+    # Y_mean = train_Y.mean(dim=-2, keepdim=True)
+    Y_std = torch.Tensor([[1]])
+    # Y_std = train_Y.std(dim=-2, keepdim=True)
     model = FixedNoiseGP(train_X, (train_Y - Y_mean)/torch.clip(Y_std, min=0.001), train_Yvar)
     # model = SingleTaskGP(train_X, (train_Y - Y_mean) / torch.clip(Y_std, min=0.001),)
                          # likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-1)))

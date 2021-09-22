@@ -46,6 +46,10 @@ def get_opt_class(opt_name):
         from bbomark.search_algorithm import transfer_taf_rgpe_optimizer_ as opt
     elif opt_name == "transfer_RMoGP_optimizer_":
         from bbomark.search_algorithm import transfer_RMoGP_optimizer_ as opt
+    elif opt_name == "de_optimizer":
+        from bbomark.search_algorithm import de_optimizer as opt
+    elif opt_name == "cma_optimizer":
+        from bbomark.search_algorithm import cma_optimizer as opt
     else:
         assert False, f"{opt_name} is not in bbomark/search_algorithm or not change bbomark/search_algorithm/__init__.py"
 

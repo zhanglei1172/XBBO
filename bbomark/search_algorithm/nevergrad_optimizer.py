@@ -13,6 +13,7 @@
 # limitations under the License.
 import nevergrad.optimization as optimization
 # from nevergrad import instrumentation as inst
+import numpy as np
 
 from bbomark.core import AbstractOptimizer
 
@@ -66,7 +67,7 @@ class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
 
         x_guess = [None] * n_suggestions
         for ii, xx in enumerate(x_guess_data):
-            x_array = self.feature_to_array(xx, self.sparse_dimension)
+            x_array = self.feature_to_array(np.asarray(xx), self.sparse_dimension)
 
 
 

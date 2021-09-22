@@ -180,7 +180,8 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.y = torch.Tensor(self.trials.history_y).unsqueeze(-1)
         with torch.no_grad():
             for d in range(len(self.gps)):
-                self.base_model_best[d] = self.gps[d].posterior(self.x).mean.min()
+                model = self.gps[d]
+                self.base_model_best[d] = model.Y_std*model.posterior(self.x).mean.min() + model.Y_mean
         self.weights = self._get_weight(self.x, self.y.squeeze())
         # self.kendallTauCorrelation(base_model_means.squeeze(), self.y.squeeze())
 

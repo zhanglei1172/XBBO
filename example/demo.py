@@ -83,8 +83,10 @@ if __name__ == '__main__':
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_hyperopt.yaml', '-r', 1])
     cfg_clone = cfg.clone()
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nevergrad.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_de.yaml', '-r', '1'])
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cma.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_tpe.yaml', '-r', '1'])
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cem.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cem.yaml', '-r', '1'])
 
     # cfg_clone = cfg.clone()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_opentuner.yaml', '-r', 1])

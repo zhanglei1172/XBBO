@@ -8,12 +8,9 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: nevergrad_optimizer
-  max_call: 100
+  name: cma_optimizer
+  max_call: 30
   n_suggestions: 1
-  kwargs:
-    budget: 300
-    tool: OnePlusOne #CMA #DE #OnePlusOne
 
 TEST_PROBLEM:
   SEARCH_SPACE:
