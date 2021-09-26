@@ -90,19 +90,22 @@ class BBO:
             losses = []
             tt = time()
             for next_point in (next_points):
-                try:
-                    f_current_eval, loss =  self.evaluate(next_point) # TODO 2
-                except Exception as e:
-                    f_current_eval = np.full((len(self.cfg.TEST_PROBLEM.func_evals),), np.inf, dtype=float)
-                    loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
+                # try:
+                f_current_eval, loss = self.evaluate(next_point) # TODO 2
+                # except Exception as e:
+                #     f_current_eval = np.full((len(self.cfg.TEST_PROBLEM.func_evals),), np.inf, dtype=float)
+                #     loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
 
 
 
                 function_evals.append(f_current_eval)
                 losses.append(loss)
             eval_time = time() - tt
-            eval_list = np.asarray(losses)[:, :self.cfg.OPTM.n_obj].ravel().tolist() # TODO
-            assert self.cfg.OPTM.n_obj == 1
+            if self.cfg.OPTM.n_obj == 1:
+                eval_list = np.asarray(losses)[:, :self.cfg.OPTM.n_obj].ravel().tolist() # TODO
+            else:
+                eval_list = np.array(losses)[:, :self.cfg.OPTM.n_obj].tolist() # TODO
+            # assert self.cfg.OPTM.n_obj == 1
             tt = time()
             self.optimizer_instance.observe(features, eval_list)  # TODO 3
             # try:

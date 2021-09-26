@@ -4,6 +4,12 @@
 
 ## 更新
 
+### 2021年9月26日
+
+测试多目标黑盒函数ZDT1
+
+![](./out/MONSGA.png)
+
 ### 2021年9月15日
 
 meta-data的label全部scale至0-1、cross validation结果
@@ -286,9 +292,9 @@ PYTHONPATH='./' python ./example/analysis.py
 - [ ] Optimizer
   - [x] BORE optimizer
   - [x] Anneal
-  - [ ] DE
-  - [ ] CMA
-  - [ ] NSGA
+  - [x] DE
+  - [x] CMA
+  - [x] NSGA
   - [ ] Regularized EA
   - [ ] PBT
   

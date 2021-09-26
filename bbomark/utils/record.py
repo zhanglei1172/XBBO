@@ -45,7 +45,7 @@ class Record:
         self.suggest_dict.append(suggest_point)
         best_id = None
         for i in range(len(loss)):
-            if loss[i][0] < self.current_best:
+            if any(np.array(loss[i]) < self.current_best):
                 self.current_best = loss[i][0]
                 best_id = i
         if best_id is None:

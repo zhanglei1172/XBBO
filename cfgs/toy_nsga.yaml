@@ -1,0 +1,33 @@
+GENERAL:
+  pipeline: BBO
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: nsga_optimizer
+  max_call: 5000
+  n_suggestions: 1
+  n_obj: 2
+
+TEST_PROBLEM:
+  name: 'toy_mo_function'
+  func_evals:
+    - 'raw1'
+    - 'raw2'
+    - 'noise1'
+    - 'noise2'
+  losses:
+    - 'val1'
+    - 'val2'
+    - 'test1'
+    - 'test2'
+  SEARCH_SPACE:
+    hp:
+      cat_dim: 2
+  kwargs:
+    func_name: ZDT1
+    noise_std: 0.0

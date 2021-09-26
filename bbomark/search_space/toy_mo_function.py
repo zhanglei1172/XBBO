@@ -4,8 +4,7 @@ from bbomark.core import TestFunction
 
 
 class Model(TestFunction):
-    _SUPPORT_FUNCTIONS = ('rosenbrock', 'rastrigin', 'indexsum', 'toyrebar',
-                          'branin', 'ZDT1')
+    _SUPPORT_FUNCTIONS = ('ZDT1')
 
     def __init__(self, cfg, **kwargs):
         # np.random.seed(cfg.GENERAL.random_seed)
@@ -17,20 +16,7 @@ class Model(TestFunction):
         assert cfg.TEST_PROBLEM.kwargs.func_name in self._SUPPORT_FUNCTIONS
         # func_name = cfg.TEST_PROBLEM.kwargs.func_name
         func_name = kwargs.get('func_name')
-        if func_name == 'rosenbrock':
-            self.func = Rosenbrock(
-                self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
-        elif func_name == 'rastrigin':
-            self.func = Rastrigin(
-                self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
-        elif func_name == 'indexsum':
-            self.func = IndexSum(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
-        elif func_name == 'toyrebar':
-            self.func = ToyREBAR(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim,
-                                 self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.t)
-        elif func_name == 'branin':
-            self.func = Branin()
-        elif func_name == 'ZDT1':
+        if func_name == 'ZDT1':
             self.func = ZDT1()
         else:
             assert False
@@ -48,12 +34,16 @@ class Model(TestFunction):
         else:
             random_noise = np.random.randn() * self.noise_std + 1.
         res_out = {
-            'raw': f,
-            'noise': f * random_noise,
+            'raw1': f[0],
+            'raw2': f[1],
+            'noise1': f[0] * random_noise[0],
+            'noise2': f[1] * random_noise[1],
         }
         res_loss = {
-            'test': f,
-            'val': f * random_noise,
+            'test1': f[0],
+            'test2': f[1],
+            'val1': f[0] * random_noise[0],
+            'val2': f[1] * random_noise[1],
         }
         return ([res_out[k] for k in self.cfg.TEST_PROBLEM.func_evals],
                 [res_loss[k] for k in self.cfg.TEST_PROBLEM.losses])
