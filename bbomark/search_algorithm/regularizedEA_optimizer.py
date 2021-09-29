@@ -11,13 +11,13 @@ from bbomark.configspace.space import Configurations
 from bbomark.core.trials import Trials
 
 
-class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
+class RegularizedEA(AbstractOptimizer, FeatureSpace_uniform):
     '''
     reference: https://zhuanlan.zhihu.com/p/144807879
     '''
 
     def __init__(self,
-                 config_spaces,):
+                 config_spaces,**kwargs):
         AbstractOptimizer.__init__(self, config_spaces)
         # FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
         FeatureSpace_uniform.__init__(self, self.space.dtypes_idx_map)
@@ -70,21 +70,13 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
                 self.population_y = np.array(self.listy)
             else:
                 self.population_y = np.concatenate([self.population_y, self.listy], axis=0)
-            ranks_, crowding_distance = self.fast_nondominated_sort(self.population_y)
 
-            s_id = sorted(zip(ranks_, -crowding_distance, range(len(self.population_y))))
-            s_id = np.array([s[-1] for s in s_id])
+            # remove dead
+            self.population_y = self.population_y[-self.popsize:]
+            self.population = np.asarray(self.population[-self.popsize:])
 
-
-            self.population = np.delete(self.population, s_id[self.popsize:], axis=0)
-            self.population_y = np.delete(self.population_y, s_id[self.popsize:], axis=0)
-
-            new_s_id = s_id[:self.popsize]
-            # tmp = np.argsort(new_s_id)
-            # new_s_id[tmp] = np.arange(self.popsize)
-            # s_id = new_s_id
-            rank = np.argsort(new_s_id)
-# FIXME
+            s_id = np.argsort(self.population_y)
+            rank = np.argsort(s_id)
             parents_id = list(self.selection_tournament(rank, self.popsize / 2))
 
             self.children = self.create_children(parents_id)
@@ -99,48 +91,21 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
             self.listy = []
             self.gen += 1
 
-    def selection_tournament(self, s_id, num):
+    def selection_tournament(self, rank, num):
         # parents = []
         parents_id = set()
         while len(parents_id) < num:
-            parent_id = self.__tournament(s_id)
+            parent_id = self.__tournament(rank)
             # if parent_id in parents_id:
             #     continue
             parents_id.add(parent_id)
             # parents.append(self.population[parent_id])
         return parents_id
 
-    def fast_nondominated_sort(self, points):
-        individual_num = len(points)
-        ranks = np.zeros(individual_num)
-        crowding_distance = np.zeros(individual_num)
-        r = 0
-        c = individual_num
-        m = np.min(points, axis=0)
-        M = np.max(points, axis=0)
-        # while c > 0:
-        #     extended = np.tile(points, (points.shape[0], 1, 1))
-        #     dominance = np.sum(np.logical_and(
-        #         np.all(extended <= np.swapaxes(extended, 0, 1), axis=2),
-        #         np.any(extended < np.swapaxes(extended, 0, 1), axis=2)), axis=1)
-        #
-        #     points[dominance == 0] = 1e9  # mark as used
-        #     ranks[dominance == 0] = r
-        #     r += 1
-        #     c -= np.sum(dominance == 0)
-        extended = np.tile(points, (points.shape[0], 1, 1))
-        dominance = np.sum(np.logical_and(
-            np.all(extended <= np.swapaxes(extended, 0, 1), axis=2),
-            np.any(extended < np.swapaxes(extended, 0, 1), axis=2)), axis=1)
-        _num = sorted(set(dominance))
-        while c > 0:
-            idx_r = np.where(dominance == _num[r])[0]
-            assert len(idx_r) > 0
-            crowding_distance[idx_r] = self.calculate_crowding_distance(points[idx_r], m, M)
-            ranks[idx_r] = r
-            c -= len(idx_r)
-            r += 1
-        return ranks, crowding_distance
+    # def fast_nondominated_sort(self, points):
+    #     individual_num = len(points)
+    #
+    #     return ranks
 
 
     def calculate_crowding_distance(self, points, m, M):
@@ -207,4 +172,4 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
         return participants[np.argsort(rank[participants])[0]]
 
 
-opt_class = NSGAII
+opt_class = RegularizedEA

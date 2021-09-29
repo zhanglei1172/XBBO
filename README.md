@@ -295,7 +295,7 @@ PYTHONPATH='./' python ./example/analysis.py
   - [x] DE
   - [x] CMA
   - [x] NSGA
-  - [ ] Regularized EA
+  - [x] Regularized EA
   - [ ] PBT
   
 - [ ] condition config

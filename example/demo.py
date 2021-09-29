@@ -86,6 +86,7 @@ if __name__ == '__main__':
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_de.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cma.yaml', '-r', '1'])
     load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nsga.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_rea.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_tpe.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cem.yaml', '-r', '1'])
 

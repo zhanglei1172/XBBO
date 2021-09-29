@@ -1,0 +1,23 @@
+GENERAL:
+  pipeline: BBO
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: regularizedEA_optimizer
+  max_call: 5000
+  n_suggestions: 1
+  kwargs:
+    llambda: 30
+
+TEST_PROBLEM:
+  SEARCH_SPACE:
+    hp:
+      cat_dim: 2
+  kwargs:
+    func_name: branin
+    noise_std: 0.1
