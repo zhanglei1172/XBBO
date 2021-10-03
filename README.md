@@ -2,7 +2,13 @@
 
 ---
 
-## 更新
+### 2021年10月3日
+
+PBT(Population based training)
+
+![](./out/PBT_mnist.png)
+
+![](./out/PBT_toy.png)
 
 ### 2021年9月26日
 
@@ -289,14 +295,15 @@ PYTHONPATH='./' python ./example/analysis.py
   - [x] RMoGP
   - [x] RGPE(mean)
   
-- [ ] Optimizer
+- [] Optimizer
   - [x] BORE optimizer
   - [x] Anneal
   - [x] DE
   - [x] CMA
   - [x] NSGA
   - [x] Regularized EA
-  - [ ] PBT
+  - [x] PBT
+  - [ ] TuRBO
   
 - [ ] condition config
 - [ ] Parallelizing

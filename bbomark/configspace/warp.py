@@ -69,8 +69,8 @@ def biexp(x):
     return y
 
 
-WARP_DICT = {"linear": identity, "log": np.log, "logit": logit, "bilog": bilog}
-UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": biexp}
+WARP_DICT = {"linear": identity, "log": np.log, "logit": logit, "bilog": bilog, 'log10': np.log10}
+UNWARP_DICT = {"linear": identity, "log": np.exp, "logit": logistic, "bilog": biexp, 'log10': lambda x: 10**x}
 ROUND_DICT = {"linear": identity, "round": np.rint}
 
 class Warp():

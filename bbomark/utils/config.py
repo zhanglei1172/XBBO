@@ -25,6 +25,10 @@ _C.OPTM.name = 'random_optimizer' # filename
 _C.OPTM.n_suggestions = 2
 _C.OPTM.n_obj = 1 # 单目标, _C.TEST_PROBLEM.lossses前n_obj个对opt可见
 _C.OPTM.max_call = 30
+_C.OPTM.pop_size = 0 # for PBT
+_C.OPTM.epoch = 30 # for PBT
+_C.OPTM.interval = 0.5 # for PBT
+# _C.OPTM.fraction = 0.2 # for PBT
 
 _C.OPTM.kwargs = CfgNode(new_allowed=True)
 

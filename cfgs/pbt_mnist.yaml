@@ -1,0 +1,28 @@
+GENERAL:
+  pipeline: PBT
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: pbt_optimizer
+  epoch: 10
+  interval: 0.5
+  max_call: 0
+  pop_size: 10
+  n_suggestions: 1
+  n_obj: 1
+
+TEST_PROBLEM:
+  name: 'pbt_mnist'
+  SEARCH_SPACE:
+    hp:
+      cat_dim: 2
+  kwargs:
+    data_path: '/home/datasets/mnist/'
+    device: 0
+    func_name: None
+    noise_std: 0.0

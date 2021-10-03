@@ -54,6 +54,8 @@ def get_opt_class(opt_name):
         from bbomark.search_algorithm import nsga_optimizer as opt
     elif opt_name == "regularizedEA_optimizer":
         from bbomark.search_algorithm import regularizedEA_optimizer as opt
+    elif opt_name == "pbt_optimizer":
+        from bbomark.search_algorithm import pbt_optimizer as opt
     else:
         assert False, f"{opt_name} is not in bbomark/search_algorithm or not change bbomark/search_algorithm/__init__.py"
 

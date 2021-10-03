@@ -22,7 +22,7 @@ def build_space(meta):
 
         param_type = param_config["type"]
 
-        param_space = param_config.get("configspace", 'linear')
+        param_space = param_config.get("warp", 'linear')
         param_range = param_config.get("range", None)
         param_values = param_config.get("values", None)
 

@@ -4,6 +4,7 @@ import numpy as np
 import random
 
 from bbomark.bbo import BBO
+from bbomark.pbt import PBT
 from bbomark.transfer_bbo import Transfer_BBO
 from bbomark.utils.config import cfg, load_cfg_fom_args
 from bbomark.nas import NAS
@@ -47,7 +48,19 @@ def experiment_main(cfg_clone):  # pragma: main
             bbo.run()
             bbo.record.save_to_file(r)
             print(bbo.record)
+    elif cfg_clone.GENERAL.pipeline == 'PBT':
 
+        # opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
+        for r in range(cfg_clone.repeat_num):
+            SEED = cfg_clone.GENERAL.random_seed + r
+            np.random.seed(SEED)
+            random.seed(SEED)
+            pbt = PBT(cfg_clone)
+
+            scores = pbt.run()
+            pbt.show_res(scores)
+            # pbt.show_toy_res(scores)
+            print(pbt)
     else:
         raise NotImplementedError
 
@@ -85,7 +98,10 @@ if __name__ == '__main__':
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nevergrad.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_de.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cma.yaml', '-r', '1'])
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nsga.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nsga.yaml', '-r', '1'])
+    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/pbt_mnist.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/pbt_toy.yaml', '-r', '1'])
+
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_rea.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_tpe.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cem.yaml', '-r', '1'])
