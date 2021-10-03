@@ -4,6 +4,12 @@
 
 ### 2021年10月3日
 
+#### benchmark
+
+![](./out/ana_res1633261723.562191.png)
+
+![](./out/ana_res1633261920.3910887.png)
+
 PBT(Population based training)
 
 ![](./out/PBT_mnist.png)

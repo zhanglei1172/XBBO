@@ -72,13 +72,24 @@ def main(cfg_clone):
 
 
 if __name__ == '__main__':
+    toy_bbo_cfg_files = [
+        "toy_gp.yaml",
+        "toy_anneal.yaml",
+        "toy_bore.yaml",
+        "toy_cem.yaml",
+        "toy_cma.yaml",
+        "toy_de.yaml",
+        "toy_rea.yaml",
+        "toy_rs.yaml",
+        "toy_tpe.yaml"
+    ]
 
-    # for file in glob.iglob('./cfgs/toy*.yaml'):
-    #     cfg_clone = cfg.clone()
-    #     cfg.freeze()
-    #     load_cfg_fom_args(cfg_clone, argv=['-c', file, '-r', '3'])
-    #     main(cfg_clone)
-    #     cfg.defrost()
+    for file in toy_bbo_cfg_files:
+        cfg_clone = cfg.clone()
+        cfg.freeze()
+        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3'])
+        main(cfg_clone)
+        cfg.defrost()
 
     # cfg_clone = cfg.clone()
     # cfg.freeze()
@@ -94,12 +105,12 @@ if __name__ == '__main__':
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_bore.yaml', '-r', 1])
     # cfg_clone = cfg.clone()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_hyperopt.yaml', '-r', 1])
-    cfg_clone = cfg.clone()
+    # cfg_clone = cfg.clone()
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nevergrad.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_de.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_cma.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_nsga.yaml', '-r', '1'])
-    load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/pbt_mnist.yaml', '-r', '1'])
+    # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/pbt_mnist.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/pbt_toy.yaml', '-r', '1'])
 
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_rea.yaml', '-r', '1'])
@@ -112,5 +123,5 @@ if __name__ == '__main__':
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_pysot.yaml', '-r', 1])
     # cfg_clone = cfg.clone()
     # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', 1])
-    main(cfg_clone)
+    # main(cfg_clone)
     # benchmark_opt()

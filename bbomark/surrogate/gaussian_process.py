@@ -309,7 +309,7 @@ class GaussianProcessRegressorARD_torch(Surrogate):
         self.X_observed = torch.empty(size=(0, dim))
 
     def transform_outputs(self, y: np.array):
-        return y # TODO
+        # return y # TODO
         psi = self.normalizer(y)
         z = psi.transform(y)
         return z

@@ -9,7 +9,7 @@ GENERAL:
 
 OPTM:
   name: cma_optimizer
-  max_call: 30
+  max_call: 50
   n_suggestions: 1
 
 TEST_PROBLEM:
@@ -18,4 +18,4 @@ TEST_PROBLEM:
       cat_dim: 2
   kwargs:
     func_name: branin
-    noise_std: 0.1
+    noise_std: 0.0

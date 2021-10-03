@@ -62,17 +62,17 @@ def visualize(df_res, df_tim):
     df = df.rename(columns={0: 'loss', 'level_2': 'loss_type'})
     df['log loss'] = np.log(df['loss'].values)
 
-    g = sns.FacetGrid(df,
-                      col="loss_type",
-                      hue="search alg",
-                      height=4.5,
-                      sharex=False,
-                      sharey=True,
-                      despine=False)
-    g.map(sns.lineplot, 'call', 'log loss')
-    # sns.lineplot(x="call", y="log loss",
-    #              hue="search alg", style="loss_type",
-    #              data=df)
+    # g = sns.FacetGrid(df,
+    #                   col="loss_type",
+    #                   hue="search alg",
+    #                   height=4.5,
+    #                   sharex=False,
+    #                   sharey=True,
+    #                   despine=False)
+    # g.map(sns.lineplot, 'call', 'log loss')
+    sns.lineplot(x="call", y="log loss",
+                 hue="search alg", #style="loss_type",
+                 data=df)
     # plt.legend(labels=plt.gca().get_legend_handles_labels()[1][:len(np.unique(df['search alg'].values))],bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
     plt.legend(bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
 
@@ -89,17 +89,17 @@ def visualize(df_res, df_tim):
     ]).sort_index()
     df_.loc[:, ['loss', 'log loss']] = tmp
 
-    g = sns.FacetGrid(df_,
-                      col="loss_type",
-                      hue="search alg",
-                      height=4.5,
-                      sharex=False,
-                      sharey=True,
-                      despine=False)
-    g.map(sns.lineplot, 'call', 'log loss')
-    # sns.lineplot(x="call", y="log loss",
-    #              hue="search alg", style="loss_type",
-    #              data=df_)
+    # g = sns.FacetGrid(df_,
+    #                   col="loss_type",
+    #                   hue="search alg",
+    #                   height=4.5,
+    #                   sharex=False,
+    #                   sharey=True,
+    #                   despine=False)
+    # g.map(sns.lineplot, 'call', 'log loss')
+    sns.lineplot(x="call", y="log loss",
+                 hue="search alg", #style="loss_type",
+                 data=df_)
     plt.legend(labels=plt.gca().get_legend_handles_labels()[1]
                [:len(np.unique(df['search alg'].values))],
                bbox_to_anchor=(1.05, 0.5),

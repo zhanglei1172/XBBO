@@ -9,10 +9,10 @@ GENERAL:
 
 OPTM:
   name: de_optimizer
-  max_call: 30
+  max_call: 50
   n_suggestions: 1
   kwargs:
-    llambda: 30
+    llambda: 15
 
 TEST_PROBLEM:
   SEARCH_SPACE:
@@ -20,4 +20,4 @@ TEST_PROBLEM:
       cat_dim: 2
   kwargs:
     func_name: branin
-    noise_std: 0.1
+    noise_std: 0.0
