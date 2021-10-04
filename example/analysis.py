@@ -60,8 +60,9 @@ def visualize(df_res, df_tim):
                                                'call']).stack().reset_index()
 
     df = df.rename(columns={0: 'loss', 'level_2': 'loss_type'})
-    df['log loss'] = np.log(df['loss'].values)
-
+    df['log loss'] = np.log10(df['loss'].values+0.01)
+    df.call += 1
+    # mask = ((df.call) % 5 == 0)
     # g = sns.FacetGrid(df,
     #                   col="loss_type",
     #                   hue="search alg",
@@ -77,15 +78,19 @@ def visualize(df_res, df_tim):
     plt.legend(bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
 
     plt.tight_layout()
-    plt.savefig('./out/ana_res{}.png'.format(time.time()))
+    # plt.savefig('./out/ana_res{}.png'.format(time.time()))
     # plt.tight_layout()
     plt.show()
-
-    df_ = df.groupby(['search alg', 'call',
-                      'loss_type']).median().reset_index()
+    alg_num = len(pd.unique(df['search alg']))
+    one_repeat_num = alg_num*2*df.call.max()
+    df['repeat'] = [i for i in range(int(len(df)/one_repeat_num)) for _ in range(one_repeat_num) ]
+    df_ = df.copy()
+    # df_ = df.groupby(['search alg', 'call','repeat'
+    #                   'loss_type']).cummin().reset_index()
+    # df_.groupby(['search alg','loss_type']).cummin()
     tmp = pd.concat([
-        df_.loc[1::2, ['loss', 'log loss']].cummin(),
-        df_.loc[::2, ['loss', 'log loss']].cummin()
+        df_.loc[1::2,:].groupby(['search alg', 'repeat']).cummin().loc[:,['loss', 'log loss']],
+        df_.loc[::2, :].groupby(['search alg', 'repeat']).cummin().loc[:,['loss', 'log loss']]
     ]).sort_index()
     df_.loc[:, ['loss', 'log loss']] = tmp
 
@@ -97,18 +102,36 @@ def visualize(df_res, df_tim):
     #                   sharey=True,
     #                   despine=False)
     # g.map(sns.lineplot, 'call', 'log loss')
+
     sns.lineplot(x="call", y="log loss",
                  hue="search alg", #style="loss_type",
-                 data=df_)
-    plt.legend(labels=plt.gca().get_legend_handles_labels()[1]
-               [:len(np.unique(df['search alg'].values))],
-               bbox_to_anchor=(1.05, 0.5),
-               loc='center left',
-               borderaxespad=0)
+                 data=df_[(df_.loss_type=='test_loss')])
+    # plt.legend(labels=plt.gca().get_legend_handles_labels()[1]
+    #            [:len(np.unique(df['search alg'].values))],
+    #            bbox_to_anchor=(1.05, 0.5),
+    #            loc='center left',
+    #            borderaxespad=0)
+    # plt.ylim([-1, 0])
     plt.legend(bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
 
     plt.tight_layout()
-    plt.savefig('./out/ana_res{}.png'.format(time.time()))
+    plt.savefig('./out/ana_res_best{}.png'.format(time.time()))
+    # plt.tight_layout()
+    plt.show()
+    mask = ((df_.call) % 5 == 0)
+    sns.pointplot(x="call", y="log loss",
+                 hue="search alg", #style="loss_type",
+                 data=df_[mask &(df_.loss_type=='test_loss')])
+    # plt.legend(labels=plt.gca().get_legend_handles_labels()[1]
+    #            [:len(np.unique(df['search alg'].values))],
+    #            bbox_to_anchor=(1.05, 0.5),
+    #            loc='center left',
+    #            borderaxespad=0)
+    # plt.ylim([-1, 0])
+    plt.legend(bbox_to_anchor=(1.05, 0.5), loc='center left', borderaxespad=0)
+
+    plt.tight_layout()
+    plt.savefig('./out/ana_res_best_point{}.png'.format(time.time()))
     # plt.tight_layout()
     plt.show()
     # # ax = experiment_main(args=args)

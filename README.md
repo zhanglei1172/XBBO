@@ -8,7 +8,9 @@
 
 ![](./out/ana_res1633261723.562191.png)
 
-![](./out/ana_res1633261920.3910887.png)
+![](./out/demo_res_line.png)
+
+![](./out/demo_res_point.png)
 
 PBT(Population based training)
 
@@ -251,7 +253,7 @@ rank_best:  1
 ---
 
 ### Anneal （2021年8月25日）
-   
+
 在 branin 黑盒函数测试
 
 ![](./out/bbomark-anneal-noise.png)
@@ -288,7 +290,7 @@ PYTHONPATH='./' python ./example/demo.py
 PYTHONPATH='./' python ./example/analysis.py
 ```
 
-[comment]: <> (![]&#40;./out/demo_res.png&#41;)
+[comment]: <> "![]&#40;./out/demo_res.png&#41;"
 
 ![](./out/ana_res1628421033.21489.png)
 
