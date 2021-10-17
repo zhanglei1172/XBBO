@@ -73,15 +73,17 @@ def main(cfg_clone):
 
 if __name__ == '__main__':
     toy_bbo_cfg_files = [
-        "toy_gp.yaml",
-        "toy_anneal.yaml",
-        "toy_bore.yaml",
-        "toy_cem.yaml",
-        "toy_cma.yaml",
-        "toy_de.yaml",
-        "toy_rea.yaml",
-        "toy_rs.yaml",
-        "toy_tpe.yaml"
+        # "toy_turbo-1.yaml"
+        "toy_turbo-5.yaml"
+        # "toy_gp.yaml",
+        # "toy_anneal.yaml",
+        # "toy_bore.yaml",
+        # "toy_cem.yaml",
+        # "toy_cma.yaml",
+        # "toy_de.yaml",
+        # "toy_rea.yaml",
+        # "toy_rs.yaml",
+        # "toy_tpe.yaml"
     ]
 
     for file in toy_bbo_cfg_files:
