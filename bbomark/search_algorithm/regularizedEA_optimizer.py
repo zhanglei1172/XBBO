@@ -12,9 +12,7 @@ from bbomark.core.trials import Trials
 
 
 class RegularizedEA(AbstractOptimizer, FeatureSpace_uniform):
-    '''
-    reference: https://zhuanlan.zhihu.com/p/144807879
-    '''
+
 
     def __init__(self,
                  config_spaces,**kwargs):
