@@ -21,7 +21,7 @@ class BBO:
 
         # Setup optimizer
         opt_class = get_opt_class(cfg.OPTM.name)
-        self.optimizer_instance = opt_class(self.config_spaces, **dict(cfg.OPTM.kwargs))
+        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call, **dict(cfg.OPTM.kwargs))
 
 
         self.n_suggestions = cfg.OPTM.n_suggestions
