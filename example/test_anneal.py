@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import random
 
 
-from bbomark.bbo import BBO
-from bbomark.utils.config import cfg, load_cfg_fom_args
-from bbomark.nas import NAS
+from xbbo.bbo import BBO
+from xbbo.utils.config import cfg, load_cfg_fom_args
+from xbbo.nas import NAS
 
 # cfg.freeze()
 
