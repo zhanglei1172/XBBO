@@ -11,7 +11,7 @@ from xbbo.acquisition_function.ei import EI
 from xbbo.acquisition_function.taf import TAF_
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 from xbbo.core.trials import Trials
 from xbbo.surrogate import get_fitted_model
@@ -65,13 +65,13 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             for insts_param in old_D_x_params:
                 insts_feature = []
                 for inst_param in insts_param:
-                    array = Configurations.dictUnwarped_to_array(self.space, inst_param)
+                    array = DenseConfiguration.dict_to_array(self.space, inst_param)
                     insts_feature.append(self.array_to_feature(array, self.dense_dimension))
                 old_D_x.append(np.asarray(insts_feature))
             insts_feature = []
             if new_D_x_param:
                 for inst_param in new_D_x_param:
-                    array = Configurations.dictUnwarped_to_array(self.space, inst_param)
+                    array = DenseConfiguration.dict_to_array(self.space, inst_param)
                     insts_feature.append(self.array_to_feature(array, self.dense_dimension))
                 new_D_x = (np.asarray(insts_feature))
                 self.candidates = new_D_x
@@ -144,7 +144,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
                     )
                     suggest_array = candidate[0].detach().cpu().numpy()
                     x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
-                    x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+                    x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
 
                     sas.append(suggest_array)
                     x_unwarpeds.append(x_unwarped)
@@ -155,7 +155,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
                     suggest_array = self.candidates[rm_id]
                     self.candidates = np.delete(self.candidates, rm_id, axis=0)  # TODO
                     x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
-                    x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+                    x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
 
                     sas.append(suggest_array)
                     x_unwarpeds.append(x_unwarped)
@@ -194,7 +194,7 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
             rm_id = np.random.choice(len(self.candidates))
             sas.append(self.candidates[rm_id])
             x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
-            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             x_unwarpeds.append(x_unwarped)
             self.candidates = np.delete(self.candidates, rm_id, axis=0)
         return x_unwarpeds, sas
@@ -207,13 +207,13 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
                 rm_id = np.random.randint(low=0, high=len(self.candidates))
                 sas.append(self.candidates[rm_id])
                 x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
-                x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+                x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
                 x_unwarpeds.append(x_unwarped)
                 self.candidates = np.delete(self.candidates, rm_id, axis=0)  # TODO
         else:
             x_unwarpeds = (self.space.sample_configuration(n_suggestions))
             for n in range(n_suggestions):
-                array = Configurations.dictUnwarped_to_array(self.space, x_unwarpeds[-1])
+                array = DenseConfiguration.dict_to_array(self.space, x_unwarpeds[-1])
                 sas.append(self.array_to_feature(array, self.dense_dimension))
         return x_unwarpeds, sas
 

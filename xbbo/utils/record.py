@@ -12,7 +12,7 @@ class Record:
         # self.n_calls = cfg.OPTM.max_call
         self.features = [] # n_call * n_suggest * dim # 单独存储
         self.func_evals = [] # n_call * n_suggest * dim
-        self.losses = [] # n_call * n_suggest * 2
+        # self.losses = [] # n_call * n_suggest * 2
         self.cum_min = {
             'cum_min_suggest_dict': [],
             'cum_min_losses': [],
@@ -36,18 +36,18 @@ class Record:
     def size(self):
         return len(self.func_evals)
 
-    def append(self, feature, loss, y, suggest_point, timing, b=None):
+    def append(self, feature, y, suggest_point, timing, b=None):
         self.features.append(feature)
         self.func_evals.append(y)
-        self.losses.append(loss)
+        # self.losses.append(loss)
         for k in self.timing:
             self.timing[k].append(timing[k])
         self.suggest_dict.append(suggest_point)
         best_id = None
-        for i in range(len(loss)):
-            if any(np.array(loss[i]) < self.current_best):
-                self.current_best = loss[i][0]
-                best_id = i
+        # for i in range(len(loss)):
+        #     if (np.array(loss[i]) < self.current_best):
+        #         self.current_best = loss[i]
+        #         best_id = i
         if best_id is None:
             self.cum_min['cum_min_suggest_dict'].append(self.cum_min['cum_min_suggest_dict'][-1])
             self.cum_min['cum_min_losses'].append(self.cum_min['cum_min_losses'][-1])
@@ -81,42 +81,44 @@ class Record:
         if not os.path.exists(self.cfg.GENERAL.exp_dir + '/res'):
             os.mkdir(self.cfg.GENERAL.exp_dir + '/res/')
         self.func_evals = np.asarray(self.func_evals)
-        self.losses = np.asarray(self.losses)
+        # self.losses = np.asarray(self.losses)
         self.suggest_dict = np.asarray(self.suggest_dict)
-        reform = {
-            (call, suggest): self.losses[call, suggest, :]
-            for call in range(self.losses.shape[0])
-            for suggest in range(self.losses.shape[1])
-        }
-        self.losses_df = pd.DataFrame(reform).T
-        self.losses_df.columns = pd.MultiIndex.from_product([['loss'], self.cfg.TEST_PROBLEM.losses])
+        # reform = {
+        #     (call, suggest): self.losses[call, suggest]
+        #     for call in range(self.losses.shape[0])
+        #     for suggest in range(self.losses.shape[1])
+        # }
+        self.df = pd.DataFrame(self.func_evals)#.T
+        # self.losses_df.columns = pd.MultiIndex.from_product([['loss'], self.cfg.TEST_PROBLEM.losses])
+        self.df.columns = ['func_evals']
+        self.df['cum_func_evals'] = self.df['func_evals'].cummin()
         # self.losses_df.columns = cfg.TEST_PROBLEM.losses
-        self.losses_df.index.set_names(['call', 'suggest'], inplace=True)
+        # self.losses_df.index.set_names(['call', 'suggest'], inplace=True)
 
-        reform = {
-            (call, suggest): self.func_evals[call, suggest, :]
-            for call in range(self.func_evals.shape[0])
-            for suggest in range(self.func_evals.shape[1])
-        }
-        self.func_evals_df = pd.DataFrame(reform).T
-        self.func_evals_df.columns = pd.MultiIndex.from_product([['func_evals'], self.cfg.TEST_PROBLEM.func_evals])
-        # self.func_evals_df.columns = cfg.TEST_PROBLEM.func_evals
-        self.func_evals_df.index.set_names(['call', 'suggest'], inplace=True)
+        # reform = {
+        #     (call, suggest): self.func_evals[call, suggest, :]
+        #     for call in range(self.func_evals.shape[0])
+        #     for suggest in range(self.func_evals.shape[1])
+        # }
+        # self.func_evals_df = pd.DataFrame(reform).T
+        # self.func_evals_df.columns = pd.MultiIndex.from_product([['func_evals'], self.cfg.TEST_PROBLEM.func_evals])
+        # # self.func_evals_df.columns = cfg.TEST_PROBLEM.func_evals
+        # self.func_evals_df.index.set_names(['call', 'suggest'], inplace=True)
 
-        sd = pd.DataFrame(self.suggest_dict).stack()
-        sd.index.set_names(['call', 'suggest'], inplace=True)
+        # sd = pd.DataFrame(self.suggest_dict).stack()
+        # sd.index.set_names(['call', 'suggest'], inplace=True)
         # sd.name = 'suggest_dict'
-        self.df = pd.concat([self.losses_df, self.func_evals_df], axis=1)
-        self.df['suggest_dict'] = sd
+        # self.df = pd.concat([self.losses_df, self.func_evals_df], axis=1)
+        # self.df['suggest_dict'] = sd
 
         self.time_df = pd.DataFrame(self.timing)
         self.time_df.index.set_names(['call'], inplace=True)
 
-        self.cum_min_df = pd.DataFrame(self.cum_min)
-        self.cum_min_df.index.set_names(['call'], inplace=True)
+        # self.cum_min_df = pd.DataFrame(self.cum_min)
+        # self.cum_min_df.index.set_names(['call'], inplace=True)
         self.df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/res_{r}.csv')
         self.time_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/time_{r}.csv')
-        self.cum_min_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/cum_min_{r}.csv')
+        # self.cum_min_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/cum_min_{r}.csv')
 
         self.features = np.asarray(self.features)
         np.savez(self.cfg.GENERAL.exp_dir + f'/res/array_{r}.npz', features=self.features)

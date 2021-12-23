@@ -23,7 +23,7 @@ from ConfigSpace.hyperparameters import (
 )
 
 from xbbo.core.abstract_optimizer import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 class ScikitOptimizer(AbstractOptimizer):
     primary_import = "scikit-optimize"
@@ -113,7 +113,7 @@ class ScikitOptimizer(AbstractOptimizer):
         # that there is not nec a round function for each dimension here.
         x_guess = [None] * n_suggestions
         for ii, xx in enumerate(features):
-            dict_unwarped = Configurations.array_to_dictUnwarped(self.space, xx)
+            dict_unwarped = DenseConfiguration.array_to_dict(self.space, xx)
             x_guess[ii] = dict_unwarped
         return x_guess, features
 

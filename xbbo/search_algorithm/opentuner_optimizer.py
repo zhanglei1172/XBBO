@@ -67,7 +67,7 @@ from ConfigSpace.hyperparameters import (
 )
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 DEFAULT_TECHNIQUES = ("AUCBanditMetaTechniqueA",)
 MEMORY_ONLY_DB = "sqlite://"
@@ -252,7 +252,7 @@ class OpentunerOptimizer(AbstractOptimizer):
 
             # Get the simple dict equivalent to suggestion.
             x_guess = desired_results[ii].configuration.data
-            dict_unwarped = Configurations.array_to_dictUnwarped(
+            dict_unwarped = DenseConfiguration.array_to_dict(
                 self.space, self.unorder_dict2ord_array(self.space.get_hyperparameter_names(), x_guess)
             )
             X.append(dict_unwarped)

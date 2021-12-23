@@ -8,7 +8,7 @@ import logging
 
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core.abstract_optimizer import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 class BORE(AbstractOptimizer, FeatureSpace_uniform):
     opt_name = 'BORE'
@@ -106,7 +106,7 @@ class BORE(AbstractOptimizer, FeatureSpace_uniform):
         x_guess = [None] * n_suggestions
         for ii, xx in enumerate(loc):
             x_array = self.feature_to_array(xx, self.sparse_dimension)
-            dict_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            dict_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             x_guess[ii] = dict_unwarped
 
         # Delete classifier (if retraining from scratch every iteration)

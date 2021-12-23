@@ -1,6 +1,7 @@
 import numpy as np
 import json
 from time import time
+from numpy.lib.twodim_base import tri
 import tqdm
 
 from xbbo.search_space import build_test_problem
@@ -11,17 +12,18 @@ from xbbo.utils.record import Record
 
 class BBO:
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, seed):
         # setup TestProblem
         self.cfg = cfg
-        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg)
+        self.rng = np.random.RandomState(seed)
+        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg, seed=self.rng.randint(100000))
 
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
-        self.config_spaces = build_space(self.api_config)
+        self.config_spaces = build_space(self.api_config,seed=self.rng.randint(100000))
 
         # Setup optimizer
         opt_class = get_opt_class(cfg.OPTM.name)
-        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call, **dict(cfg.OPTM.kwargs))
+        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(100000), **dict(cfg.OPTM.kwargs))
 
 
         self.n_suggestions = cfg.OPTM.n_suggestions
@@ -39,24 +41,6 @@ class BBO:
         self.n_calls = cfg.OPTM.max_call
         self.record = Record(self.cfg)
 
-        # # 预加载观测
-        # if history:
-        #     self._load_history_and_obs(history)
-
-
-
-    # def _load_history_and_obs(self, filename):
-    #     obs_x, obs_y, isFeature = load_history(filename)
-    #     for i in range(len(obs_x)):
-    #         if not isFeature:
-    #             obs_x[i] = Configurations.dictUnwarped_to_array(
-    #                     self.optimizer_instance.space,
-    #                     obs_x[i]
-    #             )
-    #     obs_x = self.optimizer_instance.transform_sparseArray_to_optSpace(obs_x)
-    #     self.optimizer_instance.observe(obs_x, obs_y)
-    #     print('成功加载先前观测！')
-
 
     def evaluate(self, param):
         return self.function_instance.evaluate(param)
@@ -68,7 +52,7 @@ class BBO:
         for ii in pbar:
 
             tt = time()
-            next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
+            trial_list = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
 
             # try:
             #     next_points, features = self.optimizer_instance.suggest(self.n_suggestions)  # TODO 1
@@ -84,30 +68,32 @@ class BBO:
 
             suggest_time = time() - tt
 
-            assert len(next_points) == self.n_suggestions, "invalid number of suggestions provided by the optimizer"
+            assert len(trial_list) == self.n_suggestions, "invalid number of suggestions provided by the optimizer"
             # eval_time = [None for _ in range(self.n_suggestions)]
             function_evals = []
-            losses = []
-            tt = time()
-            for next_point in (next_points):
+            # losses = []
+            for trial in (trial_list):
                 # try:
-                f_current_eval, loss = self.evaluate(next_point) # TODO 2
+                tt = time()
+
+                f_current_eval = self.evaluate(trial.config_dict) # TODO 2
+                eval_time = time() - tt
+
                 # except Exception as e:
                 #     f_current_eval = np.full((len(self.cfg.TEST_PROBLEM.func_evals),), np.inf, dtype=float)
                 #     loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
 
 
-
+                trial.add_observe_value(observe_value=f_current_eval,time=eval_time)
                 function_evals.append(f_current_eval)
-                losses.append(loss)
-            eval_time = time() - tt
-            if self.cfg.OPTM.n_obj == 1:
-                eval_list = np.asarray(losses)[:, :self.cfg.OPTM.n_obj].ravel().tolist() # TODO
-            else:
-                eval_list = np.array(losses)[:, :self.cfg.OPTM.n_obj].tolist() # TODO
+            # if self.cfg.OPTM.n_obj == 1:
+            #     eval_list = np.asarray(function_evals)[:, :self.cfg.OPTM.n_obj].ravel().tolist() # TODO
+            # else:
+            #     raise NotImplementedError()
+                # eval_list = np.array(losses)[:, :self.cfg.OPTM.n_obj].tolist() # TODO
             # assert self.cfg.OPTM.n_obj == 1
             tt = time()
-            self.optimizer_instance.observe(features, eval_list)  # TODO 3
+            self.optimizer_instance.observe(trial_list)  # TODO 3
             # try:
             #     self.optimizer_instance.observe(features, eval_list)  # TODO 3
             # except Exception as e:
@@ -118,9 +104,9 @@ class BBO:
             timing = {
                          'suggest_time_per_suggest': suggest_time,
                          'observe_time_per_suggest': observe_time,
-                         'eval_time_per_suggest': eval_time
+                         'eval_time_per_suggest': sum(trial.time for trial in trial_list)
             }
-            self.record.append(features, losses, function_evals, timing=timing, suggest_point=next_points)
+            self.record.append([trial.sparse_array for trial in trial_list], function_evals, function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
 
 
 

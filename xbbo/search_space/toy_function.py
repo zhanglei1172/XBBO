@@ -7,12 +7,12 @@ class Model(TestFunction):
     _SUPPORT_FUNCTIONS = ('rosenbrock', 'rastrigin', 'indexsum', 'toyrebar',
                           'branin', 'ZDT1')
 
-    def __init__(self, cfg, **kwargs):
+    def __init__(self, cfg, seed, **kwargs):
         # np.random.seed(cfg.GENERAL.random_seed)
         self.cfg = cfg
         # self.dim = 30
         # assert self.dim % 2 == 0
-        super().__init__()
+        super().__init__(seed=seed)
 
         assert cfg.TEST_PROBLEM.kwargs.func_name in self._SUPPORT_FUNCTIONS
         # func_name = cfg.TEST_PROBLEM.kwargs.func_name
@@ -44,19 +44,18 @@ class Model(TestFunction):
             input_x.append(params[k])
         f = self.func(np.asarray(input_x))
         if isinstance(f, tuple):
-            random_noise = np.random.randn(len(f)) * self.noise_std + 1.
+            random_noise = self.rng.randn(len(f)) * self.noise_std + 1.
         else:
-            random_noise = np.random.randn() * self.noise_std + 1.
+            random_noise = self.rng.randn() * self.noise_std + 1.
         res_out = {
-            'raw': f,
+            # 'raw': f,
             'noise': f * random_noise,
         }
-        res_loss = {
-            'test': f,
-            'val': f * random_noise,
-        }
-        return ([res_out[k] for k in self.cfg.TEST_PROBLEM.func_evals],
-                [res_loss[k] for k in self.cfg.TEST_PROBLEM.losses])
+        # res_loss = {
+        #     'test': f,
+        #     'val': f * random_noise,
+        # }
+        return (res_out['noise'])
 
     def _load_api_config(self):
         return self.func._load_api_config()

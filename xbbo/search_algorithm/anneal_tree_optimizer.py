@@ -13,7 +13,7 @@ from ConfigSpace.hyperparameters import (UniformIntegerHyperparameter,
                                          CategoricalHyperparameter,
                                          OrdinalHyperparameter)
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 
 class FloatVarKDE():
@@ -141,7 +141,7 @@ class Toy_TPE(AbstractOptimizer):
                     max_idx = np.argmax(lx - gx)
                     suggest_array.append(candidates[max_idx])
                 sas.append(suggest_array)
-        x = [Configurations.array_to_dictUnwarped(self.space,
+        x = [DenseConfiguration.array_to_dict(self.space,
                                              np.array(sa)) for sa in sas]
         return x, sas
 
@@ -157,7 +157,7 @@ class Toy_TPE(AbstractOptimizer):
                 else:
                     suggest_array.append(np.random.rand())
             sas.append(suggest_array)
-        x = [Configurations.array_to_dictUnwarped(self.space,
+        x = [DenseConfiguration.array_to_dict(self.space,
                                              np.array(sa)) for sa in sas]
         return x, sas
 

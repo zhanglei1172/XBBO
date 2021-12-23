@@ -14,24 +14,26 @@ from xbbo.nas import NAS
 
 def experiment_main(cfg_clone):  # pragma: main
     # seed = cfg.GENARAL.random_seed
-
+    SEED = cfg_clone.GENERAL.random_seed
+    sng = np.random.RandomState(SEED)
     if cfg_clone.GENERAL.pipeline == 'BBO':
 
         # opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
         for r in range(cfg_clone.repeat_num):
-            SEED = cfg_clone.GENERAL.random_seed + r
-            np.random.seed(SEED)
-            random.seed(SEED)
-            bbo = BBO(cfg_clone)
+            seed = sng.randint(100000)
+            # np.random.seed(SEED)
+            # random.seed(SEED)
+            bbo = BBO(cfg_clone, seed)
 
             bbo.run()
             bbo.record.save_to_file(r)
             print(bbo.record)
     elif cfg_clone.GENERAL.pipeline == 'NAS':
         for r in range(cfg_clone.repeat_num):
-            SEED = cfg_clone.GENERAL.random_seed + r
-            np.random.seed(SEED)
-            random.seed(SEED)
+            
+            # SEED = cfg_clone.GENERAL.random_seed + r
+            # np.random.seed(SEED)
+            # random.seed(SEED)
             nas = NAS(cfg_clone)
 
             nas.run()
@@ -40,9 +42,10 @@ def experiment_main(cfg_clone):  # pragma: main
     elif cfg_clone.GENERAL.pipeline == 'transfer_bbo':
 
         for r in range(cfg_clone.repeat_num):
-            SEED = cfg_clone.GENERAL.random_seed + r
-            np.random.seed(SEED)
-            random.seed(SEED)
+            
+            # SEED = cfg_clone.GENERAL.random_seed + r
+            # np.random.seed(SEED)
+            # random.seed(SEED)
             bbo = Transfer_BBO(cfg_clone)
 
             bbo.run()
@@ -52,9 +55,10 @@ def experiment_main(cfg_clone):  # pragma: main
 
         # opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
         for r in range(cfg_clone.repeat_num):
-            SEED = cfg_clone.GENERAL.random_seed + r
-            np.random.seed(SEED)
-            random.seed(SEED)
+            
+            # SEED = cfg_clone.GENERAL.random_seed + r
+            # np.random.seed(SEED)
+            # random.seed(SEED)
             pbt = PBT(cfg_clone)
 
             scores = pbt.run()

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import ConfigSpace as CS
 
-from xbbo.configspace.space import Space, Configurations
+from xbbo.configspace.space import DenseConfigurationSpace, DenseConfiguration
 from xbbo.configspace.warp import Warp
 
 
@@ -35,7 +35,7 @@ def test_shapes(config_space, seed):
     SPARSE_DIM = 9
     DENSE_DIM = 12
 
-    myspace = Space(*config_space, seed=seed)
+    myspace = DenseConfigurationSpace(*config_space, seed=seed)
 
     assert myspace.get_dimensions(sparse=True) == SPARSE_DIM
     assert myspace.get_dimensions(sparse=False) == DENSE_DIM
@@ -61,7 +61,7 @@ def test_dense_encoding(config_space, seed):
 
     ind = 0
 
-    myspace = Space(*config_space, seed=seed)
+    myspace = DenseConfigurationSpace(*config_space, seed=seed)
 
     name = myspace.get_hyperparameter_by_idx(ind)
     # hp = cs_dense.get_hyperparameter(name)
@@ -79,7 +79,7 @@ def test_dense_encoding(config_space, seed):
         'n_units_2': 1
     }
     dict_warped = myspace.warp.warp(dct)
-    config = Configurations(myspace, warped_values=dict_warped)
+    config = DenseConfiguration(myspace, warped_values=dict_warped)
     array = config.get_array()
 
     # # should always be between 0 and 1
@@ -89,7 +89,7 @@ def test_dense_encoding(config_space, seed):
     np.testing.assert_array_almost_equal(array, [0., 1., 0.62500063, 0.44226615, 0.02448785, 0.08333194, 1., 0.91666806, 0.24999917])
 
     # make sure we recover original dictionary exactly
-    config_recon = Configurations.from_array(myspace, array)
+    config_recon = DenseConfiguration.from_dense_array(myspace, array)
     dct_recon = config_recon.get_dict_unwarped()
 
     assert dct == dct_recon

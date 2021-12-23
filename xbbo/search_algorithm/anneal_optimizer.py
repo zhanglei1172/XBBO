@@ -5,7 +5,7 @@ from ConfigSpace.hyperparameters import (UniformIntegerHyperparameter,
                                          CategoricalHyperparameter,
                                          OrdinalHyperparameter)
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.core.stochastic import Category, Uniform
 from xbbo.core.trials import Trials
 
@@ -56,7 +56,7 @@ class Anneal(AbstractOptimizer):
                         )
 
                 sas.append(suggest_array)
-        x = [Configurations.array_to_dictUnwarped(self.space,
+        x = [DenseConfiguration.array_to_dict(self.space,
                                              np.array(sa)) for sa in sas]
         self.trials.params_history.extend(x)
         return x, sas
@@ -88,7 +88,7 @@ class Anneal(AbstractOptimizer):
             for i in range(self.hp_num):
                 self.node_trial_num[i] += 1
             sas.append(suggest_array)
-        x = [Configurations.array_to_dictUnwarped(self.space,
+        x = [DenseConfiguration.array_to_dict(self.space,
                                              np.array(sa)) for sa in sas]
         self.trials.params_history.extend(x)
         return x, sas

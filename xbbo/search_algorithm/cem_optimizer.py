@@ -1,7 +1,7 @@
 import numpy as np
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_gaussian
 from xbbo.core import AbstractOptimizer
 
@@ -36,7 +36,7 @@ class CEM(AbstractOptimizer, FeatureSpace_gaussian):
             sas.append((suggest_array))
             x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
 
-            x.append(Configurations.array_to_dictUnwarped(self.space, x_array))
+            x.append(DenseConfiguration.array_to_dict(self.space, x_array))
 
         return x, sas
 

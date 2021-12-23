@@ -1,17 +1,18 @@
 import numpy as np
 from scipy import stats
+from xbbo.acquisition_function.base import AbstractAcquisitionFunction
 
 class EI():
     def __init__(self, surrogate, y_best):
-        self.xi = 0.0
+        self.eta = 0.0
         self.surrogate = surrogate
         self.y_best = y_best
 
     def __call__(self, candidate): #
         mu, sigma = self.surrogate.predict_with_sigma(candidate)
-        z = (self.y_best - mu - self.xi) / sigma
+        z = (self.y_best - mu - self.eta) / sigma
         ei = (self.y_best - mu -
-              self.xi) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
+              self.eta) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
         return ei
 
     # def argmax(self, y_best, surrogate, candidates):
@@ -47,22 +48,23 @@ class EI():
         idx = np.random.choice(len(candidates_rm_id))
         return candidates_rm_id[idx]
 
-class EI_():
-    def __init__(self, rng):
-        self.xi = 0.0
+class EI_AcqFunc(AbstractAcquisitionFunction):
+    def __init__(self, surrogate_model, rng):
+        self.par = 0.0
         self.rng = rng
+        super().__init__(surrogate_model)
     
-    def update(self, surrogate, y_best):
-        self.surrogate = surrogate
-        self.y_best = y_best
+    # def update(self, surrogate, y_best):
+    #     self.surrogate = surrogate
+    #     self.y_best = y_best
 
-    def __call__(self, candidates): # minimize
-        mu, var = self.surrogate.predict(candidates)
-        sigma = np.sqrt(var)
-        z = (self.y_best - mu - self.xi) / sigma
-        ei = (self.y_best - mu -
-              self.xi) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
-        return ei
+    # def __call__(self, candidates): # minimize
+    #     mu, var = self.surrogate_model.predict(candidates)
+    #     sigma = np.sqrt(var)
+    #     z = (self.y_best - mu - self.eta) / sigma
+    #     ei = (self.y_best - mu -
+    #           self.eta) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
+    #     return ei
 
     # def argmax(self, y_best, surrogate, candidates):
     #     best_ei = -1
@@ -85,3 +87,51 @@ class EI_():
         scores = self.__call__(candidates)
         
         return candidates[self.rng.choice(np.where(scores==scores.max())[0])]
+
+    def _compute(self, X: np.ndarray) -> np.ndarray:
+        """Computes the EI value and its derivatives.
+
+        Parameters
+        ----------
+        X: np.ndarray(N, D), The input points where the acquisition function
+            should be evaluated. The dimensionality of X is (N, D), with N as
+            the number of points to evaluate at and D is the number of
+            dimensions of one X.
+
+        Returns
+        -------
+        np.ndarray(N,1)
+            Expected Improvement of X
+        """
+        if len(X.shape) == 1:
+            X = X[:, np.newaetas]
+
+        m, v = self.surrogate_model.predict_marginalized_over_instances(X)
+        s = np.sqrt(v)
+
+        if self.y_best is None:
+            raise ValueError('No current best specified. Call update('
+                             'eta=<int>) to inform the acquisition function '
+                             'about the current best value.')
+
+        def calculate_f():
+            z = (self.y_best - m - self.par) / s
+            return (self.y_best - m - self.par) * stats.norm.cdf(z) + s * stats.norm.pdf(z)
+
+        if np.any(s == 0.0):
+            # if std is zero, we have observed x on all instances
+            # using a RF, std should be never exactly 0.0
+            # Avoid zero division by setting all zeros in s to one.
+            # Consider the corresponding results in f to be zero.
+            s_copy = np.copy(s)
+            s[s_copy == 0.0] = 1.0
+            f = calculate_f()
+            f[s_copy == 0.0] = 0.0
+        else:
+            f = calculate_f()
+        if (f < 0).any():
+            raise ValueError(
+                "Expected Improvement is smaller than 0 for at least one "
+                "sample.")
+
+        return f

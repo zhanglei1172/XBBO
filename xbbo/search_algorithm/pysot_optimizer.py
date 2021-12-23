@@ -21,7 +21,7 @@ from pySOT.optimization_problems import OptimizationProblem
 from pySOT.strategy import SRBFStrategy
 from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
 
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
 '''
@@ -136,7 +136,7 @@ class PySOTOptimizer(AbstractOptimizer, FeatureSpace_uniform):
             # since we have likely converged anyway. See PySOT issue #30.
             x_guess_data = (proposal.record.params)[0]  # From tuple to list
             x_array = self.feature_to_array(x_guess_data, self.sparse_dimension)
-            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             if x_unwarped in self.history:
                 warnings.warn("pySOT proposed the same point twice")
                 self.start()
