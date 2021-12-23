@@ -2,7 +2,7 @@ from typing import Iterator, List, Optional, Tuple, Union
 import numpy as np
 import abc
 
-from xbbo.configspace.space import Space, Configurations
+from xbbo.configspace.space import DenseConfigurationSpace, DenseConfiguration
 
 class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
     """Abstract class for acquisition maximization.
@@ -22,7 +22,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
     def __init__(
             self,
             acquisition_function,
-            config_space: Space,
+            config_space: DenseConfigurationSpace,
             rng: Union[bool, np.random.RandomState] = None,
     ):
         self.acquisition_function = acquisition_function
@@ -38,7 +38,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         self,
         runhistory,
         num_points: int,
-    ) -> Iterator[Configurations]:
+    ) -> Iterator[DenseConfiguration]:
         """Maximize acquisition function using ``_maximize``.
 
         Parameters
@@ -61,7 +61,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         iterable
             An iterable consisting of :class:`smac.configspace.Configuration`.
         """
-        def next_configs_by_acq_value() -> List[Configurations]:
+        def next_configs_by_acq_value() -> List[DenseConfiguration]:
             return [t[1] for t in self._maximize(runhistory, stats, num_points)]
 
         challengers = ChallengerList(next_configs_by_acq_value,
@@ -77,7 +77,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
             self,
             runhistory,
             num_points: int,
-    ) -> List[Tuple[float, Configurations]]:
+    ) -> List[Tuple[float, DenseConfiguration]]:
         """Implements acquisition function maximization.
 
         In contrast to ``maximize``, this method returns an iterable of tuples,
@@ -103,8 +103,8 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
 
     def _sort_configs_by_acq_value(
             self,
-            configs: List[Configurations]
-    ) -> List[Tuple[float, Configurations]]:
+            configs: List[DenseConfiguration]
+    ) -> List[Tuple[float, DenseConfiguration]]:
         """Sort the given configurations by acquisition value
 
         Parameters
@@ -147,7 +147,7 @@ class RandomSearch(AcquisitionFunctionMaximizer):
             runhistory,
             num_points: int,
             _sorted: bool = False,
-    ) -> List[Tuple[float, Configurations]]:
+    ) -> List[Tuple[float, DenseConfiguration]]:
         """Randomly sampled configurations
 
         Parameters

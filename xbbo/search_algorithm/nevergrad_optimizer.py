@@ -17,7 +17,7 @@ import numpy as np
 
 from xbbo.core import AbstractOptimizer
 
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_gaussian
 
 class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
@@ -72,7 +72,7 @@ class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
 
 
 
-            dict_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            dict_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             x_guess[ii] = dict_unwarped
 
         return x_guess, x_guess_data

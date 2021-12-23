@@ -7,7 +7,7 @@ import numpy as np
 
 from xbbo.configspace.feature_space import FeatureSpace_gaussian, FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.core.trials import Trials
 
 
@@ -53,7 +53,7 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
             x_arrays.append(self.feature_to_array(np.asarray(new_individual), self.sparse_dimension))
 
             self.cur += 1
-        x = [Configurations.array_to_dictUnwarped(self.space,
+        x = [DenseConfiguration.array_to_dict(self.space,
                                                   np.array(sa)) for sa in x_arrays]
         self.trials.params_history.extend(x)
 
