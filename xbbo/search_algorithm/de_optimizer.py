@@ -2,7 +2,7 @@ import numpy as np
 
 from xbbo.configspace.feature_space import FeatureSpace_gaussian
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.core.trials import Trials
 
 
@@ -58,7 +58,7 @@ class DE(AbstractOptimizer, FeatureSpace_gaussian):
             sas.append(new_individual)
             x_arrays.append(self.feature_to_array(np.asarray(new_individual), self.sparse_dimension))
 
-        x = [Configurations.array_to_dictUnwarped(self.space,
+        x = [DenseConfiguration.array_to_dict(self.space,
                                                   np.array(sa)) for sa in x_arrays]
         self.trials.params_history.extend(x)
         # self._num_suggestions += n_suggestions

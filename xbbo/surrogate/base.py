@@ -8,10 +8,10 @@ from sklearn.exceptions import NotFittedError
 from skopt.learning.gaussian_process.kernels import Kernel
 from skopt.learning.gaussian_process import GaussianProcessRegressor
 
-from xbbo.configspace.space import Space
+from xbbo.configspace.space import DenseConfigurationSpace
 from xbbo.surrogate.gp_prior import Prior, SoftTopHatPrior, TophatPrior
 
-class AbstractModel(object):
+class SurrogateModel(object):
     """Abstract implementation of the Model API.
 
     **Note:** The input dimensionality of Y for training and the output dimensions
@@ -91,7 +91,7 @@ class AbstractModel(object):
         # Initial types array which is used to reset the type array at every call to train()
         self._initial_types = types.copy()
 
-    def train(self, X: np.ndarray, Y: np.ndarray) -> 'AbstractModel':
+    def train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the Model on X and Y.
 
         Parameters
@@ -137,7 +137,7 @@ class AbstractModel(object):
 
         return self._train(X, Y)
 
-    def _train(self, X: np.ndarray, Y: np.ndarray) -> 'AbstractModel':
+    def _train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the random forest on X and y.
 
         Parameters
@@ -274,11 +274,11 @@ class AbstractModel(object):
 
         return mean, var
 
-class BaseGP(AbstractModel):
+class BaseGP(SurrogateModel):
 
     def __init__(
             self,
-            configspace: Space,
+            configspace: DenseConfigurationSpace,
             types: List[int],
             bounds: List[Tuple[float, float]],
             rng: np.random.RandomState,

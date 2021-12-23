@@ -8,7 +8,7 @@ import numpy as np
 
 from xbbo.configspace.feature_space import FeatureSpace_gaussian, FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.core.trials import Trials
 
 
@@ -26,7 +26,7 @@ class PBT(FeatureSpace_uniform):
         self.population_hp = [self.space.sample_configuration()[0].get_dict_unwarped() for _ in range(pop_size)]
         # self.population_hp = [{'h1':1.0, 'h2':0.0}, {'h1':0.0,'h2':1.0}]
         self.population_hp_array = [
-            self.array_to_feature(Configurations.dictUnwarped_to_array(self.space, hp), self.dense_dimension) for hp
+            self.array_to_feature(DenseConfiguration.dict_to_array(self.space, hp), self.dense_dimension) for hp
             in self.population_hp]
 
         self.data_shuffle_seed = kwargs.get('seed', 0)
@@ -56,7 +56,7 @@ class PBT(FeatureSpace_uniform):
                 self.population_hp_array[bot_id] + np.random.normal(0, 0.2, size=self.dense_dimension), 0, 1)
 
             x_array = self.feature_to_array(self.population_hp_array[bot_id], self.sparse_dimension)
-            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             self.population_hp[bot_id] = x_unwarped
             population_model[bot_id].history_hp = copy.copy(population_model[top_id].history_hp)
             population_model[bot_id].history_score = copy.copy(population_model[top_id].history_score)
@@ -79,7 +79,7 @@ class PBT(FeatureSpace_uniform):
                 self.population_hp_array[top_id] + np.random.normal(0, 0.1, size=self.dense_dimension), 0, 1)
 
             x_array = self.feature_to_array(self.population_hp_array[bot_id], self.sparse_dimension)
-            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             self.population_hp[bot_id] = x_unwarped
             population_model[bot_id].history_hp = copy.copy(population_model[top_id].history_hp)
             population_model[bot_id].history_score = copy.copy(population_model[top_id].history_score)

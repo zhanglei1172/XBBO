@@ -9,7 +9,7 @@ from ConfigSpace.hyperparameters import (
 )
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 SEED_MAX_INCL = np.iinfo(np.uint32).max
 # Sklearn prefers str to unicode:
@@ -163,7 +163,7 @@ class HyperoptOptimizer(AbstractOptimizer):
         features = []
         for trial in new_trials:
             x_guess = self.cleanup_guess(trial["misc"]["vals"])
-            dict_unwarped = Configurations.array_to_dictUnwarped(
+            dict_unwarped = DenseConfiguration.array_to_dict(
                 self.space, self.unorder_dict2ord_array(self.space.get_hyperparameter_names(), x_guess)
             )
             X.append(dict_unwarped)

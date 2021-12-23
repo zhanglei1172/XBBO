@@ -14,7 +14,7 @@ from torch.quasirandom import SobolEngine
 from xbbo.acquisition_function.ei import EI
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 
 from xbbo.core.trials import Trials
 from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
@@ -190,7 +190,7 @@ class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
             # Make sure we never pick this point again
             y_cand[i, j, :] = np.inf
             x_array = self.feature_to_array(X_next[b, :], self.sparse_dimension)
-            x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             x_unwarpeds.append(x_unwarped)
             sas.append(X_next[b, :])
         self._idx = np.vstack((self._idx, idx_next))
@@ -276,13 +276,13 @@ class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
                 rm_id = np.random.randint(low=0, high=len(self.candidates))
                 sas.append(self.candidates[rm_id])
                 x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
-                x_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+                x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
                 x_unwarpeds.append(x_unwarped)
                 self.candidates = np.delete(self.candidates, rm_id, axis=0)  # TODO
         else:
             x_unwarpeds = (self.space.sample_configuration(n_suggestions))
             for n in range(n_suggestions):
-                array = Configurations.dictUnwarped_to_array(self.space, x_unwarpeds[n])
+                array = DenseConfiguration.dict_to_array(self.space, x_unwarpeds[n])
                 sas.append(self.array_to_feature(array, self.dense_dimension))
         return x_unwarpeds, sas
 

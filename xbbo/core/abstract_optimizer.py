@@ -27,9 +27,9 @@ class AbstractOptimizer(ABC):
         # else:
         #     self.logger = logger
 
-    # @abstractmethod
-    def transform_sparseArray_to_optSpace(self, sparse_array):
-        return sparse_array
+    # # @abstractmethod
+    # def transform_sparseArray_to_optSpace(self, sparse_array):
+    #     return sparse_array
 
     @classmethod
     def get_version(cls):
@@ -65,23 +65,12 @@ class AbstractOptimizer(ABC):
             corresponds to a parameter being optimized.
         """
         x_guess_configs = self.space.sample_configuration(size=n_suggestions)
-        x_guess = [x_guess_config.get_dict_unwarped() for x_guess_config in x_guess_configs]
-        # x_guess = self.configspace.sample_configuration_and_unwarp(size=n_suggestions)
-        # x_guess = self.configspace.sample_configuration_and_unwarp(size=n_suggestions)
+        x_guess = [x_guess_config.get_dictionary() for x_guess_config in x_guess_configs]
         return x_guess
-        # next_guess = self._suggest(n_suggestions)
-        # self._post_suggest(next_guess)
-        #
-        # return next_guess
 
 
 
-    # def _post_suggest(self, next_guess):
-
-    #     validate_space(next_guess)
-
-
-    def observe(self, features, y): # input [meta param]
+    def observe(self, trials, y): # input [meta param]
         """Send an observation of a suggestion back to the optimizer.
 
         Parameters
@@ -91,12 +80,3 @@ class AbstractOptimizer(ABC):
             Corresponding values where objective has been evaluated
         """
         pass
-
-
-
-
-    # def warp(self, parms):
-    #     pass
-    #
-    # def unwarp(self, cs):
-    #     pass

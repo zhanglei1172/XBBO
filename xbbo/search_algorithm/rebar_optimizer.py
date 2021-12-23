@@ -3,7 +3,7 @@ import numpy as np
 import torch
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_discrete_all_oneHot
 
 class SNG(AbstractOptimizer, FeatureSpace_discrete_all_oneHot):
@@ -112,7 +112,7 @@ class SNG(AbstractOptimizer, FeatureSpace_discrete_all_oneHot):
         x_guess = [None] * n_suggestions
         for ii, xx in enumerate(features): # 因为feature并不是横排成一个向量，需要ravel()
             x_array = self.feature_to_array(xx.ravel(), self.sparse_dimension)
-            dict_unwarped = Configurations.array_to_dictUnwarped(self.space, x_array)
+            dict_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             # dict_unwarped = Configurations.array_to_dictUnwarped(self.space, np.argmax(xx,axis=-1) / (self.categories-1))
             x_guess[ii] = dict_unwarped
         return x_guess, features

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-
+import numpy as np
 
 class AbstractBaseModel(ABC):
 
@@ -24,13 +24,14 @@ class TestFunction(ABC):
     """Abstract base class for test functions in the benchmark. These do not need to be ML hyper-parameter tuning.
     """
 
-    def __init__(self):
+    def __init__(self, seed=42):
         """Setup general test function for benchmark. We assume the test function knows the meta-data about the search
         configspace, but is also stateless to fit modeling assumptions. To keep stateless, it does not do things like count
         the number of function evaluations.
         """
         # This will need to be set before using other routines
         self.api_config = None
+        self.rng = np.random.RandomState(seed)
 
     @abstractmethod
     def evaluate(self, params):

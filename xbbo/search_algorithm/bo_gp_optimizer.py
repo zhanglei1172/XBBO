@@ -1,30 +1,31 @@
 import typing
 import numpy as np
-import tqdm, random
+# import tqdm, random
 from ConfigSpace.hyperparameters import (UniformIntegerHyperparameter,
                                          UniformFloatHyperparameter,
                                          CategoricalHyperparameter,
                                          OrdinalHyperparameter)
-from sklearn.gaussian_process.kernels import Kernel
-from sklearn.gaussian_process import GaussianProcessRegressor
+# from sklearn.gaussian_process.kernels import Kernel
+# from sklearn.gaussian_process import GaussianProcessRegressor
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import Configurations
+from xbbo.configspace.space import DenseConfiguration
 from xbbo.core import trials
-from xbbo.core.stochastic import Category, Uniform
-from xbbo.core.trials import Trials
+# from xbbo.core import trials
+# from xbbo.core.stochastic import Category, Uniform
+from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design.sobol import SobolDesign
 from xbbo.surrogate.gaussian_process import GPR_sklearn
-from xbbo.acquisition_function.ei import EI_
+from xbbo.acquisition_function.ei import EI_AcqFunc
 
 
 class BOGP(AbstractOptimizer):
     def __init__(
             self,
             config_spaces,
-            rng=np.random.RandomState(0),
+            seed: int = 42,
             #  min_sample=1,
-            total_limit=10,
+            total_limit: int = 10,
             predict_x_best: bool = True):
         '''
         predict_x_best: bool
@@ -33,56 +34,65 @@ class BOGP(AbstractOptimizer):
         AbstractOptimizer.__init__(self, config_spaces)
         # self.min_sample = min_sample
         configs = self.space.get_hyperparameters()
-        self.rng = rng
+        self.rng = np.random.RandomState(seed)
         self.predict_x_best = predict_x_best
         self.dense_dimension = self.space.get_dimensions(sparse=False)
+        self.sparse_dimension = self.space.get_dimensions(sparse=True)
 
-        self.initial_design = SobolDesign(self.dense_dimension,
-                                          rng,
+        self.initial_design = SobolDesign(self.space,
+                                          self.rng,
                                           ta_run_limit=total_limit)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(configs)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
-        self.trials = Trials()
-        self.surrogate_model = GPR_sklearn(self.space,
-                                           rng=self.rng)
-        self.acquisition_func = EI_(rng)
+        self.trials = Trials(sparse_dim=self.sparse_dimension, dense_dim=self.dense_dimension)
+        self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
+        self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
 
     def suggest(self, n_suggestions=1):
+        trial_list = []
         # 只suggest 一个
         if (self.trials.trials_num) < self.init_budget:
             assert self.trials.trials_num % n_suggestions == 0
-            sas = self.initial_design_configs[int(
-                    n_suggestions *
+            configs = self.initial_design_configs[
+                int(n_suggestions *
                     self.trials.trials_num):int(n_suggestions *
                                                 (self.trials.trials_num + 1))]
+            for config in configs:
+                trial_list.append(Trial(configuration=config,config_dict=config.get_dictionary(), sparse_array=config.get_sparse_array()))
         else:
-            self.surrogate_model._train(np.array(self.trials.history),
-                                        np.array(self.trials.history_y))
-            X = np.atleast_2d(self.trials.history)
-            sas = []
+            self.surrogate_model._train(np.asarray(self.trials.his_sparse_array),
+                                        np.asarray(self.trials.his_observe_value))
+            configs = []
             for n in range(n_suggestions):
-                _, best_val = self._get_x_best(self.predict_x_best, X)
-                self.acquisition_func.update(self.surrogate_model, best_val)
-                arr = self.acquisition_func.argmax(
-                    np.random.rand(1000, self.dense_dimension))
-                sas.append(arr)
+                _, best_val = self._get_x_best(self.predict_x_best)
+                self.acquisition_func.update(surrogate_model=self.surrogate_model, y_best=best_val)
+                config = self.acquisition_func.argmax( # TODO argmax valid sample
+                    self.space.sample_configuration(1000))
+                # arr = self.acquisition_func.argmax( # TODO argmax valid sample
+                #     self.rng.rand(1000, self.dense_dimension))
+                # config = DenseConfiguration.from_sparse_array(self.space, arr)
+                configs.append(config)
+                trial_list.append(Trial(configuration=config,config_dict=config.get_dictionary(), sparse_array=config.get_sparse_array()))
 
-        x = [
-            Configurations.array_to_dictUnwarped(self.space, np.array(sa))
-            for sa in sas
-        ]
-        self.trials.params_history.extend(x)
-        return x, sas
+        # x = [
+        #     config.get_dictionary()
+        #     # DenseConfiguration.sparse_array_to_dict(self.space, config.get_sparse_array())
+        #     for config in configs
+        # ]
+        # self.trials.params_history.extend(x)
+        
+        return trial_list
 
-    def observe(self, x, y):
-        self.trials.history.extend(x)
-        self.trials.history_y.extend(y)
-        self.trials.trials_num += 1
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial)
+        # self.trials.history.extend(x)
+        # self.trials.history_y.extend(y)
+        # self.trials.trials_num += 1
 
-    def _get_x_best(self, predict: bool,
-                    X: np.ndarray) -> typing.Tuple[float, np.ndarray]:
+    def _get_x_best(self, predict: bool) -> typing.Tuple[float, np.ndarray]:
         """Get value, configuration, and array representation of the "best" configuration.
 
         The definition of best varies depending on the argument ``predict``. If set to ``True``,
@@ -101,6 +111,7 @@ class BOGP(AbstractOptimizer):
         Configuration
         """
         if predict:
+            X = self.trials.his_sparse_array
             costs = list(
                 map(
                     lambda x: (
@@ -114,9 +125,9 @@ class BOGP(AbstractOptimizer):
             best_observation = costs[0][0]
             # won't need log(y) if EPM was already trained on log(y)
         else:
-            best_idx = np.argmin(self.trials.history_y)
-            x_best_array = self.trials.history[best_idx]
-            best_observation = self.trials.history_y[best_idx]
+            best_idx = self.trials.best_id
+            x_best_array = self.trials.his_sparse_array[best_idx]
+            best_observation = self.trials.best_observe_value
 
         return x_best_array, best_observation
 
