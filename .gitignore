@@ -153,7 +153,7 @@ dmypy.json
 cython_debug/
 
 .idea/
-/bbomark/data/cifar-10-batches-py/
-/bbomark/exp
+/xbbo/data/cifar-10-batches-py/
+/xbbo/exp
 exp
 .vscode
