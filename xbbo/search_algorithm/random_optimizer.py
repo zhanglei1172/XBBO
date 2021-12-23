@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# from bbomark import np_util
+# from xbbo import np_util
 from xbbo.core.abstract_optimizer import AbstractOptimizer
-# from bbomark.search_algorithm.feature_space import FeatureSpace_gaussian
+# from xbbo.search_algorithm.feature_space import FeatureSpace_gaussian
 
 class RandomOptimizer(AbstractOptimizer):
     # Unclear what is best package to list for primary_import here.
-    primary_import = "bbomark"
+    primary_import = "xbbo"
 
     def __init__(self, config_spaces, **kwargs):
         self.opt_name = 'radom-search'

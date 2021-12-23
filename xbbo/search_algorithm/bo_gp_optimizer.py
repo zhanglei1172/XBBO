@@ -17,6 +17,7 @@ from xbbo.initial_design.sobol import SobolDesign
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.acquisition_function.ei import EI_
 
+
 class BOGP(AbstractOptimizer):
     def __init__(
             self,
@@ -28,7 +29,7 @@ class BOGP(AbstractOptimizer):
         '''
         predict_x_best: bool
             Choose x_best for computing the acquisition function via the model instead of via the observations.
-        '''    
+        '''
         AbstractOptimizer.__init__(self, config_spaces)
         # self.min_sample = min_sample
         configs = self.space.get_hyperparameters()
@@ -36,39 +37,38 @@ class BOGP(AbstractOptimizer):
         self.predict_x_best = predict_x_best
         self.dense_dimension = self.space.get_dimensions(sparse=False)
 
-        self.initial_design = SobolDesign(self.dense_dimension,rng,
+        self.initial_design = SobolDesign(self.dense_dimension,
+                                          rng,
                                           ta_run_limit=total_limit)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(configs)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
         self.trials = Trials()
-        self.surrogate_model = GPR_sklearn(self.dense_dimension,min_sample=self.init_budget, rng=self.rng)
-        self.acquisition_func = EI_()
+        self.surrogate_model = GPR_sklearn(self.space,
+                                           rng=self.rng)
+        self.acquisition_func = EI_(rng)
 
     def suggest(self, n_suggestions=1):
         # 只suggest 一个
         if (self.trials.trials_num) < self.init_budget:
-            assert self.trials.trials_num / n_suggestions == 0
-            return self.initial_design_configs[
-                int(n_suggestions *
+            assert self.trials.trials_num % n_suggestions == 0
+            sas = self.initial_design_configs[int(
+                    n_suggestions *
                     self.trials.trials_num):int(n_suggestions *
                                                 (self.trials.trials_num + 1))]
         else:
-            self.surrogate_model._train(np.array(self.trials.history), np.array(self.trials.history_y))
+            self.surrogate_model._train(np.array(self.trials.history),
+                                        np.array(self.trials.history_y))
             X = np.atleast_2d(self.trials.history)
             sas = []
             for n in range(n_suggestions):
-                suggest_array = []
-                for i in range(self.hp_num):
-                    best_val = self._get_x_best(self.predict_x_best, X)
-                    self.acquisition_func.update(self.surrogate_model, best_val)
-                    arr = self.acquisition_func.argmax(np.random.randn(1000, self.dense_dimension))
-                    suggest_array.append(arr)
-                    
-                    
+                _, best_val = self._get_x_best(self.predict_x_best, X)
+                self.acquisition_func.update(self.surrogate_model, best_val)
+                arr = self.acquisition_func.argmax(
+                    np.random.rand(1000, self.dense_dimension))
+                sas.append(arr)
 
-                sas.append(suggest_array)
         x = [
             Configurations.array_to_dictUnwarped(self.space, np.array(sa))
             for sa in sas
@@ -80,8 +80,6 @@ class BOGP(AbstractOptimizer):
         self.trials.history.extend(x)
         self.trials.history_y.extend(y)
         self.trials.trials_num += 1
-
-
 
     def _get_x_best(self, predict: bool,
                     X: np.ndarray) -> typing.Tuple[float, np.ndarray]:
@@ -106,7 +104,7 @@ class BOGP(AbstractOptimizer):
             costs = list(
                 map(
                     lambda x: (
-                        self.gp.predict(x.reshape((1, -1)))[0][0][0],
+                        self.surrogate_model.predict(x.reshape((1, -1)))[0][0],
                         x,
                     ),
                     X,

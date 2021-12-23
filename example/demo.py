@@ -91,7 +91,7 @@ if __name__ == '__main__':
     for file in toy_bbo_cfg_files:
         cfg_clone = cfg.clone()
         cfg.freeze()
-        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3'])
+        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3']) # repeat 3 times with diffent seeds
         main(cfg_clone)
         cfg.defrost()
 

@@ -48,8 +48,9 @@ class EI():
         return candidates_rm_id[idx]
 
 class EI_():
-    def __init__(self, surrogate, y_best):
+    def __init__(self, rng):
         self.xi = 0.0
+        self.rng = rng
     
     def update(self, surrogate, y_best):
         self.surrogate = surrogate
@@ -83,4 +84,4 @@ class EI_():
         # y_hats = list(zip(*surrogate.predict_with_sigma(candidates)))
         scores = self.__call__(candidates)
         
-        return np.random.choice(candidates[scores==scores.max()])
+        return candidates[self.rng.choice(np.where(scores==scores.max())[0])]

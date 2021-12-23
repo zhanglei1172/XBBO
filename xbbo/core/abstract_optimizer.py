@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-# from bbomark.configspace.space import Configurations
+# from xbbo.configspace.space import Configurations
 
 class AbstractOptimizer(ABC):
     """Abstract base class for the optimizers in the benchmark. This creates a common API across all packages.
@@ -23,7 +23,7 @@ class AbstractOptimizer(ABC):
         #     self.feature_spaces.dtypes_idx_map = self.space.dtypes_idx_map
         # self.warp = warp
         # if logger is None:
-        #     self.logger = logging.getLogger('bbomark')
+        #     self.logger = logging.getLogger('xbbo')
         # else:
         #     self.logger = logger
 

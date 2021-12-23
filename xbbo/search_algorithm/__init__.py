@@ -61,6 +61,6 @@ def get_opt_class(opt_name):
     elif opt_name == "bo_gp_optimizer":
         from xbbo.search_algorithm import bo_gp_optimizer as opt
     else:
-        assert False, f"{opt_name} is not in bbomark/search_algorithm or not change bbomark/search_algorithm/__init__.py"
+        assert False, f"{opt_name} is not in xbbo/search_algorithm or not change xbbo/search_algorithm/__init__.py"
 
     return opt.opt_class

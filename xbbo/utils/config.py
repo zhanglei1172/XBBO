@@ -104,7 +104,7 @@ def load_cfg_fom_args(cfg_, description = "Config file options.", argv=None):
             '../..'
         )
     )
-    shutil.copytree(project_dir +'/bbomark/', cfg_.GENERAL.exp_dir + '/scripts/')
+    shutil.copytree(project_dir +'/xbbo/', cfg_.GENERAL.exp_dir + '/scripts/')
 
 
     # _C.freeze()

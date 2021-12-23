@@ -2,7 +2,8 @@ from typing import List
 import typing
 import gpytorch
 import sklearn
-from sklearn.gaussian_process.kernels import ConstantKernel, Kernel, KernelOperator
+from sklearn.gaussian_process import kernels
+from sklearn.gaussian_process.kernels import Kernel, KernelOperator
 import torch
 from scipy.linalg import solve_triangular, cholesky
 from scipy import optimize, stats
@@ -11,9 +12,10 @@ import GPy
 from sklearn import gaussian_process
 # from botorch.acquisition import ExpectedImprovement
 
-from xbbo.surrogate.base import Surrogate
-from xbbo.surrogate.gp_kernels import HammingKernel, Matern
-from xbbo.surrogate.gp_prior import LognormalPrior, Prior, SoftTopHatPrior, TophatPrior
+from xbbo.surrogate.base import Surrogate, BaseGP
+from xbbo.surrogate.gp_kernels import HammingKernel, Matern, ConstantKernel, WhiteKernel
+from xbbo.surrogate.gp_prior import HorseshoePrior, LognormalPrior, Prior, SoftTopHatPrior, TophatPrior
+from xbbo.utils.util import get_types
 
 VERY_SMALL_NUMBER = 1e-10
 
@@ -183,24 +185,38 @@ class GaussianProcessRegressorARD_gpy(Surrogate):
         return self.cached_mu_cov[key]
 
 
-class GPR_sklearn(Surrogate):
-    def __init__(self,
-                 dim,
-                 min_sample=3,
-                 rng=np.random.RandomState(0),
-                 normalize_y=True):
-        super(GPR_sklearn, self).__init__(dim, min_sample)
-        self.rng = rng
-        self.normalize_y = normalize_y
+class GPR_sklearn(BaseGP):
+    def __init__(
+        self,
+        cs,
+        #  min_sample=3,
+        # alpha=0,
+        rng=np.random.RandomState(0),
+        n_opt_restarts: int = 10,
+        instance_features: typing.Optional[np.ndarray] = None,
+        pca_components: typing.Optional[int] = None,
+    ):
+        types, bounds = get_types(cs)
         # self.cached = {}
+
+        super(GPR_sklearn, self).__init__(cs, types, bounds, rng,instance_features=instance_features,
+            pca_components=pca_components,)
+
+        self.is_fited = False
+        # self.alpha = alpha  # Fix RBF kernel error
+        self.n_opt_restarts = n_opt_restarts
+        self._n_ll_evals = 0
+        self._set_has_conditions()
+
+    def _get_kernel(self, ):
         cov_amp = ConstantKernel(
             2.0,
             constant_value_bounds=(np.exp(-10), np.exp(2)),
-            prior=LognormalPrior(mean=0.0, sigma=1.0, rng=rng),
+            prior=LognormalPrior(mean=0.0, sigma=1.0, rng=self.rng),
         )
 
-        cont_dims = np.where(np.array(types) == 0)[0]
-        cat_dims = np.where(np.array(types) != 0)[0]
+        cont_dims = np.where(np.array(self.types) == 0)[0]
+        cat_dims = np.where(np.array(self.types) != 0)[0]
 
         if len(cont_dims) > 0:
             exp_kernel = Matern(
@@ -219,13 +235,13 @@ class GPR_sklearn(Surrogate):
                 operate_on=cat_dims,
             )
 
-        assert (len(cont_dims) + len(cat_dims)) == len(
-            scenario.cs.get_hyperparameters())
+        # assert (len(cont_dims) + len(cat_dims)) == len(
+        #     scenario.cs.get_hyperparameters())
 
         noise_kernel = WhiteKernel(
             noise_level=1e-8,
             noise_level_bounds=(np.exp(-25), np.exp(2)),
-            prior=HorseshoePrior(scale=0.1, rng=rng),
+            prior=HorseshoePrior(scale=0.1, rng=self.rng),
         )
 
         if len(cont_dims) > 0 and len(cat_dims) > 0:
@@ -239,25 +255,19 @@ class GPR_sklearn(Surrogate):
             kernel = cov_amp * ham_kernel + noise_kernel
         else:
             raise ValueError()
-        kernel = gaussian_process.kernels.ConstantKernel(
-            constant_value=1  #, constant_value_bounds=(1e-4, 1e4)
-        ) * gaussian_process.kernels.RBF(
-            length_scale=1  #, length_scale_bounds=(1e-4, 1e4)
-        )
-        self.gp = gaussian_process.GaussianProcessRegressor(
-            kernel=self.kernel,
-            normalize_y=False,
-            optimizer=None,
-            n_restarts_optimizer=
-            -1,  # Do not use scikit-learn's optimization routine
-            alpha=0,  # Governed by the kernel
-            random_state=self.rng,
-        )
-        self.is_fited = False
+        # kernel = gaussian_process.kernels.ConstantKernel(
+        #     constant_value=1  #, constant_value_bounds=(1e-4, 1e4)
+        # ) * gaussian_process.kernels.RBF(
+        #     length_scale=1  #, length_scale_bounds=(1e-4, 1e4)
+        # )
+        return kernel
 
     def predict(self,
                 X_test,
                 cov_return_type: typing.Optional[str] = 'diagonal_cov'):
+        '''
+        return: \mu ,\sigma^2
+        '''
         assert self.is_fited
         X_test = self._impute_inactive(X_test)
         if cov_return_type is None:
@@ -290,9 +300,54 @@ class GPR_sklearn(Surrogate):
 
         return mu, var
 
+    def _get_gp(self) -> gaussian_process.GaussianProcessRegressor:
+        return gaussian_process.GaussianProcessRegressor(
+            kernel=self.kernel,
+            normalize_y=False,
+            optimizer=None,
+            n_restarts_optimizer=
+            -1,  # Do not use scikit-learn's optimization routine
+            alpha=0,  # Governed by the kernel
+            random_state=self.rng,
+        )
+    
+    def _nll(self, theta: np.ndarray) -> typing.Tuple[float, np.ndarray]:
+        """
+        Returns the negative marginal log likelihood (+ the prior) for
+        a hyperparameter configuration theta.
+        (negative because we use scipy minimize for optimization)
+
+        Parameters
+        ----------
+        theta : np.ndarray(H)
+            Hyperparameter vector. Note that all hyperparameter are
+            on a log scale.
+
+        Returns
+        ----------
+        float
+            lnlikelihood + prior
+        """
+        self._n_ll_evals += 1
+
+        try:
+            lml, grad = self.gp.log_marginal_likelihood(theta, eval_gradient=True)
+        except np.linalg.LinAlgError:
+            return 1e25, np.zeros(theta.shape)
+
+        for dim, priors in enumerate(self._all_priors):
+            for prior in priors:
+                lml += prior.lnprob(theta[dim])
+                grad[dim] += prior.gradient(theta[dim])
+
+        # We add a minus here because scipy is minimizing
+        if not np.isfinite(lml).all() or not np.all(np.isfinite(grad)):
+            return 1e25, np.zeros(theta.shape)
+        else:
+            return -lml, -grad
+
     def _train(self, X: np.ndarray, y: np.ndarray, do_optimize: bool = True):
-        self.gp.fit(X, y)
-        x = np.atleast_2d(X)
+        X = np.atleast_2d(X)
         X = self._impute_inactive(X)
         if self.normalize_y:
             y = self._normalize_y(y)
@@ -306,7 +361,7 @@ class GPR_sklearn(Surrogate):
         n_tries = 10
         for i in range(n_tries):
             try:
-                self.gp = self._get_gp()
+                self.gp = self._get_gp()  # new model
                 self.gp.fit(X, y)
                 break
             except np.linalg.LinAlgError as e:

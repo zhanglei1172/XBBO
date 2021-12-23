@@ -1,4 +1,4 @@
-# bbomark
+# xbbo
 
 ---
 
@@ -58,8 +58,8 @@ meta-data的label全部scale至0-1、cross validation结果
 
 ```bash
 cd ${PROJECT_ROOT_PATH}
-PYTHONPATH='./' python ./bbomark/example/test_tst2.py
-PYTHONPATH='./' python ./bbomark/example/analysis_transfer.py
+PYTHONPATH='./' python ./xbbo/example/test_tst2.py
+PYTHONPATH='./' python ./xbbo/example/analysis_transfer.py
 ```
 
 ![](../out/ana_tranfer_res1630487971.2002113.png)
@@ -80,7 +80,7 @@ PYTHONPATH='./' python ./bbomark/example/analysis_transfer.py
 
 ```bash
 cd ${PROJECT_ROOT_PATH}
-PYTHONPATH='./' python ./bbomark/search_algorithm/transfer_tst_optimizer.py
+PYTHONPATH='./' python ./xbbo/search_algorithm/transfer_tst_optimizer.py
 ```
 
 Result:
@@ -252,10 +252,10 @@ rank_best:  1
 
 在 branin 黑盒函数测试
 
-![](../out/bbomark-anneal-noise.png)
+![](../out/xbbo-anneal-noise.png)
 best_loss: 0.36538257770050925
 
-![](../out/bbomark-anneal.png)
+![](../out/xbbo-anneal.png)
 best_loss: 0.398102262920645
 
 ![](../out/hyperopt-anneal.png)

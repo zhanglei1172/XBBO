@@ -1,4 +1,4 @@
-bbomark is a library that integrates common black box optimization algorithms, which can easily and quickly benchmark different black box optimization algorithms.
+XBBO is a library that integrates common black box optimization algorithms, which can easily and quickly benchmark different black box optimization algorithms.
 
 ## Usage
 

@@ -5,7 +5,7 @@ from scipy.special import logit
 from copy import deepcopy
 import warnings
 import ConfigSpace.hyperparameters as CSH
-# from bbomark.utils.util import clip_chk
+# from xbbo.utils.util import clip_chk
 '''
 warp for dict
 '''
