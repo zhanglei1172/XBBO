@@ -3,11 +3,11 @@ import glob
 import numpy as np
 import random
 
-from bbomark.bbo import BBO
-from bbomark.pbt import PBT
-from bbomark.transfer_bbo import Transfer_BBO
-from bbomark.utils.config import cfg, load_cfg_fom_args
-from bbomark.nas import NAS
+from xbbo.bbo import BBO
+from xbbo.pbt import PBT
+from xbbo.transfer_bbo import Transfer_BBO
+from xbbo.utils.config import cfg, load_cfg_fom_args
+from xbbo.nas import NAS
 
 # cfg.freeze()
 
@@ -74,7 +74,7 @@ def main(cfg_clone):
 if __name__ == '__main__':
     toy_bbo_cfg_files = [
         # "toy_turbo-1.yaml"
-        "toy_turbo-5.yaml"
+        # "toy_turbo-5.yaml"
         # "toy_gp.yaml",
         # "toy_anneal.yaml",
         # "toy_bore.yaml",
@@ -84,12 +84,14 @@ if __name__ == '__main__':
         # "toy_rea.yaml",
         # "toy_rs.yaml",
         # "toy_tpe.yaml"
+
+        "bo_gp2.yaml"
     ]
 
     for file in toy_bbo_cfg_files:
         cfg_clone = cfg.clone()
         cfg.freeze()
-        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3'])
+        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3']) # repeat 3 times with diffent seeds
         main(cfg_clone)
         cfg.defrost()
 

@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 import ConfigSpace as CS
 
-from bbomark.configspace.space import Space, Configurations
-from bbomark.configspace.warp import Warp
+from xbbo.configspace.space import Space, Configurations
+from xbbo.configspace.warp import Warp
 
 
 @pytest.fixture

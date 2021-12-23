@@ -5,11 +5,11 @@ import time
 import numpy as np
 import random
 
-from bbomark.bbo import BBO
-from bbomark.search_algorithm import get_opt_class
-from bbomark.transfer_bbo import Transfer_BBO
-from bbomark.utils.config import cfg, load_cfg_fom_args
-from bbomark.nas import NAS
+from xbbo.bbo import BBO
+from xbbo.search_algorithm import get_opt_class
+from xbbo.transfer_bbo import Transfer_BBO
+from xbbo.utils.config import cfg, load_cfg_fom_args
+from xbbo.nas import NAS
 
 # cfg.freeze()
 
