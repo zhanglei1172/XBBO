@@ -4,6 +4,10 @@ XBBO is a library that integrates common black box optimization algorithms, whic
 
 Run the script in the `examples/` folder
 
+#### Bayesian Optimization use Gaussian-process
+
+`cd ~/BBO && PYTHONPATH='./' python ./example/demo.py -c './cfgs/bo_gp2.yaml' -r 1`
+
 ## Feature
 
 

@@ -2,10 +2,12 @@ from collections import OrderedDict
 import numpy as np
 import abc
 from typing import Iterable, List, Tuple, Union
+import logging
 
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, convert_denseConfigurations_to_array
 from xbbo.core.trials import Trials
 from xbbo.surrogate.base import SurrogateModel
+
 
 class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
     """Abstract base class for acquisition function
@@ -19,7 +21,8 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
     # def __str__(self):
     #     return type(self).__name__ + " (" + self.long_name + ")"
 
-    def __init__(self, surrogate_model: Union[SurrogateModel, List[SurrogateModel]], **kwargs):
+    def __init__(self, surrogate_model: Union[SurrogateModel,
+                                              List[SurrogateModel]], **kwargs):
         """Constructor
 
         Parameters
@@ -48,7 +51,10 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
-    def __call__(self, configurations: Union[List[DenseConfiguration], np.ndarray], convert=True, **kwargs):
+    def __call__(self,
+                 configurations: Union[List[DenseConfiguration], np.ndarray],
+                 convert=True,
+                 **kwargs):
         """Computes the acquisition value for a given X
 
         Parameters
@@ -111,25 +117,21 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
 
     rng : np.random.RandomState or int, optional
     """
-
-    def __init__(
-            self,
-            acquisition_function: AbstractAcquisitionFunction,
-            config_space: DenseConfigurationSpace,
-            rng: np.random.RandomState=np.random.RandomState(42)
-    ):
+    def __init__(self,
+                 acquisition_function: AbstractAcquisitionFunction,
+                 config_space: DenseConfigurationSpace,
+                 rng: np.random.RandomState = np.random.RandomState(42)):
         self.acquisition_function = acquisition_function
         self.config_space = config_space
-
+        self.logger = logging.getLogger(self.__module__ + "." +
+                                        self.__class__.__name__)
         self.rng = rng
 
-    def maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            drop_self_duplicate: bool = False,
-            **kwargs
-    ) -> Iterable[DenseConfiguration]:
+    def maximize(self,
+                 trials: Trials,
+                 num_points: int,
+                 drop_self_duplicate: bool = False,
+                 **kwargs) -> Iterable[DenseConfiguration]:
         """Maximize acquisition function using ``_maximize``.
 
         Parameters
@@ -149,18 +151,14 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         """
         configs = [t[1] for t in self._maximize(trials, num_points, **kwargs)]
         return self.unique(configs=configs) if drop_self_duplicate else configs
-    
+
     @staticmethod
-    def unique(configs:Iterable[DenseConfiguration]):
+    def unique(configs: Iterable[DenseConfiguration]):
         return list(OrderedDict.fromkeys(configs))
 
     @abc.abstractmethod
-    def _maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            **kwargs
-    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+    def _maximize(self, trials: Trials, num_points: int,
+                  **kwargs) -> Iterable[Tuple[float, DenseConfiguration]]:
         """Implements acquisition function maximization.
 
         In contrast to ``maximize``, this method returns an iterable of tuples,
@@ -186,8 +184,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         raise NotImplementedError()
 
     def _sort_configs_by_acq_value(
-            self,
-            configs: List[DenseConfiguration]
+        self, configs: List[DenseConfiguration]
     ) -> List[Tuple[float, DenseConfiguration]]:
         """Sort the given configurations by acquisition value
 
@@ -214,6 +211,5 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         # https://stackoverflow.com/questions/480214/how-do-you-remove-duplicates-from-a-list-whilst-preserving-order
         # seen = set()
         # seen_add = seen.add
-        
-        return [(acq_values[ind][0], configs[ind]) for ind in indices[::-1]]
 
+        return [(acq_values[ind][0], configs[ind]) for ind in indices[::-1]]
