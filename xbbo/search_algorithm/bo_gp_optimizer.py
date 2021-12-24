@@ -5,12 +5,13 @@ from ConfigSpace.hyperparameters import (UniformIntegerHyperparameter,
                                          UniformFloatHyperparameter,
                                          CategoricalHyperparameter,
                                          OrdinalHyperparameter)
+from xbbo.acquisition_function.acq_optimizer import LocalSearch
 # from sklearn.gaussian_process.kernels import Kernel
 # from sklearn.gaussian_process import GaussianProcessRegressor
 
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
-from xbbo.core import trials
+
 # from xbbo.core import trials
 # from xbbo.core.stochastic import Category, Uniform
 from xbbo.core.trials import Trial, Trials
@@ -22,7 +23,7 @@ from xbbo.acquisition_function.ei import EI_AcqFunc
 class BOGP(AbstractOptimizer):
     def __init__(
             self,
-            config_spaces,
+            config_spaces: DenseConfiguration,
             seed: int = 42,
             #  min_sample=1,
             total_limit: int = 10,
@@ -49,6 +50,7 @@ class BOGP(AbstractOptimizer):
         self.trials = Trials(sparse_dim=self.sparse_dimension, dense_dim=self.dense_dimension)
         self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
+        self.acq_maximizer = LocalSearch(self.acquisition_func, self.space, self.rng)
 
     def suggest(self, n_suggestions=1):
         trial_list = []
@@ -65,16 +67,28 @@ class BOGP(AbstractOptimizer):
             self.surrogate_model._train(np.asarray(self.trials.his_sparse_array),
                                         np.asarray(self.trials.his_observe_value))
             configs = []
-            for n in range(n_suggestions):
-                _, best_val = self._get_x_best(self.predict_x_best)
-                self.acquisition_func.update(surrogate_model=self.surrogate_model, y_best=best_val)
-                config = self.acquisition_func.argmax( # TODO argmax valid sample
-                    self.space.sample_configuration(1000))
+            _, best_val = self._get_x_best(self.predict_x_best)
+            self.acquisition_func.update(surrogate_model=self.surrogate_model, y_best=best_val)
+            configs = self.acq_maximizer.maximize(self.trials,1000, drop_self_duplicate=True)
+            _idx = 0
+            for n in range(n_suggestions): 
+                while _idx < len(configs): # remove history suggest
+                    if not self.trials.is_contain(configs[_idx]):
+                        config = configs[_idx]
+                        configs.append(config)
+                        trial_list.append(Trial(configuration=config,config_dict=config.get_dictionary(), sparse_array=config.get_sparse_array()))
+                        _idx += 1
+
+                        break
+                    _idx += 1
+                else:
+                    assert False, "no more configs can be suggest"
+                # config = self.acquisition_func.argmax( # TODO argmax valid sample
+                #     self.space.sample_configuration(1000))
                 # arr = self.acquisition_func.argmax( # TODO argmax valid sample
                 #     self.rng.rand(1000, self.dense_dimension))
                 # config = DenseConfiguration.from_sparse_array(self.space, arr)
-                configs.append(config)
-                trial_list.append(Trial(configuration=config,config_dict=config.get_dictionary(), sparse_array=config.get_sparse_array()))
+
 
         # x = [
         #     config.get_dictionary()

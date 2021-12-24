@@ -262,7 +262,7 @@ class GPR_sklearn(BaseGP):
         # )
         return kernel
 
-    def predict(self,
+    def _predict(self,
                 X_test,
                 cov_return_type: typing.Optional[str] = 'diagonal_cov'):
         '''
