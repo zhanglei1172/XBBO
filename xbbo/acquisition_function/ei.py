@@ -80,6 +80,7 @@ class EI_AcqFunc(AbstractAcquisitionFunction):
     #     return np.random.choice(best_candidate)
 
     def argmax(self, candidates):
+        print('depreciate!')
         # best_ei = -1
         # # best_candidate = []
         # candidates_rm_id = []

@@ -1,1 +1,2 @@
 VERY_SMALL_NUMBER = 1e-10
+MAXINT = 2 ** 31 - 1
