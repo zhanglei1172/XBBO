@@ -3,6 +3,7 @@ array_sparse:cat hp use idx
 array_dense:cat hp use onr-hot
 ref:https://github.com/ltiao/bore/blob/c137ed5f7a2d859b0053b9c20e7ed1b744186ea8/bore/plugins/hpbandster/types.py
 '''
+from functools import partial
 from typing import List
 import ConfigSpace as CS
 import ConfigSpace.hyperparameters as CSH
@@ -10,7 +11,7 @@ import numpy as np
 from scipy.optimize import Bounds
 from ConfigSpace.util import deactivate_inactive_hyperparameters as _deactivate_inactive_hyperparameters
 # from xbbo.configspace.warp import WARP_DICT, UNWARP_DICT
-
+from ConfigSpace.util import get_one_exchange_neighbourhood as _get_one_exchange_neighbourhood
 
 
 class DenseConfigurationSpace(CS.ConfigurationSpace):
@@ -253,4 +254,10 @@ def deactivate_inactive_hyperparameters(*arg,**kwargs):
     return DenseConfiguration(configuration_space=configuration.configuration_space,values=configuration.get_dictionary())
 
 def convert_denseConfiguration(conf:CS.Configuration):
-    return DenseConfiguration(configuration_space=conf.configuration_space,values=conf.get_dictionary())
+    # return DenseConfiguration(configuration_space=conf.configuration_space,values=conf.get_dictionary())
+    conf.__class__ = DenseConfiguration
+    return conf
+
+def get_one_exchange_neighbourhood(*args,**kwargs):
+    configs = map(convert_denseConfiguration,_get_one_exchange_neighbourhood(*args,stdev=0.05, num_neighbors=8,**kwargs))
+    return configs

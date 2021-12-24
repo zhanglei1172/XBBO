@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import typing
 import numpy as np
 from ConfigSpace.hyperparameters import NumericalHyperparameter, \
@@ -35,6 +36,7 @@ class InitialDesign:
 
     def select_configurations(self) -> typing.List[DenseConfiguration]:
         self.configs = self._select_configurations()
+        self.configs = list(OrderedDict.fromkeys(self.configs))
         return self.configs
 
     def _select_configurations(self) -> typing.List[DenseConfiguration]:

@@ -1,7 +1,6 @@
 import numpy as np
 import json
 from time import time
-from numpy.lib.twodim_base import tri
 import tqdm
 
 from xbbo.search_space import build_test_problem
@@ -106,7 +105,7 @@ class BBO:
                          'observe_time_per_suggest': observe_time,
                          'eval_time_per_suggest': sum(trial.time for trial in trial_list)
             }
-            self.record.append([trial.sparse_array for trial in trial_list], function_evals, function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
+            self.record.append([trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
 
 
 

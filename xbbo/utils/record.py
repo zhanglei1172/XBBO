@@ -36,29 +36,13 @@ class Record:
     def size(self):
         return len(self.func_evals)
 
-    def append(self, feature, y, suggest_point, timing, b=None):
+    def append(self, feature, y, suggest_point, timing):
         self.features.append(feature)
         self.func_evals.append(y)
         # self.losses.append(loss)
         for k in self.timing:
             self.timing[k].append(timing[k])
         self.suggest_dict.append(suggest_point)
-        best_id = None
-        # for i in range(len(loss)):
-        #     if (np.array(loss[i]) < self.current_best):
-        #         self.current_best = loss[i]
-        #         best_id = i
-        if best_id is None:
-            self.cum_min['cum_min_suggest_dict'].append(self.cum_min['cum_min_suggest_dict'][-1])
-            self.cum_min['cum_min_losses'].append(self.cum_min['cum_min_losses'][-1])
-            self.cum_min['cum_min_func_evals'].append(self.cum_min['cum_min_func_evals'][-1])
-        else:
-            self.cum_min['cum_min_suggest_dict'].append(suggest_point[best_id])
-            self.cum_min['cum_min_losses'].append(loss[best_id])
-            self.cum_min['cum_min_func_evals'].append(y[best_id])
-
-        # if b is not None:
-        #     self.budgets.append(b)
 
     # def get_best(self):
     #     idx = np.argmin(np.asarray(self.func_evals)[...,0].ravel())

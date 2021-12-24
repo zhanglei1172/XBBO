@@ -1,6 +1,8 @@
 import numpy as np
 from numpy.lib.twodim_base import tri
 
+from xbbo.configspace.space import DenseConfiguration
+
 
 class Trial:
     def __init__(self,
@@ -24,6 +26,7 @@ class Trial:
 
 class Trials:
     def __init__(self, sparse_dim, dense_dim):
+        self.configs = set()
         self.his_dense_dense = np.empty((0,dense_dim))
         self.his_sparse_array = np.empty((0,sparse_dim))
         self.his_observe_value = []
@@ -35,6 +38,8 @@ class Trials:
         # self.run_history = {}
         self.traj_history = []
     def add_a_trial(self, trial:Trial):
+        assert trial.configuation not in self.configs
+        self.configs.add(trial.configuation)
         self.trials_num += 1
         self.traj_history.append(trial)
         self.his_config_dict.append(trial.config_dict)
@@ -50,3 +55,11 @@ class Trials:
     def add_trials(self, trials):
         for trial in trials.traj_history:
             self.add_a_trial(trial)
+    def is_contain(self, config:DenseConfiguration)->bool:
+        return config in self.configs
+    
+    def is_empty(self,):
+        return self.trials_num == 0
+
+    def get_all_configs(self,):
+        return list(self.configs)
