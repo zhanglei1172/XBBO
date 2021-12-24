@@ -106,6 +106,7 @@ class BBO:
                          'eval_time_per_suggest': sum(trial.time for trial in trial_list)
             }
             self.record.append([trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
+            print(self.optimizer_instance.trials.best_observe_value)
 
 
 

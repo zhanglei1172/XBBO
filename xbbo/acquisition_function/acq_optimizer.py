@@ -1,11 +1,13 @@
-from typing import Iterator, List, Optional, Tuple, Union
+from typing import Iterable, Iterator, List, Optional, Tuple, Union
 import numpy as np
 import time
+import scipy
 from xbbo.acquisition_function.base import AbstractAcquisitionFunction, AcquisitionFunctionMaximizer
 
 from xbbo.configspace.space import DenseConfigurationSpace, DenseConfiguration, get_one_exchange_neighbourhood
 from xbbo.core.trials import Trials
 from xbbo.utils.constants import MAXINT
+from xbbo.utils.util import get_types
 
 
 class RandomSearch(AcquisitionFunctionMaximizer):
@@ -15,16 +17,15 @@ class RandomSearch(AcquisitionFunctionMaximizer):
     ----------
     acquisition_function : ~smac.optimizer.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~smac.configspace.ConfigurationSpace
+    config_space : ~smac.configspace.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
     """
-
     def _maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            _sorted: bool = False,
+        self,
+        trials: Trials,
+        num_points: int,
+        _sorted: bool = False,
     ) -> List[Tuple[float, DenseConfiguration]]:
         """Randomly sampled configurations
 
@@ -59,6 +60,7 @@ class RandomSearch(AcquisitionFunctionMaximizer):
                 rand_configs[i].origin = 'Random Search'
             return [(0, rand_configs[i]) for i in range(len(rand_configs))]
 
+
 class LocalSearch(AcquisitionFunctionMaximizer):
     """Implementation of openbox's local search.
 
@@ -66,7 +68,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
     ----------
     acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.ConfigurationSpace
+    config_space : ~openbox.config_space.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
 
@@ -77,25 +79,20 @@ class LocalSearch(AcquisitionFunctionMaximizer):
         number of steps during a plateau walk before local search terminates
 
     """
-
     def __init__(
-            self,
-            acquisition_function: AbstractAcquisitionFunction,
-            config_space: DenseConfigurationSpace,
-            rng: Union[bool, np.random.RandomState] = None,
-            max_steps: Optional[int] = None,
-            n_steps_plateau_walk: int = 10,
+        self,
+        acquisition_function: AbstractAcquisitionFunction,
+        config_space: DenseConfigurationSpace,
+        rng: np.random.RandomState = np.random.RandomState(42),
+        max_steps: Optional[int] = None,
+        n_steps_plateau_walk: int = 10,
     ):
         super().__init__(acquisition_function, config_space, rng)
         self.max_steps = max_steps
         self.n_steps_plateau_walk = n_steps_plateau_walk
 
-    def _maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            **kwargs
-    ) -> List[Tuple[float, DenseConfiguration]]:
+    def _maximize(self, trials: Trials, num_points: int,
+                  **kwargs) -> List[Tuple[float, DenseConfiguration]]:
         """Starts a local search from the given startpoint and quits
         if either the max number of steps is reached or no neighbor
         with an higher improvement was found.
@@ -121,14 +118,12 @@ class LocalSearch(AcquisitionFunctionMaximizer):
 
         """
 
-        init_points = self._get_initial_points(
-            num_points, trials)
+        init_points = self._get_initial_points(num_points, trials)
 
         acq_configs = []
         # Start N local search from different random start points
         for start_point in init_points:
-            acq_val, DenseConfiguration = self._one_iter(
-                start_point, **kwargs)
+            acq_val, DenseConfiguration = self._one_iter(start_point, **kwargs)
 
             DenseConfiguration.origin = "Local Search"
             acq_configs.append((acq_val, DenseConfiguration))
@@ -151,22 +146,16 @@ class LocalSearch(AcquisitionFunctionMaximizer):
             configs_previous_runs = trials.get_all_configs()
             configs_previous_runs_sorted = self._sort_configs_by_acq_value(
                 configs_previous_runs)
-            num_configs_local_search = int(min(
-                len(configs_previous_runs_sorted),
-                num_points)
-            )
+            num_configs_local_search = int(
+                min(len(configs_previous_runs_sorted), num_points))
             init_points = list(
                 map(lambda x: x[1],
-                    configs_previous_runs_sorted[:num_configs_local_search])
-            )
+                    configs_previous_runs_sorted[:num_configs_local_search]))
 
         return init_points
 
-    def _one_iter(
-            self,
-            start_point: DenseConfiguration,
-            **kwargs
-    ) -> Tuple[float, DenseConfiguration]:
+    def _one_iter(self, start_point: DenseConfiguration,
+                  **kwargs) -> Tuple[float, DenseConfiguration]:
 
         incumbent = start_point
         # Compute the acquisition value of the incumbent
@@ -181,8 +170,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
             if local_search_steps % 1000 == 0:
                 self.logger.warning(
                     "Local search took already %d iterations. Is it maybe "
-                    "stuck in a infinite loop?", local_search_steps
-                )
+                    "stuck in a infinite loop?", local_search_steps)
 
             # Get neighborhood of the current incumbent
             # by randomly drawing configurations
@@ -218,3 +206,342 @@ class LocalSearch(AcquisitionFunctionMaximizer):
                 break
 
         return acq_val_incumbent, incumbent
+
+
+class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
+    """
+    Wraps scipy global optimizer. Only on continuous dims.
+
+    Parameters
+    ----------
+    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+
+    config_space : ~openbox.config_space.DenseConfigurationSpace
+
+    rng : np.random.RandomState or int, optional
+    """
+    def __init__(self,
+                 acquisition_function: AbstractAcquisitionFunction,
+                 config_space: DenseConfigurationSpace,
+                 rng: np.random.RandomState = np.random.RandomState(42)):
+        super().__init__(acquisition_function, config_space, rng)
+
+        types, bounds = get_types(self.config_space)
+        assert all(types == 0)
+        self.bounds = bounds
+
+    def maximize(self,
+                 trials: Trials,
+                 initial_config=None,
+                 drop_self_duplicate: bool=False,
+                 **kwargs) -> List[Tuple[float, DenseConfiguration]]:
+        def negative_acquisition(x):
+            # shape of x = (d,)
+            return -self.acquisition_function(x,
+                                              convert=False)[0]  # shape=(1,)
+
+        acq_configs = []
+        result = scipy.optimize.differential_evolution(
+            func=negative_acquisition, bounds=self.bounds)
+        if not result.success:
+            self.logger.debug(
+                'Scipy differential evolution optimizer failed. Info:\n%s' %
+                (result, ))
+        try:
+            config = DenseConfiguration(self.config_space, vector=result.x)
+            acq = self.acquisition_function(result.x, convert=False)
+            acq_configs.append((acq, config))
+        except Exception:
+            pass
+
+        if not acq_configs:  # empty
+            self.logger.warning(
+                'Scipy differential evolution optimizer failed. Return empty config list. Info:\n%s'
+                % (result, ))
+        configs = [config for _, config in acq_configs]
+        return self.unique(configs=configs) if drop_self_duplicate else configs
+
+    def _maximize(self, trials: Trials, num_points: int,
+                  **kwargs) -> Iterable[Tuple[float, DenseConfiguration]]:
+        raise NotImplementedError()
+
+class RandomScipyOptimizer(AcquisitionFunctionMaximizer):
+    """
+    Use scipy.optimize with start points chosen by random search. Only on continuous dims.
+
+    Parameters
+    ----------
+    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+
+    config_space : ~openbox.config_space.DenseConfigurationSpace
+
+    rng : np.random.RandomState or int, optional
+    """
+
+    def __init__(
+            self,
+            acquisition_function: AbstractAcquisitionFunction,
+            config_space: DenseConfigurationSpace,
+            rng: Union[bool, np.random.RandomState] = None,
+    ):
+        super().__init__(acquisition_function, config_space, rng)
+
+        self.random_search = InterleavedLocalAndRandomSearch(
+            acquisition_function=acquisition_function,
+            config_space=config_space,
+            rng=rng
+        )
+        self.scipy_optimizer = ScipyOptimizer(
+            acquisition_function=acquisition_function,
+            config_space=config_space,
+            rng=rng
+        )
+
+    def maximize(
+            self,
+            trials: Trials,
+            num_points: int,
+            drop_self_duplicate: bool=False,
+            num_trials=10,
+            **kwargs
+    ) -> List[Tuple[float, DenseConfiguration]]:
+        acq_configs = []
+
+        initial_configs = self.random_search.maximize(trials, num_points, **kwargs).challengers
+        initial_acqs = self.acquisition_function(initial_configs)
+        acq_configs.extend(zip(initial_acqs, initial_configs))
+
+        success_count = 0
+        for config in initial_configs[:num_trials]:
+            scipy_configs = self.scipy_optimizer.maximize(trials, initial_config=config).challengers
+            if not scipy_configs:   # empty
+                continue
+            scipy_acqs = self.acquisition_function(scipy_configs)
+            acq_configs.extend(zip(scipy_acqs, scipy_configs))
+            success_count += 1
+        if success_count == 0:
+            self.logger.warning('None of Scipy optimizations are successful in RandomScipyOptimizer.')
+
+        # shuffle for random tie-break
+        self.rng.shuffle(acq_configs)
+
+        # sort according to acq value
+        acq_configs.sort(reverse=True, key=lambda x: x[0])
+
+        configs = [_[1] for _ in acq_configs]
+
+    
+        return self.unique(configs=configs) if drop_self_duplicate else configs
+
+    def _maximize(
+            self,
+            trials: Trials,
+            num_points: int,
+            **kwargs
+    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+        raise NotImplementedError()
+
+
+class ScipyOptimizer(AcquisitionFunctionMaximizer):
+    """
+    Wraps scipy optimizer. Only on continuous dims.
+
+    Parameters
+    ----------
+    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+
+    config_space : ~openbox.config_space.DenseConfigurationSpace
+
+    rng : np.random.RandomState or int, optional
+    """
+
+    def __init__(
+            self,
+            acquisition_function: AbstractAcquisitionFunction,
+            config_space: DenseConfigurationSpace,
+            rng: Union[bool, np.random.RandomState] = None,
+    ):
+        super().__init__(acquisition_function, config_space, rng)
+
+        types, bounds = get_types(self.config_space)    # todo: support constant hp in scipy optimizer
+        assert all(types == 0), 'Scipy optimizer (L-BFGS-B) only supports Integer and Float parameters.'
+        self.bounds = bounds
+
+        options = dict(disp=False, maxiter=1000)
+        self.scipy_config = dict(tol=None, method='L-BFGS-B', options=options)
+
+    def maximize(
+            self,
+            trials: Trials,
+            initial_config=None,
+            drop_self_duplicate: bool=False,
+            **kwargs
+    ) -> List[Tuple[float, DenseConfiguration]]:
+
+        def negative_acquisition(x):
+            # shape of x = (d,)
+            x = np.clip(x, 0.0, 1.0)    # fix numerical problem in L-BFGS-B
+            return -self.acquisition_function(x, convert=False)[0]  # shape=(1,)
+
+        if initial_config is None:
+            initial_config = self.config_space.sample_configuration()
+        init_point = initial_config.get_array()
+
+        acq_configs = []
+        result = scipy.optimize.minimize(fun=negative_acquisition,
+                                         x0=init_point,
+                                         bounds=self.bounds,
+                                         **self.scipy_config)
+        # if result.success:
+        #     acq_configs.append((result.fun, DenseConfiguration(self.config_space, vector=result.x)))
+        if not result.success:
+            self.logger.debug('Scipy optimizer failed. Info:\n%s' % (result,))
+        try:
+            x = np.clip(result.x, 0.0, 1.0)  # fix numerical problem in L-BFGS-B
+            config = DenseConfiguration(self.config_space, vector=x)
+            acq = self.acquisition_function(x, convert=False)
+            acq_configs.append((acq, config))
+        except Exception:
+            pass
+
+        if not acq_configs:  # empty
+            self.logger.warning('Scipy optimizer failed. Return empty config list. Info:\n%s' % (result,))
+
+        configs = [config for _, config in acq_configs]
+        return self.unique(configs=configs) if drop_self_duplicate else configs
+
+
+    def _maximize(
+            self,
+            trials: Trials,
+            num_points: int,
+            **kwargs
+    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+        raise NotImplementedError()
+
+class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
+    """Implements openbox's default acquisition function optimization.
+
+    This acq_maximizer performs local search from the previous best points
+    according, to the acquisition function, uses the acquisition function to
+    sort randomly sampled configurations and interleaves unsorted, randomly
+    sampled configurations in between.
+
+    Parameters
+    ----------
+    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+
+    config_space : ~openbox.config_space.DenseConfigurationSpace
+
+    rng : np.random.RandomState or int, optional
+
+    max_steps: int
+        [LocalSearch] Maximum number of steps that the local search will perform
+
+    n_steps_plateau_walk: int
+        [LocalSearch] number of steps during a plateau walk before local search terminates
+
+    n_sls_iterations: int
+        [Local Search] number of local search iterations
+
+    """
+
+    def __init__(
+            self,
+            acquisition_function: AbstractAcquisitionFunction,
+            config_space: DenseConfigurationSpace,
+            rng: Union[bool, np.random.RandomState] = None,
+            max_steps: Optional[int] = None,
+            n_steps_plateau_walk: int = 10,
+            n_sls_iterations: int = 10,
+    ):
+        super().__init__(acquisition_function, config_space, rng)
+        self.random_search = RandomSearch(
+            acquisition_function=acquisition_function,
+            config_space=config_space,
+            rng=rng
+        )
+        self.local_search = LocalSearch(
+            acquisition_function=acquisition_function,
+            config_space=config_space,
+            rng=rng,
+            max_steps=max_steps,
+            n_steps_plateau_walk=n_steps_plateau_walk
+        )
+        self.n_sls_iterations = n_sls_iterations
+
+        # =======================================================================
+        # self.local_search = DiffOpt(
+        #     acquisition_function=acquisition_function,
+        #     config_space=config_space,
+        #     rng=rng
+        # )
+        # =======================================================================
+
+    def maximize(
+            self,
+            trials: Trials,
+            num_points: int,
+            drop_self_duplicate: bool=False,
+            **kwargs
+    ) -> Iterable[DenseConfiguration]:
+        """Maximize acquisition function using ``_maximize``.
+
+        Parameters
+        ----------
+        trials: ~openbox.utils.history_container.Trials
+            trials object
+        num_points: int
+            number of points to be sampled
+        random_configuration_chooser: ~openbox.acq_maximizer.random_configuration_chooser.RandomConfigurationChooser
+            part of the returned ChallengerList such
+            that we can interleave random configurations
+            by a scheme defined by the random_configuration_chooser;
+            random_configuration_chooser.next_smbo_iteration()
+            is called at the end of this function
+        **kwargs
+            passed to acquisition function
+
+        Returns
+        -------
+        Iterable[DenseConfiguration]
+            to be concrete: ~openbox.ei_optimization.ChallengerList
+        """
+
+        next_configs_by_local_search = self.local_search._maximize(
+            trials, self.n_sls_iterations, **kwargs
+        )
+
+        # Get configurations sorted by EI
+        next_configs_by_random_search_sorted = self.random_search._maximize(
+            trials,
+            num_points - len(next_configs_by_local_search),
+            _sorted=True,
+        )
+
+        # Having the configurations from random search, sorted by their
+        # acquisition function value is important for the first few iterations
+        # of openbox. As long as the random forest predicts constant value, we
+        # want to use only random configurations. Having them at the begging of
+        # the list ensures this (even after adding the configurations by local
+        # search, and then sorting them)
+        next_configs_by_acq_value = (
+                next_configs_by_random_search_sorted
+                + next_configs_by_local_search
+        )
+        next_configs_by_acq_value.sort(reverse=True, key=lambda x: x[0])
+        self.logger.debug(
+            "First 10 acq func (origin) values of selected configurations: %s",
+            str([[_[0], _[1].origin] for _ in next_configs_by_acq_value[:10]])
+        )
+        configs = [_[1] for _ in next_configs_by_acq_value]
+        return self.unique(configs=configs) if drop_self_duplicate else configs
+
+
+    def _maximize(
+            self,
+            trials: Trials,
+            num_points: int,
+            **kwargs
+    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+        raise NotImplementedError()

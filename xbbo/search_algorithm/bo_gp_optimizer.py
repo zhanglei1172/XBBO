@@ -5,7 +5,7 @@ from ConfigSpace.hyperparameters import (UniformIntegerHyperparameter,
                                          UniformFloatHyperparameter,
                                          CategoricalHyperparameter,
                                          OrdinalHyperparameter)
-from xbbo.acquisition_function.acq_optimizer import LocalSearch
+from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch
 # from sklearn.gaussian_process.kernels import Kernel
 # from sklearn.gaussian_process import GaussianProcessRegressor
 
@@ -50,7 +50,8 @@ class BOGP(AbstractOptimizer):
         self.trials = Trials(sparse_dim=self.sparse_dimension, dense_dim=self.dense_dimension)
         self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
-        self.acq_maximizer = LocalSearch(self.acquisition_func, self.space, self.rng)
+        # self.acq_maximizer = LocalSearch(self.acquisition_func, self.space, self.rng)
+        self.acq_maximizer = InterleavedLocalAndRandomSearch(self.acquisition_func,self.space,self.rng)
 
     def suggest(self, n_suggestions=1):
         trial_list = []
