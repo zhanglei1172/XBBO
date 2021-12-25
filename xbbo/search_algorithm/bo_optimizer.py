@@ -26,18 +26,18 @@ class BO(AbstractOptimizer):
             seed: int = 42,
             surrogate: str = 'gp',
             acq_func: str = 'ei',
-            acq_opt: str = 'ls_rs',
+            acq_opt: str = 'rs_ls',
             initial_design: str = 'sobol',
             #  min_sample=1,
             total_limit: int = 10,
-            predict_x_best: bool = True):
+            predict_x_best: bool = True,**kwargs):
         '''
         predict_x_best: bool
             Choose x_best for computing the acquisition function via the model instead of via the observations.
         '''
-        AbstractOptimizer.__init__(self, config_spaces, seed)
+        AbstractOptimizer.__init__(self, config_spaces, seed, **kwargs)
         # self.min_sample = min_sample
-        configs = self.space.get_hyperparameters()
+        # configs = self.space.get_hyperparameters()
         self.predict_x_best = predict_x_best
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
@@ -45,7 +45,7 @@ class BO(AbstractOptimizer):
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(configs)
+        self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 

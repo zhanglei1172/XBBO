@@ -1,13 +1,25 @@
+# XBBO
+
 **XBBO** is a library that integrates common black box optimization algorithms, which can easily and quickly benchmark different black box optimization algorithms.
 
-## Usage
+## Installation
 
-Run the script in the `example/` folder
+### Requirements
 
-#### Bayesian Optimization test
+`Python >= 3.8`
 
-`cd ~/BBO && PYTHONPATH='./' python ./example/rosenbrock_bo.py`
+```bash
+pip install -r ./requirements.txt
+```
 
+
+## Quick Start
+
+### Bayesian Optimization test
+
+`cd $PROJECT_ROOT && PYTHONPATH='./' python ./example/rosenbrock_bo.py`
+
+`note:`XBBO default **minimize** black box function.
 
 ```python
 def build_space(rng):
@@ -58,6 +70,10 @@ for i in range(MAX_CALL):
   - [X] Regularized EA
   - [X] PBT
   - [X] TuRBO
+
+## Compare other bbo library
+
+[SMAC3](docs/compare/SMAC3/SMAC3.md)
 
 ## Algorithms notes
 

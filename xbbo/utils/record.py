@@ -13,11 +13,11 @@ class Record:
         self.features = [] # n_call * n_suggest * dim # 单独存储
         self.func_evals = [] # n_call * n_suggest * dim
         # self.losses = [] # n_call * n_suggest * 2
-        self.cum_min = {
-            'cum_min_suggest_dict': [],
-            'cum_min_losses': [],
-            'cum_min_func_evals': []
-        }
+        # self.cum_min = {
+        #     'cum_min_suggest_dict': [],
+        #     'cum_min_losses': [],
+        #     'cum_min_func_evals': []
+        # }
         self.current_best = np.inf
         # self.metrics = [] # n_call * n_suggest * dim
         # self.budgets = []
