@@ -2,7 +2,7 @@ from collections import OrderedDict
 import numpy as np
 import abc
 from typing import Iterable, List, Tuple, Union
-import logging
+# import logging
 
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, convert_denseConfigurations_to_array
 from xbbo.core.trials import Trials
@@ -111,9 +111,9 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
 
     Parameters
     ----------
-    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.ConfigurationSpace
+    config_space : ~xbbo.config_space.ConfigurationSpace
 
     rng : np.random.RandomState or int, optional
     """
@@ -123,8 +123,8 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
                  rng: np.random.RandomState = np.random.RandomState(42)):
         self.acquisition_function = acquisition_function
         self.config_space = config_space
-        self.logger = logging.getLogger(self.__module__ + "." +
-                                        self.__class__.__name__)
+        # self.logger = logging.getLogger(self.__module__ + "." +
+                                        # self.__class__.__name__)
         self.rng = rng
 
     def maximize(self,
@@ -136,9 +136,9 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        trials: ~openbox.utils.history_container.HistoryContainer
+        trials: ~xbbo.utils.history_container.HistoryContainer
             trials object
-        stats: ~openbox.stats.stats.Stats
+        stats: ~xbbo.stats.stats.Stats
             current stats object
         num_points: int
             number of points to be sampled
@@ -147,7 +147,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         Returns
         -------
         iterable
-            An iterable consisting of :class:`openbox.config_space.DenseConfiguration`.
+            An iterable consisting of :class:`xbbo.config_space.DenseConfiguration`.
         """
         configs = [t[1] for t in self._maximize(trials, num_points, **kwargs)]
         return self.unique(configs=configs) if drop_self_duplicate else configs
@@ -167,9 +167,9 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
 
         Parameters
         ----------
-        trials: ~openbox.utils.history_container.HistoryContainer
+        trials: ~xbbo.utils.history_container.HistoryContainer
             trials object
-        stats: ~openbox.stats.stats.Stats
+        stats: ~xbbo.stats.stats.Stats
             current stats object
         num_points: int
             number of points to be sampled
@@ -179,7 +179,7 @@ class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):
         -------
         iterable
             An iterable consistng of
-            tuple(acqusition_value, :class:`openbox.config_space.DenseConfiguration`).
+            tuple(acqusition_value, :class:`xbbo.config_space.DenseConfiguration`).
         """
         raise NotImplementedError()
 

@@ -1,3 +1,4 @@
+import logging
 from typing import Iterable, Iterator, List, Optional, Tuple, Union
 import numpy as np
 import time
@@ -9,15 +10,17 @@ from xbbo.core.trials import Trials
 from xbbo.utils.constants import MAXINT
 from xbbo.utils.util import get_types
 
+logger = logging.getLogger(__name__)
+
 
 class RandomSearch(AcquisitionFunctionMaximizer):
     """Get candidate solutions via random sampling of configurations.
 
     Parameters
     ----------
-    acquisition_function : ~smac.optimizer.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.optimizer.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~smac.configspace.DenseConfigurationSpace
+    config_space : ~xbbo.configspace.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
     """
@@ -31,9 +34,9 @@ class RandomSearch(AcquisitionFunctionMaximizer):
 
         Parameters
         ----------
-        trials: ~smac.trials.trials.trials
+        trials: ~xbbo.trials.trials.trials
             trials object
-        stats: ~smac.stats.stats.Stats
+        stats: ~xbbo.stats.stats.Stats
             current stats object
         num_points: int
             number of points to be sampled
@@ -44,7 +47,7 @@ class RandomSearch(AcquisitionFunctionMaximizer):
         -------
         iterable
             An iterable consistng of
-            tuple(acqusition_value, :class:`smac.configspace.DenseConfiguration`).
+            tuple(acqusition_value, :class:`xbbo.configspace.DenseConfiguration`).
         """
         if num_points > 1:
             rand_configs = self.config_space.sample_configuration(
@@ -62,13 +65,13 @@ class RandomSearch(AcquisitionFunctionMaximizer):
 
 
 class LocalSearch(AcquisitionFunctionMaximizer):
-    """Implementation of openbox's local search.
+    """Implementation of xbbo's local search.
 
     Parameters
     ----------
-    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.DenseConfigurationSpace
+    config_space : ~xbbo.config_space.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
 
@@ -99,9 +102,9 @@ class LocalSearch(AcquisitionFunctionMaximizer):
 
         Parameters
         ----------
-        trials: ~openbox.utils.history_container.Trials
+        trials: ~xbbo.utils.history_container.Trials
             trials object
-        stats: ~openbox.stats.stats.Stats
+        stats: ~xbbo.stats.stats.Stats
             current stats object
         num_points: int
             number of points to be sampled
@@ -168,7 +171,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
 
             local_search_steps += 1
             if local_search_steps % 1000 == 0:
-                self.logger.warning(
+                logger.warning(
                     "Local search took already %d iterations. Is it maybe "
                     "stuck in a infinite loop?", local_search_steps)
 
@@ -188,7 +191,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
                 time_n.append(time.time() - s_time)
 
                 if acq_val > acq_val_incumbent:
-                    # self.logger.debug("Switch to one of the neighbors")
+                    logger.debug("Switch to one of the neighbors")
                     incumbent = neighbor
                     acq_val_incumbent = acq_val
                     changed_inc = True
@@ -197,7 +200,7 @@ class LocalSearch(AcquisitionFunctionMaximizer):
             if (not changed_inc) or \
                     (self.max_steps is not None and
                      local_search_steps == self.max_steps):
-                # self.logger.debug("Local search took %d steps and looked at %d "
+                # logger.debug("Local search took %d steps and looked at %d "
                 #                   "configurations. Computing the acquisition "
                 #                   "value for one DenseConfiguration took %f seconds"
                 #                   " on average.",
@@ -214,9 +217,9 @@ class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
 
     Parameters
     ----------
-    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.DenseConfigurationSpace
+    config_space : ~xbbo.config_space.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
     """
@@ -244,7 +247,7 @@ class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
         result = scipy.optimize.differential_evolution(
             func=negative_acquisition, bounds=self.bounds)
         if not result.success:
-            self.logger.debug(
+            logger.debug(
                 'Scipy differential evolution optimizer failed. Info:\n%s' %
                 (result, ))
         try:
@@ -255,7 +258,7 @@ class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
             pass
 
         if not acq_configs:  # empty
-            self.logger.warning(
+            logger.warning(
                 'Scipy differential evolution optimizer failed. Return empty config list. Info:\n%s'
                 % (result, ))
         configs = [config for _, config in acq_configs]
@@ -271,9 +274,9 @@ class RandomScipyOptimizer(AcquisitionFunctionMaximizer):
 
     Parameters
     ----------
-    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.DenseConfigurationSpace
+    config_space : ~xbbo.config_space.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
     """
@@ -320,7 +323,7 @@ class RandomScipyOptimizer(AcquisitionFunctionMaximizer):
             acq_configs.extend(zip(scipy_acqs, scipy_configs))
             success_count += 1
         if success_count == 0:
-            self.logger.warning('None of Scipy optimizations are successful in RandomScipyOptimizer.')
+            logger.warning('None of Scipy optimizations are successful in RandomScipyOptimizer.')
 
         # shuffle for random tie-break
         self.rng.shuffle(acq_configs)
@@ -348,9 +351,9 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
 
     Parameters
     ----------
-    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.DenseConfigurationSpace
+    config_space : ~xbbo.config_space.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
     """
@@ -395,7 +398,7 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
         # if result.success:
         #     acq_configs.append((result.fun, DenseConfiguration(self.config_space, vector=result.x)))
         if not result.success:
-            self.logger.debug('Scipy optimizer failed. Info:\n%s' % (result,))
+            logger.debug('Scipy optimizer failed. Info:\n%s' % (result,))
         try:
             x = np.clip(result.x, 0.0, 1.0)  # fix numerical problem in L-BFGS-B
             config = DenseConfiguration(self.config_space, vector=x)
@@ -405,7 +408,7 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
             pass
 
         if not acq_configs:  # empty
-            self.logger.warning('Scipy optimizer failed. Return empty config list. Info:\n%s' % (result,))
+            logger.warning('Scipy optimizer failed. Return empty config list. Info:\n%s' % (result,))
 
         configs = [config for _, config in acq_configs]
         return self.unique(configs=configs) if drop_self_duplicate else configs
@@ -420,7 +423,7 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
         raise NotImplementedError()
 
 class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
-    """Implements openbox's default acquisition function optimization.
+    """Implements xbbo's default acquisition function optimization.
 
     This acq_maximizer performs local search from the previous best points
     according, to the acquisition function, uses the acquisition function to
@@ -429,9 +432,9 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
 
     Parameters
     ----------
-    acquisition_function : ~openbox.acquisition_function.acquisition.AbstractAcquisitionFunction
+    acquisition_function : ~xbbo.acquisition_function.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~openbox.config_space.DenseConfigurationSpace
+    config_space : ~xbbo.config_space.DenseConfigurationSpace
 
     rng : np.random.RandomState or int, optional
 
@@ -489,11 +492,11 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
 
         Parameters
         ----------
-        trials: ~openbox.utils.history_container.Trials
+        trials: ~xbbo.utils.history_container.Trials
             trials object
         num_points: int
             number of points to be sampled
-        random_configuration_chooser: ~openbox.acq_maximizer.random_configuration_chooser.RandomConfigurationChooser
+        random_configuration_chooser: ~xbbo.acq_maximizer.random_configuration_chooser.RandomConfigurationChooser
             part of the returned ChallengerList such
             that we can interleave random configurations
             by a scheme defined by the random_configuration_chooser;
@@ -505,7 +508,7 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
         Returns
         -------
         Iterable[DenseConfiguration]
-            to be concrete: ~openbox.ei_optimization.ChallengerList
+            to be concrete: ~xbbo.ei_optimization.ChallengerList
         """
 
         next_configs_by_local_search = self.local_search._maximize(
@@ -521,7 +524,7 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
 
         # Having the configurations from random search, sorted by their
         # acquisition function value is important for the first few iterations
-        # of openbox. As long as the random forest predicts constant value, we
+        # of xbbo. As long as the random forest predicts constant value, we
         # want to use only random configurations. Having them at the begging of
         # the list ensures this (even after adding the configurations by local
         # search, and then sorting them)
@@ -530,7 +533,7 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
                 + next_configs_by_local_search
         )
         next_configs_by_acq_value.sort(reverse=True, key=lambda x: x[0])
-        self.logger.debug(
+        logger.debug(
             "First 10 acq func (origin) values of selected configurations: %s",
             str([[_[0], _[1].origin] for _ in next_configs_by_acq_value[:10]])
         )
