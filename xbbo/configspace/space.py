@@ -251,7 +251,8 @@ def impute_default_values(
 
 def deactivate_inactive_hyperparameters(*arg,**kwargs):
     configuration = _deactivate_inactive_hyperparameters(*arg,**kwargs)
-    return DenseConfiguration(configuration_space=configuration.configuration_space,values=configuration.get_dictionary())
+    # return DenseConfiguration(configuration_space=configuration.configuration_space,values=configuration.get_dictionary())
+    return convert_denseConfiguration(configuration)
 
 def convert_denseConfiguration(conf:CS.Configuration):
     # return DenseConfiguration(configuration_space=conf.configuration_space,values=conf.get_dictionary())

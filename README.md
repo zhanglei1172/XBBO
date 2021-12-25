@@ -4,9 +4,9 @@
 
 Run the script in the `example/` folder
 
-#### Bayesian Optimization use Gaussian-process
+#### Bayesian Optimization test
 
-`cd ~/BBO && PYTHONPATH='./' python ./example/rosenbrock_bo_gp.py`
+`cd ~/BBO && PYTHONPATH='./' python ./example/rosenbrock_bo.py`
 
 
 ```python
@@ -23,7 +23,7 @@ blackbox_func = rosenbrock_2d
 # define search space
 cs = build_space(rng)
 # define black box optimizer
-hpopt = BOGP(config_spaces=cs, seed=rng.randint(10000), total_limit=MAX_CALL)
+hpopt = BO(config_spaces=cs, seed=rng.randint(10000), total_limit=MAX_CALL)
 # Example call of the black-box function
 def_value = blackbox_func(cs.get_default_configuration())
 print("Default Value: %.2f" % def_value)

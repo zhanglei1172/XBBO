@@ -58,8 +58,8 @@ def get_opt_class(opt_name):
         from xbbo.search_algorithm import pbt_optimizer as opt
     elif opt_name == "turbo_optimizer":
         from xbbo.search_algorithm import turbo_optimizer as opt
-    elif opt_name == "bo_gp_optimizer":
-        from xbbo.search_algorithm import bo_gp_optimizer as opt
+    elif opt_name == "bo_optimizer":
+        from xbbo.search_algorithm import bo_optimizer as opt
     else:
         assert False, f"{opt_name} is not in xbbo/search_algorithm or not change xbbo/search_algorithm/__init__.py"
 

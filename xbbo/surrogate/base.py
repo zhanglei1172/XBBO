@@ -301,7 +301,6 @@ class BaseGP(SurrogateModel):
         self.normalize_y = normalize_y
         self.kernel = self._get_kernel()
         self.gp = self._get_gp()
-        # self.seed = seed
 
     def _get_kernel(self) -> Kernel:
         raise NotImplementedError()

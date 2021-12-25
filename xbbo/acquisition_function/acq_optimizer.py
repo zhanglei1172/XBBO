@@ -200,12 +200,12 @@ class LocalSearch(AcquisitionFunctionMaximizer):
             if (not changed_inc) or \
                     (self.max_steps is not None and
                      local_search_steps == self.max_steps):
-                # logger.debug("Local search took %d steps and looked at %d "
-                #                   "configurations. Computing the acquisition "
-                #                   "value for one DenseConfiguration took %f seconds"
-                #                   " on average.",
-                #                   local_search_steps, neighbors_looked_at,
-                #                   np.mean(time_n))
+                logger.debug("Local search took %d steps and looked at %d "
+                                  "configurations. Computing the acquisition "
+                                  "value for one DenseConfiguration took %f seconds"
+                                  " on average.",
+                                  local_search_steps, neighbors_looked_at,
+                                  np.mean(time_n))
                 break
 
         return acq_val_incumbent, incumbent
