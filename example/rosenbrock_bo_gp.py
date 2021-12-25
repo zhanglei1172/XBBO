@@ -40,7 +40,6 @@ if __name__ == "__main__":
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
-    values = []
     # ---- Begin BO-loop ----
     for i in range(MAX_CALL):
         # suggest
@@ -52,9 +51,9 @@ if __name__ == "__main__":
         hpopt.observe(trial_list=trial_list)
         
         print(value)
-        values.append(value)
-    plt.plot('values')
+    
+    plt.plot(np.log(hpopt.trials.get_history()[0]))
     plt.savefig('./out/rosenbrock_bo_gp.png')
     plt.show()
-    print('find best value:{}'.format(min(values)))
+    print('find best value:{}'.format(hpopt.trials.get_best()[0]))
 

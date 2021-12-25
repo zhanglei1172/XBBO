@@ -17,6 +17,7 @@ def build_space(rng):
     cs.add_hyperparameters([x0, x1])
     return cs
     
+rng = np.random.RandomState(42)
 # define black box function
 blackbox_func = rosenbrock_2d
 # define search space
@@ -26,7 +27,6 @@ hpopt = BOGP(config_spaces=cs, seed=rng.randint(10000), total_limit=MAX_CALL)
 # Example call of the black-box function
 def_value = blackbox_func(cs.get_default_configuration())
 print("Default Value: %.2f" % def_value)
-values = []
 # ---- Begin BO-loop ----
 for i in range(MAX_CALL):
     # suggest
@@ -37,7 +37,7 @@ for i in range(MAX_CALL):
     trial_list[0].add_observe_value(observe_value=value)
     hpopt.observe(trial_list=trial_list)
     
-    print(value)
+    print(value)  
 ```
 
 ## Feature

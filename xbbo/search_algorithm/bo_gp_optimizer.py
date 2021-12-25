@@ -66,7 +66,7 @@ class BOGP(AbstractOptimizer):
                 trial_list.append(Trial(configuration=config,config_dict=config.get_dictionary(), sparse_array=config.get_sparse_array()))
         else:
             self.surrogate_model._train(np.asarray(self.trials.his_sparse_array),
-                                        np.asarray(self.trials.his_observe_value))
+                                        np.asarray(self.trials._his_observe_value))
             configs = []
             _, best_val = self._get_x_best(self.predict_x_best)
             self.acquisition_func.update(surrogate_model=self.surrogate_model, y_best=best_val)
