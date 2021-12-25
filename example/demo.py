@@ -8,6 +8,7 @@ from xbbo.pbt import PBT
 from xbbo.transfer_bbo import Transfer_BBO
 from xbbo.utils.config import cfg, load_cfg_fom_args
 from xbbo.nas import NAS
+from xbbo.utils.constants import MAXINT
 
 # cfg.freeze()
 
@@ -15,12 +16,12 @@ from xbbo.nas import NAS
 def experiment_main(cfg_clone):  # pragma: main
     # seed = cfg.GENARAL.random_seed
     SEED = cfg_clone.GENERAL.random_seed
-    sng = np.random.RandomState(SEED)
+    rng = np.random.RandomState(SEED)
     if cfg_clone.GENERAL.pipeline == 'BBO':
 
         # opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
         for r in range(cfg_clone.repeat_num):
-            seed = sng.randint(100000)
+            seed = rng.randint(MAXINT)
             # np.random.seed(SEED)
             # random.seed(SEED)
             bbo = BBO(cfg_clone, seed)
@@ -30,7 +31,7 @@ def experiment_main(cfg_clone):  # pragma: main
             print(bbo.record)
     elif cfg_clone.GENERAL.pipeline == 'NAS':
         for r in range(cfg_clone.repeat_num):
-            
+
             # SEED = cfg_clone.GENERAL.random_seed + r
             # np.random.seed(SEED)
             # random.seed(SEED)
@@ -42,7 +43,7 @@ def experiment_main(cfg_clone):  # pragma: main
     elif cfg_clone.GENERAL.pipeline == 'transfer_bbo':
 
         for r in range(cfg_clone.repeat_num):
-            
+
             # SEED = cfg_clone.GENERAL.random_seed + r
             # np.random.seed(SEED)
             # random.seed(SEED)
@@ -55,7 +56,7 @@ def experiment_main(cfg_clone):  # pragma: main
 
         # opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
         for r in range(cfg_clone.repeat_num):
-            
+
             # SEED = cfg_clone.GENERAL.random_seed + r
             # np.random.seed(SEED)
             # random.seed(SEED)
@@ -76,33 +77,37 @@ def main(cfg_clone):
 
 
 if __name__ == '__main__':
-    toy_bbo_cfg_files = [
-        # "toy_turbo-1.yaml"
-        # "toy_turbo-5.yaml"
-        # "toy_gp.yaml",
-        # "toy_anneal.yaml",
-        # "toy_bore.yaml",
-        # "toy_cem.yaml",
-        # "toy_cma.yaml",
-        # "toy_de.yaml",
-        # "toy_rea.yaml",
-        # "toy_rs.yaml",
-        # "toy_tpe.yaml"
+    # toy_bbo_cfg_files = [
+    #     # "toy_turbo-1.yaml"
+    #     # "toy_turbo-5.yaml"
+    #     # "toy_gp.yaml",
+    #     # "toy_anneal.yaml",
+    #     # "toy_bore.yaml",
+    #     # "toy_cem.yaml",
+    #     # "toy_cma.yaml",
+    #     # "toy_de.yaml",
+    #     # "toy_rea.yaml",
+    #     # "toy_rs.yaml",
+    #     # "toy_tpe.yaml"
 
-        "bo_gp2.yaml"
-    ]
+    #     "bo_gp2.yaml"
+    # ]
 
-    for file in toy_bbo_cfg_files:
-        cfg_clone = cfg.clone()
-        cfg.freeze()
-        load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3']) # repeat 3 times with diffent seeds
-        main(cfg_clone)
-        cfg.defrost()
-
+    # for file in toy_bbo_cfg_files:
+    #     cfg_clone = cfg.clone()
+    #     cfg.freeze()
+    #     load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/'+file, '-r', '3']) # repeat 3 times with diffent seeds
+    #     main(cfg_clone)
+    #     cfg.defrost()
+    cfg_clone = cfg.clone()
+    cfg.freeze()
+    load_cfg_fom_args(cfg_clone)  # repeat 3 times with diffent seeds
+    main(cfg_clone)
+    cfg.defrost()
     # cfg_clone = cfg.clone()
     # cfg.freeze()
     # # load_cfg_fom_args(cfg_clone, argv=['-c', '../cfgs/toy_scikit.yaml', '-r', '3'])
-    # # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_sng.yaml', '-r', '1'])
+    # # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_rng.yaml', '-r', '1'])
     # load_cfg_fom_args(cfg_clone, argv=['-c', './cfgs/toy_hyperopt.yaml', '-r', '1'])
     # main(cfg_clone)
     # cfg.defrost()

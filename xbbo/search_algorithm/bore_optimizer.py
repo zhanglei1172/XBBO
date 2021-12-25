@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 import logging
 
 from xbbo.configspace.feature_space import FeatureSpace_uniform
-from xbbo.core.abstract_optimizer import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
 
 class BORE(AbstractOptimizer, FeatureSpace_uniform):

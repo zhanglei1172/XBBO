@@ -1,18 +1,15 @@
-# scipy==1.6.2
-opentuner==0.8.4
-pathvalidate==2.4.1
-POAP==0.1.26
-matplotlib==3.3.4
-hyperopt==0.2.5
-nevergrad==0.1.4
-scikit_optimize==0.8.1
-torchvision==0.10.0
-pytest==6.2.4
+scipy>=1.6.1
+# pathvalidate==2.4.1
+# POAP==0.1.26
+matplotlib>=3.3.4
+scikit_optimize>=0.8.1
+# pytest==6.2.4
 #torch==1.9.0
-numpy==1.20.3
-pandas==1.2.5
+numpy>=1.20.3
+pandas>=1.2.5
 #bayesmark==0.0.8
-ConfigSpace==0.4.19
-GitPython==3.1.18
-pySOT==0.3.3
-scikit_learn==0.24.2
+ConfigSpace>=0.4.19
+# GitPython==3.1.18
+# pySOT==0.3.3
+scikit_learn>=0.24.2
+yacs>=0.1.8

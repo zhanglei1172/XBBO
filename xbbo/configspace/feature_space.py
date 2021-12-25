@@ -3,7 +3,7 @@ import ConfigSpace as CS
 import numpy as np
 
 from xbbo.configspace.space import Array_idx_map
-from xbbo.core.abstract_feature_space import (
+from xbbo.configspace.abstract_feature_space import (
     AbstractFeatureSpace,
     Identity,
     Ord2Uniform,

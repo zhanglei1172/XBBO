@@ -6,6 +6,7 @@ import tqdm
 from xbbo.search_space import build_test_problem
 from xbbo.search_algorithm import get_opt_class
 from xbbo.configspace import build_space
+from xbbo.utils.constants import MAXINT
 from xbbo.utils.record import Record
 
 
@@ -15,14 +16,14 @@ class BBO:
         # setup TestProblem
         self.cfg = cfg
         self.rng = np.random.RandomState(seed)
-        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg, seed=self.rng.randint(100000))
+        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg, seed=self.rng.randint(MAXINT))
 
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
-        self.config_spaces = build_space(self.api_config,seed=self.rng.randint(100000))
+        self.config_spaces = build_space(self.api_config,seed=self.rng.randint(MAXINT))
 
         # Setup optimizer
         opt_class = get_opt_class(cfg.OPTM.name)
-        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(100000), **dict(cfg.OPTM.kwargs))
+        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
 
 
         self.n_suggestions = cfg.OPTM.n_suggestions
@@ -106,6 +107,7 @@ class BBO:
                          'eval_time_per_suggest': sum(trial.time for trial in trial_list)
             }
             self.record.append([trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
+            print(self.optimizer_instance.trials.best_observe_value)
 
 
 

@@ -166,7 +166,7 @@ class Rosenbrock():
         return {
             'x_{}'.format(k): {
                 'type': 'float',
-                'range': (-10, 10)
+                'range': (-5, 10)
             }
             for k in range(self.dim)
         }

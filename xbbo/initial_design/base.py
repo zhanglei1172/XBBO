@@ -10,7 +10,7 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, 
 
 class InitialDesign:
     '''
-    reference: https://github.com/automl/SMAC3/blob/master/smac/initial_design/initial_design.py
+    reference: https://github.com/automl/SMAC3/blob/master/xbbo/initial_design/initial_design.py
     '''
     def __init__(
         self,
