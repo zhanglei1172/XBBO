@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+
+import numpy as np
 # from xbbo.configspace.space import Configurations
 
 class AbstractOptimizer(ABC):
@@ -8,7 +10,7 @@ class AbstractOptimizer(ABC):
     # Every implementation package needs to specify this static variable, e.g., "primary_import=opentuner"
     primary_import = None
 
-    def __init__(self, config_spaces, **kwargs):
+    def __init__(self, config_spaces, seed=42, **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -16,20 +18,9 @@ class AbstractOptimizer(ABC):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        # self.api_config = api_config
         self.space = config_spaces
-        # self.feature_spaces = feature_spaces
-        # if not (feature_spaces is None):
-        #     self.feature_spaces.dtypes_idx_map = self.space.dtypes_idx_map
-        # self.warp = warp
-        # if logger is None:
-        #     self.logger = logging.getLogger('xbbo')
-        # else:
-        #     self.logger = logger
+        self.rng = np.random.RandomState(seed)
 
-    # # @abstractmethod
-    # def transform_sparseArray_to_optSpace(self, sparse_array):
-    #     return sparse_array
 
     @classmethod
     def get_version(cls):

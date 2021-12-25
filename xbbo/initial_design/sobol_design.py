@@ -1,8 +1,11 @@
+# License: 3-clause BSD
+# Copyright (c) 2016-2018, Ml4AAD Group (http://www.ml4aad.org/)
+
 import typing
 from scipy.stats.qmc import Sobol
 
 from xbbo.configspace.space import DenseConfiguration
-from xbbo.initial_design.initialDesign import InitialDesign
+from xbbo.initial_design.base import InitialDesign
 
 
 class SobolDesign(InitialDesign):

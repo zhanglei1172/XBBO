@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # from xbbo import np_util
-from xbbo.core.abstract_optimizer import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 # from xbbo.search_algorithm.feature_space import FeatureSpace_gaussian
 
 class RandomOptimizer(AbstractOptimizer):

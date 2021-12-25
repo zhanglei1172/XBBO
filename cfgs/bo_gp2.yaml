@@ -8,7 +8,7 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: bo_gp_optimizer
+  name: bo_optimizer
   n_suggestions: 1
   max_call: 50
 

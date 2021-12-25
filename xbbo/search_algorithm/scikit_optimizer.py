@@ -22,7 +22,7 @@ from ConfigSpace.hyperparameters import (
     OrdinalHyperparameter
 )
 
-from xbbo.core.abstract_optimizer import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
 
 class ScikitOptimizer(AbstractOptimizer):
