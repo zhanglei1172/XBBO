@@ -20,11 +20,24 @@ def rosenbrock_2d(x):
     val = 100. * (x2 - x1 ** 2.) ** 2. + (1 - x1) ** 2.
     return val
 
+def branin(config):
+    x1, x2 = config['x1'], config['x2']
+    y = (x2 - 5.1 / (4 * np.pi ** 2) * x1 ** 2 + 5 / np.pi * x1 - 6) ** 2 \
+        + 10 * (1 - 1 / (8 * np.pi)) * np.cos(x1) + 10
+    return y
+
 def build_space(rng):
     cs = DenseConfigurationSpace(seed=rng.randint(10000))
     x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
+    return cs
+
+def build_branin_space(rng):
+    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
+    x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
+    cs.add_hyperparameters([x1, x2])
     return cs
 
 if __name__ == "__main__":
@@ -52,7 +65,7 @@ if __name__ == "__main__":
         
         print(value)
     
-    plt.plot(np.log(hpopt.trials.get_history()[0]))
+    plt.plot(hpopt.trials.get_history()[0])
     plt.savefig('./out/rosenbrock_bo_gp.png')
     plt.show()
     print('find best value:{}'.format(hpopt.trials.get_best()[0]))

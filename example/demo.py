@@ -8,6 +8,7 @@ from xbbo.pbt import PBT
 from xbbo.transfer_bbo import Transfer_BBO
 from xbbo.utils.config import cfg, load_cfg_fom_args
 from xbbo.nas import NAS
+from xbbo.utils.constants import MAXINT
 
 # cfg.freeze()
 
@@ -20,7 +21,7 @@ def experiment_main(cfg_clone):  # pragma: main
 
         # opt_kwargs = load_optimizer_kwargs(args[CmdArgs.optimizer], args[CmdArgs.optimizer_root])
         for r in range(cfg_clone.repeat_num):
-            seed = rng.randint(100000)
+            seed = rng.randint(MAXINT)
             # np.random.seed(SEED)
             # random.seed(SEED)
             bbo = BBO(cfg_clone, seed)

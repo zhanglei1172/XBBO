@@ -1,2 +1,2 @@
-from .abstract_optimizer import AbstractOptimizer
+from ..search_algorithm.base import AbstractOptimizer
 from .abstract_model import TestFunction, AbstractBaseModel

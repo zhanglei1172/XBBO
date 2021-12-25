@@ -1,8 +1,8 @@
-XBBO is a library that integrates common black box optimization algorithms, which can easily and quickly benchmark different black box optimization algorithms.
+**XBBO** is a library that integrates common black box optimization algorithms, which can easily and quickly benchmark different black box optimization algorithms.
 
 ## Usage
 
-Run the script in the `examples/` folder
+Run the script in the `example/` folder
 
 #### Bayesian Optimization use Gaussian-process
 
@@ -16,7 +16,7 @@ def build_space(rng):
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
     return cs
-    
+
 rng = np.random.RandomState(42)
 # define black box function
 blackbox_func = rosenbrock_2d
@@ -59,7 +59,7 @@ for i in range(MAX_CALL):
   - [X] PBT
   - [X] TuRBO
 
-## algorithms
+## Algorithms notes
 
 - [BORE](docs/BBO_paper_reading/BORE_BayesianOptimization_by_Density-Ratio_Estimation.pdf)
 - [CEM](docs/BBO_paper_reading/cem.md)

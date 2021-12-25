@@ -2,7 +2,7 @@ import typing
 from scipy.stats.qmc import Sobol
 
 from xbbo.configspace.space import DenseConfiguration
-from xbbo.initial_design.initialDesign import InitialDesign
+from xbbo.initial_design.base import InitialDesign
 
 
 class SobolDesign(InitialDesign):

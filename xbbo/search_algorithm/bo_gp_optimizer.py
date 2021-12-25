@@ -65,8 +65,8 @@ class BOGP(AbstractOptimizer):
             for config in configs:
                 trial_list.append(Trial(configuration=config,config_dict=config.get_dictionary(), sparse_array=config.get_sparse_array()))
         else:
-            self.surrogate_model._train(np.asarray(self.trials.his_sparse_array),
-                                        np.asarray(self.trials._his_observe_value))
+            self.surrogate_model._train(np.asarray(self.trials.get_sparse_array()),
+                                        np.asarray(self.trials.get_history()[0]))
             configs = []
             _, best_val = self._get_x_best(self.predict_x_best)
             self.acquisition_func.update(surrogate_model=self.surrogate_model, y_best=best_val)
@@ -93,7 +93,7 @@ class BOGP(AbstractOptimizer):
 
         # x = [
         #     config.get_dictionary()
-        #     # DenseConfiguration.sparse_array_to_dict(self.space, config.get_sparse_array())
+        #     # DenseConfiguration.sparse_array_to_dict(self.space, config.get_sparse_array()())
         #     for config in configs
         # ]
         # self.trials.params_history.extend(x)
@@ -126,7 +126,7 @@ class BOGP(AbstractOptimizer):
         Configuration
         """
         if predict:
-            X = self.trials.his_sparse_array
+            X = self.trials.get_sparse_array()
             costs = list(
                 map(
                     lambda x: (
@@ -141,7 +141,7 @@ class BOGP(AbstractOptimizer):
             # won't need log(y) if EPM was already trained on log(y)
         else:
             best_idx = self.trials.best_id
-            x_best_array = self.trials.his_sparse_array[best_idx]
+            x_best_array = self.trials.get_sparse_array()[best_idx]
             best_observation = self.trials.best_observe_value
 
         return x_best_array, best_observation
