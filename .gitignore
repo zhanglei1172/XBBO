@@ -156,4 +156,5 @@ cython_debug/
 /xbbo/data/cifar-10-batches-py/
 /xbbo/exp
 exp
-.vscode
+.
+*smac3*/*

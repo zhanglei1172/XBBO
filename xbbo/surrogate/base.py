@@ -1,6 +1,8 @@
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 import typing
 import numpy as np
+from ConfigSpace.hyperparameters import \
+    CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter,Constant
 import sklearn.gaussian_process.kernels
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
@@ -10,6 +12,7 @@ from skopt.learning.gaussian_process import GaussianProcessRegressor
 
 from xbbo.configspace.space import DenseConfigurationSpace
 from xbbo.surrogate.gp_prior import Prior, SoftTopHatPrior, TophatPrior
+
 
 class SurrogateModel(object):
     """Abstract implementation of the Model API.
@@ -40,13 +43,13 @@ class SurrogateModel(object):
     types : list
         If set, contains a list with feature types (cat,const) of input vector
     """
-
-    def __init__(self,
-                 types: np.ndarray,
-                 bounds: typing.List[typing.Tuple[float, float]],
-                 instance_features: np.ndarray=None,
-                 pca_components: float=None,
-                 ):
+    def __init__(
+        self,
+        types: np.ndarray,
+        bounds: typing.List[typing.Tuple[float, float]],
+        instance_features: np.ndarray = None,
+        pca_components: float = None,
+    ):
         """Constructor
 
         Parameters
@@ -84,7 +87,7 @@ class SurrogateModel(object):
             self.scaler = MinMaxScaler()
 
         # Never use a lower variance than this
-        self.var_threshold = 10 ** -5
+        self.var_threshold = 10**-5
 
         self.bounds = bounds
         self.types = types
@@ -109,11 +112,15 @@ class SurrogateModel(object):
         self.types = self._initial_types.copy()
 
         if len(X.shape) != 2:
-            raise ValueError('Expected 2d array, got %dd array!' % len(X.shape))
+            raise ValueError('Expected 2d array, got %dd array!' %
+                             len(X.shape))
         if X.shape[1] != len(self.types):
-            raise ValueError('Feature mismatch: X should have %d features, but has %d' % (X.shape[1], len(self.types)))
+            raise ValueError(
+                'Feature mismatch: X should have %d features, but has %d' %
+                (X.shape[1], len(self.types)))
         if X.shape[0] != Y.shape[0]:
-            raise ValueError('X.shape[0] (%s) != y.shape[0] (%s)' % (X.shape[0], Y.shape[0]))
+            raise ValueError('X.shape[0] (%s) != y.shape[0] (%s)' %
+                             (X.shape[0], Y.shape[0]))
 
         self.n_params = X.shape[1] - self.n_feats
 
@@ -131,7 +138,8 @@ class SurrogateModel(object):
                 # if X_feats.shape[0] < self.pca, X_feats.shape[1] ==
                 # X_feats.shape[0]
                 self.types = np.array(
-                    np.hstack((self.types[:self.n_params], np.zeros((X_feats.shape[1])))),
+                    np.hstack((self.types[:self.n_params],
+                               np.zeros((X_feats.shape[1])))),
                     dtype=np.uint,
                 )
 
@@ -175,9 +183,12 @@ class SurrogateModel(object):
             warnings.simplefilter("ignore", category=UserWarning)
 
             if len(X.shape) != 2:
-                raise ValueError('Expected 2d array, got %dd array!' % len(X.shape))
+                raise ValueError('Expected 2d array, got %dd array!' %
+                                 len(X.shape))
             if X.shape[1] != len(self._initial_types):
-                raise ValueError('Rows in X should have %d entries but have %d!' % (len(self._initial_types), X.shape[1]))
+                raise ValueError(
+                    'Rows in X should have %d entries but have %d!' %
+                    (len(self._initial_types), X.shape[1]))
 
             if self.pca:
                 try:
@@ -189,7 +200,9 @@ class SurrogateModel(object):
                     pass  # PCA not fitted if only one training sample
 
             if X.shape[1] != len(self.types):
-                raise ValueError('Rows in X should have %d entries but have %d!' % (len(self.types), X.shape[1]))
+                raise ValueError(
+                    'Rows in X should have %d entries but have %d!' %
+                    (len(self.types), X.shape[1]))
 
             mean, var = self._predict(X)
 
@@ -218,7 +231,8 @@ class SurrogateModel(object):
         """
         raise NotImplementedError()
 
-    def predict_marginalized_over_instances(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def predict_marginalized_over_instances(
+            self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
         """Predict mean and variance marginalized over all instances.
 
         Returns the predictive mean and variance marginalised over all
@@ -238,9 +252,11 @@ class SurrogateModel(object):
         """
 
         if len(X.shape) != 2:
-            raise ValueError('Expected 2d array, got %dd array!' % len(X.shape))
+            raise ValueError('Expected 2d array, got %dd array!' %
+                             len(X.shape))
         if X.shape[1] != len(self.types):
-            raise ValueError('Rows in X should have %d entries but have %d!' % (len(self.types), X.shape[1]))
+            raise ValueError('Rows in X should have %d entries but have %d!' %
+                             (len(self.types), X.shape[1]))
 
         if self.instance_features is None or \
                 len(self.instance_features) == 0:
@@ -254,13 +270,13 @@ class SurrogateModel(object):
         mean = np.zeros(X.shape[0])
         var = np.zeros(X.shape[0])
         for i, x in enumerate(X):
-            X_ = np.hstack(
-                (np.tile(x, (n_instances, 1)), self.instance_features))
+            X_ = np.hstack((np.tile(x,
+                                    (n_instances, 1)), self.instance_features))
             means, vars = self.predict(X_)
             # VAR[1/n (X_1 + ... + X_n)] =
             # 1/n^2 * ( VAR(X_1) + ... + VAR(X_n))
             # for independent X_1 ... X_n
-            var_x = np.sum(vars) / (len(vars) ** 2)
+            var_x = np.sum(vars) / (len(vars)**2)
             if var_x < self.var_threshold:
                 var_x = self.var_threshold
 
@@ -274,17 +290,17 @@ class SurrogateModel(object):
 
         return mean, var
 
-class BaseGP(SurrogateModel):
 
+class BaseGP(SurrogateModel):
     def __init__(
-            self,
-            configspace: DenseConfigurationSpace,
-            types: List[int],
-            bounds: List[Tuple[float, float]],
-            rng: np.random.RandomState,
-            normalize_y: bool = True,
-            instance_features: Optional[np.ndarray] = None,
-            pca_components: Optional[int] = None,
+        self,
+        configspace: DenseConfigurationSpace,
+        types: List[int],
+        bounds: List[Tuple[float, float]],
+        rng: np.random.RandomState,
+        normalize_y: bool = True,
+        instance_features: Optional[np.ndarray] = None,
+        pca_components: Optional[int] = None,
     ):
         """
         Abstract base class for all Gaussian process models.
@@ -327,9 +343,9 @@ class BaseGP(SurrogateModel):
         return (y - self.mean_y_) / self.std_y_
 
     def _untransform_y(
-            self,
-            y: np.ndarray,
-            var: Optional[np.ndarray] = None,
+        self,
+        y: np.ndarray,
+        var: Optional[np.ndarray] = None,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         """Transform zeromean unit standard deviation data into the regular space.
 
@@ -348,14 +364,14 @@ class BaseGP(SurrogateModel):
         """
         y = y * self.std_y_ + self.mean_y_
         if var is not None:
-            var = var * self.std_y_ ** 2
+            var = var * self.std_y_**2
             return y, var
         return y
 
     def _get_all_priors(
-            self,
-            add_bound_priors: bool = True,
-            add_soft_bounds: bool = False,
+        self,
+        add_bound_priors: bool = True,
+        add_soft_bounds: bool = False,
     ) -> List[List[Prior]]:
         # Obtain a list of all priors for each tunable hyperparameter of the kernel
         all_priors = []
@@ -365,11 +381,13 @@ class BaseGP(SurrogateModel):
         to_visit.append(self.gp.kernel)  # fix single kernel
         while len(to_visit) > 0:
             current_param = to_visit.pop(0)
-            if isinstance(current_param, sklearn.gaussian_process.kernels.KernelOperator):
+            if isinstance(current_param,
+                          sklearn.gaussian_process.kernels.KernelOperator):
                 to_visit.insert(0, current_param.k1)
                 to_visit.insert(1, current_param.k2)
                 continue
-            elif isinstance(current_param, sklearn.gaussian_process.kernels.Kernel):
+            elif isinstance(current_param,
+                            sklearn.gaussian_process.kernels.Kernel):
                 hps = current_param.hyperparameters
                 assert len(hps) == 1
                 hp = hps[0]
@@ -384,12 +402,17 @@ class BaseGP(SurrogateModel):
                         if add_soft_bounds:
                             priors_for_hp.append(
                                 SoftTopHatPrior(
-                                    lower_bound=bounds[i][0], upper_bound=bounds[i][1], rng=self.rng, exponent=2,
+                                    lower_bound=bounds[i][0],
+                                    upper_bound=bounds[i][1],
+                                    rng=self.rng,
+                                    exponent=2,
                                 ))
                         else:
                             priors_for_hp.append(
                                 TophatPrior(
-                                    lower_bound=bounds[i][0], upper_bound=bounds[i][1], rng=self.rng,
+                                    lower_bound=bounds[i][0],
+                                    upper_bound=bounds[i][1],
+                                    rng=self.rng,
                                 ))
                     all_priors.append(priors_for_hp)
         return all_priors
@@ -400,11 +423,13 @@ class BaseGP(SurrogateModel):
         to_visit.append(self.kernel)
         while len(to_visit) > 0:
             current_param = to_visit.pop(0)
-            if isinstance(current_param, sklearn.gaussian_process.kernels.KernelOperator):
+            if isinstance(current_param,
+                          sklearn.gaussian_process.kernels.KernelOperator):
                 to_visit.insert(0, current_param.k1)
                 to_visit.insert(1, current_param.k2)
                 current_param.has_conditions = has_conditions
-            elif isinstance(current_param, sklearn.gaussian_process.kernels.Kernel):
+            elif isinstance(current_param,
+                            sklearn.gaussian_process.kernels.Kernel):
                 current_param.has_conditions = has_conditions
             else:
                 raise ValueError(current_param)
@@ -427,7 +452,7 @@ class Surrogate():
     def fit(self, x, y):
         pass
 
-    def _normalize_y(self, y:np.ndarray) -> np.ndarray:
+    def _normalize_y(self, y: np.ndarray) -> np.ndarray:
         self.mean_y = np.mean(y)
         self.std_y = np.std(y)
         if self.std_y == 0:
@@ -456,11 +481,62 @@ class Surrogate():
         """
         y = y * self.std_y_ + self.mean_y_
         if var is not None:
-            var = var * self.std_y_ ** 2
+            var = var * self.std_y_**2
             return y, var
         return y
 
     def _impute_inactive(self, X: np.ndarray) -> np.ndarray:
         X = X.copy()
         X[~np.isfinite(X)] = -1
+        return X
+
+
+class BaseRF(SurrogateModel):
+    def __init__(
+        self,
+        configspace: DenseConfigurationSpace,
+        types: typing.List[int],
+        bounds: List[Tuple[float, float]],
+        instance_features: Optional[np.ndarray] = None,
+        pca_components: Optional[int] = None,
+        **kwargs
+    ) -> None:
+        """
+        Abstract base class for all random forest models.
+        """
+        self.configspace = configspace
+        super().__init__(
+            types=types,
+            bounds=bounds,
+            instance_features=instance_features,
+            pca_components=pca_components,
+            **kwargs
+        )
+
+        self.conditional = dict()  # type: Dict[int, bool]
+        self.impute_values = dict()  # type: Dict[int, float]
+
+    def _impute_inactive(self, X: np.ndarray) -> np.ndarray:
+        X = X.copy()
+        for idx, hp in enumerate(self.configspace.get_hyperparameters()):
+            if idx not in self.conditional:
+                parents = self.configspace.get_parents_of(hp.name)
+                if len(parents) == 0:
+                    self.conditional[idx] = False
+                else:
+                    self.conditional[idx] = True
+                    if isinstance(hp, CategoricalHyperparameter):
+                        self.impute_values[idx] = len(hp.choices)
+                    elif isinstance(hp, (UniformFloatHyperparameter,
+                                         UniformIntegerHyperparameter)):
+                        self.impute_values[idx] = -1
+                    elif isinstance(hp, Constant):
+                        self.impute_values[idx] = 1
+                    else:
+                        raise ValueError
+
+            if self.conditional[idx] is True:
+                nonfinite_mask = ~np.isfinite(X[:, idx])
+                X[nonfinite_mask, idx] = self.impute_values[idx]
+
         return X

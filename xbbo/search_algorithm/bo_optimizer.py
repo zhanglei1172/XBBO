@@ -13,7 +13,8 @@ from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.acquisition_function.ei import EI_AcqFunc
-from xbbo.surrogate.prf import skRandomForestWithInstances
+from xbbo.surrogate.prf import RandomForestWithInstances
+from xbbo.surrogate.sk_prf import skRandomForestWithInstances
 from xbbo.surrogate.skrf import RandomForestSurrogate
 from xbbo.utils.util import get_types
 
@@ -53,13 +54,15 @@ class BO(AbstractOptimizer):
                              dense_dim=self.dense_dimension)
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
+        elif surrogate == 'prf':
+            self.surrogate_model = RandomForestWithInstances(self.space,rng=self.rng)
         elif surrogate == 'rf':
             self.surrogate_model = RandomForestSurrogate(self.space,rng=self.rng)
-        elif surrogate == 'prf':
+        elif surrogate == 'sk_prf':
              self.surrogate_model = skRandomForestWithInstances(self.space,rng=self.rng)
         else:
             raise ValueError('surrogate {} not in {}'.format(
-                surrogate, ['gp', 'rf', 'prf']))
+                surrogate, ['gp', 'rf', 'prf', 'sk_prf']))
 
         if acq_func == 'ei':
             self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
