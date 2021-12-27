@@ -1,79 +1,62 @@
-# Copyright (c) 2019 Uber Technologies, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# from xbbo import np_util
+from xbbo.core.trials import Trial, Trials
+from xbbo.initial_design import ALL_avaliable_design
 from xbbo.search_algorithm.base import AbstractOptimizer
-# from xbbo.search_algorithm.feature_space import FeatureSpace_gaussian
+
 
 class RandomOptimizer(AbstractOptimizer):
-    # Unclear what is best package to list for primary_import here.
-    primary_import = "xbbo"
-
-    def __init__(self, config_spaces, **kwargs):
-        self.opt_name = 'radom-search'
-        """Build wrapper class to use random search function in benchmark.
-
-        Settings for `suggest_dict` can be passed using kwargs.
-
-        Parameters
-        ----------
-        api_config : dict-like of dict-like
-            Configuration of the optimization variables. See API description.
-        """
-        AbstractOptimizer.__init__(self, config_spaces)
+    def __init__(
+            self,
+            config_spaces,
+            seed: int = 42,
+            initial_design: str = 'sobol',
+            #  min_sample=1,
+            total_limit: int = 10,
+            **kwargs):
+        AbstractOptimizer.__init__(self, config_spaces, seed, **kwargs)
+        self.initial_design = ALL_avaliable_design[initial_design](
+            self.space, self.rng, ta_run_limit=total_limit)
+        self.init_budget = self.initial_design.init_budget
+        self.initial_design_configs = self.initial_design.select_configurations(
+        )
+        self.dense_dimension = self.space.get_dimensions(sparse=False)
+        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.trials = Trials(sparse_dim=self.sparse_dimension,
+                             dense_dim=self.dense_dimension)
 
     def transform_sparseArray_to_optSpace(self, sparse_array):
         return sparse_array
 
     def suggest(self, n_suggestions=1):
-        """Get suggestion.
+        trial_list = []
+        for n in range(n_suggestions):
+            if self.initial_design_configs:
+                config = self.initial_design_configs.pop(0)
+                trial_list.append(
+                    Trial(
+                        configuration=config,
+                          config_dict=config.get_dictionary(),
+                        #   sparse_array=config.get_sparse_array())
+                    ))
+                continue
+            iter_ = 0
+            while iter_ < 1000:  # remove history suggest
+                config = self.space.sample_configuration()[0]
+                if not self.trials.is_contain(config):
+                    trial_list.append(
+                        Trial(configuration=config,
+                              config_dict=config.get_dictionary(),
+                              sparse_array=config.get_sparse_array()))
 
-        Parameters
-        ----------
-        n_suggestions : int
-            Desired number of parallel suggestions in the output
+                    break
+                iter_ += 1
+            else:
+                assert False, "no more configs can be suggest"
 
-        Returns
-        -------
-        next_guess : list of dict
-            List of `n_suggestions` suggestions to evaluate the objective
-            function. Each suggestion is a dictionary where each key
-            corresponds to a parameter being optimized.
-        """
-        # x_guess = rs.suggest_dict([], [], self.configspace, n_suggestions=n_suggestions, random=self.random)
-        x_guess_configs = self.space.sample_configuration(size=n_suggestions)
-        x_guess = [x_guess_config.get_dict_unwarped() for x_guess_config in x_guess_configs]
-        features = [x_guess_config.get_array() for x_guess_config in x_guess_configs]        # x_guess = self.configspace.sample_configuration_and_unwarp(size=n_suggestions)
-        # x_guess = self.configspace.sample_configuration_and_unwarp(size=n_suggestions)
-        return x_guess, features
+        return trial_list
 
-    def observe(self, features, y):
-        """Feed an observation back.
-
-        Parameters
-        ----------
-        X : list of dict-like
-            Places where the objective function has already been evaluated.
-            Each suggestion is a dictionary where each key corresponds to a
-            parameter being optimized.
-        y : array-like, shape (n,)
-            Corresponding values where objective has been evaluated
-        """
-        # Random search so don't do anything
-        pass
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial)
 
 
-# All optimizer wrappers need to assign their wrapper to the name opt_wrapper because experiment always tries to import
-# opt_wrapper regardless of the optimizer it is importing.
 opt_class = RandomOptimizer
-# feature_space = FeatureSpace_gaussian
