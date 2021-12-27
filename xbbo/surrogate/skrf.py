@@ -5,7 +5,7 @@ import typing
 import numpy as np
 from typing import List, Optional, Tuple, Union
 
-from xbbo.surrogate.base import SurrogateModel
+from xbbo.surrogate.base import BaseRF
 from xbbo.configspace.space import DenseConfigurationSpace
 from xbbo.utils.util import get_types
 
@@ -13,7 +13,7 @@ from xbbo.utils.util import get_types
 logger = logging.getLogger(__name__)
 
 
-class RandomForestSurrogate(SurrogateModel):
+class RandomForestSurrogate(BaseRF):
 
     def __init__(
             self,
@@ -22,7 +22,8 @@ class RandomForestSurrogate(SurrogateModel):
             normalize_y: bool = True,
             instance_features: typing.Optional[np.ndarray] = None,
             pca_components: typing.Optional[int] = None,
-            rng: np.random.RandomState = np.random.RandomState(42)
+            rng: np.random.RandomState = np.random.RandomState(42),
+            **kwargs
     ):
     
         self.model_config = dict()
@@ -45,10 +46,12 @@ class RandomForestSurrogate(SurrogateModel):
         self.random_seeds = self.rng.randint(low=1, high=10000, size=self.ensemble_size)
         types, bounds = get_types(configspace)
         super().__init__(
+            configspace=configspace,
             types=types,
             bounds=bounds,
             instance_features=instance_features,
             pca_components=pca_components,
+            **kwargs
         )
 
         self.normalize_y = normalize_y

@@ -73,7 +73,7 @@ for i in range(MAX_CALL):
 
 ## Compare other bbo library
 
-[SMAC3](docs/compare/SMAC3/SMAC3.md)
+[SMAC3](tests/smac3/SMAC3.md)
 
 ## Algorithms notes
 
