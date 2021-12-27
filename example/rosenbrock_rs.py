@@ -3,7 +3,7 @@ import numpy as np
 from xbbo.configspace.space import DenseConfigurationSpace
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 
-from xbbo.search_algorithm.bo_optimizer import BO
+from xbbo.search_algorithm.random_optimizer import RandomOptimizer
 
 def rosenbrock_2d(x):
     """ The 2 dimensional Rosenbrock function as a toy model
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_branin_space(rng)
     # define black box optimizer
-    hpopt = BO(config_spaces=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_opt='rs_ls')
+    hpopt = RandomOptimizer(config_spaces=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol')
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         print(value)
     
     # plt.plot(hpopt.trials.get_history()[0])
-    # plt.savefig('./out/rosenbrock_bo_gp.png')
+    # plt.savefig('./out/rosenbrock_bo_rs.png')
     # plt.show()
     print('find best value:{}'.format(hpopt.trials.get_best()[0]))
 

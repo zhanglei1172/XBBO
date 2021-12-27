@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.lib.twodim_base import tri
+import matplotlib.pyplot as plt
 
 from xbbo.configspace.space import DenseConfiguration
 
@@ -80,3 +80,8 @@ class Trials:
 
     def get_history(self):
         return self._his_observe_value, self._his_configs_dict
+    
+    # def visualize(self, ax=None):
+    #     if ax is None:
+    #         _, ax = plt.subplots(111)
+    #     ax.plot(np.minimum.acumalate(self._his_observe_value))

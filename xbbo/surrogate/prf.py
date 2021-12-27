@@ -1,48 +1,29 @@
-# ref: https://github.com/thomas-young-2013/open-box/blob/master/openbox/surrogate/base/rf_with_instances_sklearn.py
+# License: 3-clause BSD
+# Copyright (c) 2016-2018, Ml4AAD Group (http://www.ml4aad.org/)
 
-import typing, logging
+import logging
+import typing
+
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-import threading
-from joblib import Parallel, delayed
-from sklearn.utils.fixes import _joblib_parallel_args
-from sklearn.utils.validation import check_is_fitted
+from pyrfr import regression
 from xbbo.configspace.space import DenseConfigurationSpace
+from xbbo.surrogate.base import BaseRF
+from xbbo.utils.constants import MAXINT
 from xbbo.utils.util import get_types
-try:
-    from sklearn.ensemble.base import _partition_estimators
-    old_sk_version = True
-except ModuleNotFoundError:
-    from sklearn.ensemble._base import _partition_estimators
-    old_sk_version = False
-
-from xbbo.surrogate.base import SurrogateModel
-
-logger = logging.getLogger(__name__)
 
 
-def _collect_prediction(predict, X, out, lock):
-    """
-    This is a utility function for joblib's Parallel.
-
-    It can't go locally in ForestClassifier or ForestRegressor, because joblib
-    complains that it cannot pickle it when placed there.
-    """
-    prediction = predict(X, check_input=False)
-    with lock:
-        out.append(prediction)
-
-class skRandomForestWithInstances(SurrogateModel):
-
+class RandomForestWithInstances(BaseRF):
     """Random forest that takes instance features into account.
-
-    implement based on sklearn.ensemble.RandomForestRegressor
 
     Attributes
     ----------
+    rf_opts : regression.rf_opts
+        Random forest hyperparameter
     n_points_per_tree : int
-    rf : RandomForestRegressor
+    rf : regression.binary_rss_forest
         Only available after training
+    hypers: list
+        List of random forest hyperparameters
     unlog_y: bool
     seed : int
     types : np.ndarray
@@ -50,20 +31,19 @@ class skRandomForestWithInstances(SurrogateModel):
     rng : np.random.RandomState
     logger : logging.logger
     """
-
-    def __init__(self, configspace: DenseConfigurationSpace,
-                 log_y: bool=False,
-                 num_trees: int=10,
-                 do_bootstrapping: bool=True,
-                 n_points_per_tree: int=-1,
-                 ratio_features: float=5. / 6.,
-                 min_samples_split: int=3,
-                 min_samples_leaf: int=3,
-                 max_depth: int=2**20,
-                 eps_purity: float=1e-8,
-                 max_num_nodes: int=2**20,
-                 rng: np.random.RandomState = np.random.RandomState(42),
-                 n_jobs: int=None,
+    def __init__(self,
+                 configspace: DenseConfigurationSpace,
+                 log_y: bool = False,
+                 num_trees: int = 10,
+                 do_bootstrapping: bool = True,
+                 n_points_per_tree: int = -1,
+                 ratio_features: float = 5. / 6.,
+                 min_samples_split: int = 3,
+                 min_samples_leaf: int = 3,
+                 max_depth: int = 2**20,
+                 eps_purity: float = 1e-8,
+                 max_num_nodes: int = 2**20,
+                 rng: np.random.RandomState=np.random.RandomState(42),
                  **kwargs):
         """
         Parameters
@@ -101,37 +81,40 @@ class skRandomForestWithInstances(SurrogateModel):
             The maxmimum total number of nodes in a tree
         seed : int
             The seed that is passed to the random_forest_run library.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. :meth:`fit`, :meth:`predict`,
-            :meth:`decision_path` and :meth:`apply` are all parallelized over the
-            trees. ``None`` means 1 unless in a :obj:`joblib.parallel_backend`
-            context. ``-1`` means using all processors. See :term:`Glossary
-            <n_jobs>` for more details.
         """
         types, bounds = get_types(configspace)
-        super().__init__(types, bounds, **kwargs)
-
+        super().__init__(configspace, types, bounds, **kwargs)
 
         self.log_y = log_y
-        if self.log_y:
-            raise NotImplementedError
-        self.rng = rng
+        seed = rng.randint(MAXINT)
+        self.rng = regression.default_random_engine(seed)
 
-        self.num_trees = num_trees
-        self.do_bootstrapping = do_bootstrapping
-        max_features = None if ratio_features > 1.0 else \
-            int(max(1, types.shape[0] * ratio_features))
-        self.max_features = max_features
-        self.min_samples_split = min_samples_split
-        self.min_samples_leaf = min_samples_leaf
-        self.max_depth = max_depth
-        self.epsilon_purity = eps_purity
-        self.max_num_nodes = max_num_nodes
+        self.rf_opts = regression.forest_opts()
+        self.rf_opts.num_trees = num_trees
+        self.rf_opts.do_bootstrapping = do_bootstrapping
+        max_features = 0 if ratio_features > 1.0 else \
+            max(1, int(types.shape[0] * ratio_features))
+        self.rf_opts.tree_opts.max_features = max_features
+        self.rf_opts.tree_opts.min_samples_to_split = min_samples_split
+        self.rf_opts.tree_opts.min_samples_in_leaf = min_samples_leaf
+        self.rf_opts.tree_opts.max_depth = max_depth
+        self.rf_opts.tree_opts.epsilon_purity = eps_purity
+        self.rf_opts.tree_opts.max_num_nodes = max_num_nodes
+        self.rf_opts.compute_law_of_total_variance = False
 
         self.n_points_per_tree = n_points_per_tree
-        self.n_jobs = n_jobs
+        self.rf = None  # type: regression.binary_rss_forest
 
-        self.rf = None  # type: RandomForestRegressor
+        # This list well be read out by save_iteration() in the solver
+        self.hypers = [
+            num_trees, max_num_nodes, do_bootstrapping, n_points_per_tree,
+            ratio_features, min_samples_split, min_samples_leaf, max_depth,
+            eps_purity, seed
+        ]
+        self.seed = seed
+
+        self.logger = logging.getLogger(self.__module__ + "." +
+                                        self.__class__.__name__)
 
     def _train(self, X: np.ndarray, y: np.ndarray):
         """Trains the random forest on X and y.
@@ -147,72 +130,48 @@ class skRandomForestWithInstances(SurrogateModel):
         -------
         self
         """
-
+        X = self._impute_inactive(X)
         self.X = X
         self.y = y.flatten()
 
         if self.n_points_per_tree <= 0:
-            self.num_data_points_per_tree = self.X.shape[0]
+            self.rf_opts.num_data_points_per_tree = self.X.shape[0]
         else:
-            self.num_data_points_per_tree = self.n_points_per_tree
-        if old_sk_version:
-            self.rf = RandomForestRegressor(
-                n_estimators=self.num_trees,
-                max_depth=self.max_depth,
-                min_samples_split=self.min_samples_split,
-                min_samples_leaf=self.min_samples_leaf,
-                max_features=self.max_features,
-                # max_samples=self.num_data_points_per_tree,
-                max_leaf_nodes=self.max_num_nodes,
-                min_impurity_decrease=self.epsilon_purity,
-                bootstrap=self.do_bootstrapping,
-                n_jobs=self.n_jobs,
-                random_state=self.rng,
-            )
-        else:
-            self.rf = RandomForestRegressor(
-                n_estimators=self.num_trees,
-                max_depth=self.max_depth,
-                min_samples_split=self.min_samples_split,
-                min_samples_leaf=self.min_samples_leaf,
-                max_features=self.max_features,
-                max_samples=self.num_data_points_per_tree,
-                max_leaf_nodes=self.max_num_nodes,
-                min_impurity_decrease=self.epsilon_purity,
-                bootstrap=self.do_bootstrapping,
-                n_jobs=self.n_jobs,
-                random_state=self.rng,
-            )
-        self.rf.fit(self.X, self.y)
+            self.rf_opts.num_data_points_per_tree = self.n_points_per_tree
+        self.rf = regression.binary_rss_forest()
+        self.rf.options = self.rf_opts
+        data = self._init_data_container(self.X, self.y)
+        self.rf.fit(data, rng=self.rng)
         return self
 
-    def predict_mean_var(self, X: np.ndarray):
-        if old_sk_version:
-            check_is_fitted(self.rf, 'estimators_')
-        else:
-            check_is_fitted(self.rf)
-        # Check data
-        if X.ndim == 1:
-            X = X.reshape((1, -1))
-        X = self.rf._validate_X_predict(X)
+    def _init_data_container(self, X: np.ndarray, y: np.ndarray):
+        """Fills a pyrfr default data container, s.t. the forest knows
+        categoricals and bounds for continous data
 
-        # Assign chunk of trees to jobs
-        n_jobs, _, _ = _partition_estimators(self.rf.n_estimators, self.rf.n_jobs)
+        Parameters
+        ----------
+        X : np.ndarray [n_samples, n_features]
+            Input data points
+        y : np.ndarray [n_samples, ]
+            Corresponding target values
 
-        # collect the output of every estimator
-        all_y_preds = list()
+        Returns
+        -------
+        data : regression.default_data_container
+            The filled data container that pyrfr can interpret
+        """
+        # retrieve the types and the bounds from the ConfigSpace
+        data = regression.default_data_container(X.shape[1])
 
-        # Parallel loop
-        lock = threading.Lock()
-        Parallel(n_jobs=n_jobs, verbose=self.rf.verbose,
-                 **_joblib_parallel_args(require="sharedmem"))(
-            delayed(_collect_prediction)(e.predict, X, all_y_preds, lock)
-            for e in self.rf.estimators_)
-        all_y_preds = np.asarray(all_y_preds, dtype=np.float64)
+        for i, (mn, mx) in enumerate(self.bounds):
+            if np.isnan(mx):
+                data.set_type_of_feature(i, mn)
+            else:
+                data.set_bounds_of_feature(i, mn, mx)
 
-        m = np.mean(all_y_preds, axis=0)
-        v = np.var(all_y_preds, axis=0)
-        return m, v
+        for row_X, row_y in zip(X, y):
+            data.add_data_point(row_X, row_y)
+        return data
 
     def _predict(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
         """Predict means and variances for given X.
@@ -230,15 +189,30 @@ class skRandomForestWithInstances(SurrogateModel):
             Predictive variance
         """
         if len(X.shape) != 2:
-            raise ValueError(
-                'Expected 2d array, got %dd array!' % len(X.shape))
+            raise ValueError('Expected 2d array, got %dd array!' %
+                             len(X.shape))
         if X.shape[1] != self.types.shape[0]:
-            raise ValueError('Rows in X should have %d entries but have %d!' % (self.types.shape[0], X.shape[1]))
-
-        if self.log_y:
-            raise NotImplementedError
-        else:
-            means, vars_ = self.predict_mean_var(X)
+            raise ValueError('Rows in X should have %d entries but have %d!' %
+                             (self.types.shape[0], X.shape[1]))
+        X = self._impute_inactive(X)
+        means, vars_ = [], []
+        for row_X in X:
+            if self.log_y:
+                preds_per_tree = self.rf.all_leaf_values(row_X)
+                means_per_tree = []
+                for preds in preds_per_tree:
+                    # within one tree, we want to use the
+                    # arithmetic mean and not the geometric mean
+                    means_per_tree.append(np.log(np.mean(np.exp(preds))))
+                mean = np.mean(means_per_tree)
+                var = np.var(means_per_tree
+                             )  # variance over trees as uncertainty estimate
+            else:
+                mean, var = self.rf.predict_mean_var(row_X)
+            means.append(mean)
+            vars_.append(var)
+        means = np.array(means)
+        vars_ = np.array(vars_)
 
         return means.reshape((-1, 1)), vars_.reshape((-1, 1))
 
@@ -269,7 +243,54 @@ class skRandomForestWithInstances(SurrogateModel):
             Predictive variance
         """
 
-        if self.log_y:
-            raise NotImplementedError
-        else:
-            return super().predict_marginalized_over_instances(X)
+        if self.instance_features is None or \
+                len(self.instance_features) == 0:
+            mean, var = self.predict(X)
+            var[var < self.var_threshold] = self.var_threshold
+            var[np.isnan(var)] = self.var_threshold
+            return mean, var
+
+        if len(X.shape) != 2:
+            raise ValueError('Expected 2d array, got %dd array!' %
+                             len(X.shape))
+        if X.shape[1] != self.bounds.shape[0]:
+            raise ValueError('Rows in X should have %d entries but have %d!' %
+                             (self.bounds.shape[0], X.shape[1]))
+        X = self._impute_inactive(X)
+        mean = np.zeros(X.shape[0])
+        var = np.zeros(X.shape[0])
+        for i, x in enumerate(X):
+
+            # marginalize over instances
+            # 1. get all leaf values for each tree
+            preds_trees = [[] for i in range(self.rf_opts.num_trees)]
+
+            for feat in self.instance_features:
+                x_ = np.concatenate([x, feat])
+                preds_per_tree = self.rf.all_leaf_values(x_)
+                for tree_id, preds in enumerate(preds_per_tree):
+                    preds_trees[tree_id] += preds
+
+            # 2. average in each tree
+            for tree_id in range(self.rf_opts.num_trees):
+                if self.log_y:
+                    preds_trees[tree_id] = \
+                        np.log(np.mean(np.exp(preds_trees[tree_id])))
+                else:
+                    preds_trees[tree_id] = np.mean(preds_trees[tree_id])
+
+            # 3. compute statistics across trees
+            mean_x = np.mean(preds_trees)
+            var_x = np.var(preds_trees)
+            if var_x < self.var_threshold:
+                var_x = self.var_threshold
+
+            var[i] = var_x
+            mean[i] = mean_x
+
+        if len(mean.shape) == 1:
+            mean = mean.reshape((-1, 1))
+        if len(var.shape) == 1:
+            var = var.reshape((-1, 1))
+
+        return mean, var
