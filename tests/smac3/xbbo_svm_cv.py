@@ -117,7 +117,7 @@ def run_one_exp(seed):
     def_value = svm_from_cfg(cs.get_default_configuration())
     print("Default Value: %.2f" % (def_value))
 
-    hpopt = BO(config_spaces=cs,
+    hpopt = BO(space=cs,
                seed=seed,
                total_limit=MAX_CALL,
                initial_design='sobol',

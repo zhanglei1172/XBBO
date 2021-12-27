@@ -5,7 +5,7 @@ import numpy as np
 from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
 # from xbbo.core import trials
 # from xbbo.core.stochastic import Category, Uniform
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class BO(AbstractOptimizer):
     def __init__(
             self,
-            config_spaces: DenseConfiguration,
+            space: DenseConfigurationSpace,
             seed: int = 42,
             surrogate: str = 'gp',
             acq_func: str = 'ei',
@@ -36,7 +36,7 @@ class BO(AbstractOptimizer):
         predict_x_best: bool
             Choose x_best for computing the acquisition function via the model instead of via the observations.
         '''
-        AbstractOptimizer.__init__(self, config_spaces, seed, **kwargs)
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
         # self.min_sample = min_sample
         # configs = self.space.get_hyperparameters()
         self.predict_x_best = predict_x_best
