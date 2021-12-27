@@ -33,7 +33,7 @@ def run_one_exp(seed):
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
 
-    hpopt = BO(config_spaces=cs,
+    hpopt = BO(space=cs,
                seed=seed,
                total_limit=MAX_CALL,
                initial_design='sobol',

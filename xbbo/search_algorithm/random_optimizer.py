@@ -6,13 +6,13 @@ from xbbo.search_algorithm.base import AbstractOptimizer
 class RandomOptimizer(AbstractOptimizer):
     def __init__(
             self,
-            config_spaces,
+            space,
             seed: int = 42,
             initial_design: str = 'sobol',
             #  min_sample=1,
             total_limit: int = 10,
             **kwargs):
-        AbstractOptimizer.__init__(self, config_spaces, seed, **kwargs)
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit)
         self.init_budget = self.initial_design.init_budget
