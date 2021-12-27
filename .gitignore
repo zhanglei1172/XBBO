@@ -157,4 +157,5 @@ cython_debug/
 /xbbo/exp
 exp
 .
-*smac3*/*
+*smac3*/
+.vscode/
