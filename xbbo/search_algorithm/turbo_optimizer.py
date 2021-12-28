@@ -1,25 +1,23 @@
-import glob
+import logging
 import math
-import sys
 from copy import deepcopy
 
 import gpytorch
 import numpy as np
 import torch
-from botorch.acquisition import ExpectedImprovement
-from matplotlib import pyplot as plt
-from botorch.optim import optimize_acqf
-import tqdm, random
 from torch.quasirandom import SobolEngine
-from xbbo.acquisition_function.ei import EI
-from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
-from xbbo.core.trials import Trials
-from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
-    GaussianProcessRegressorARD_torch
+from xbbo.core.trials import Trial, Trials
+from xbbo.initial_design import ALL_avaliable_design
+# from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
+#     GaussianProcessRegressorARD_torch
+from xbbo.utils.constants import MAXINT
 from xbbo.surrogate.gp import train_gp
+
+logger = logging.getLogger(__name__)
+
 
 def latin_hypercube(n_pts, dim):
     """Basic Latin hypercube implementation with center perturbation."""
@@ -33,58 +31,61 @@ def latin_hypercube(n_pts, dim):
     X += pert
     return X
 
-class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
+
+class TuRBO(AbstractOptimizer):
     '''
     reference: https://github.com/uber-research/TuRBO/blob/master/turbo/turbo_m.py
     '''
-
-    def __init__(self,
-                 config_spaces,
-                 min_sample=8, # recommand 2*dim
-                 num_tr=1,
-                 max_cholesky_size=2000,
-                 use_ard=True,
-                 n_training_steps=50,
-                 use_design=False
-                 # avg_best_idx=2.0,
-                 # meta_data_path=None,
-                 ):
-        AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_uniform.__init__(self, self.space.dtypes_idx_map)
-        self.min_sample = min_sample
+    def __init__(
+            self,
+            space: DenseConfigurationSpace,
+            seed: int = 42,
+            initial_design: str = 'sobol',
+            num_tr=1,
+            #  total_limit: int = 10,
+            **kwargs):
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.n_training_steps = n_training_steps
 
-        self.trials = Trials()
-        self.max_cholesky_size = max_cholesky_size
-        self.n_cand = min(100 * self.dense_dimension, 5000)
-        self.use_ard = use_ard
+        self.n_min_sample = kwargs.get('n_min_sample', 5)
+        self.init_budget = self.n_min_sample  # self.initial_design.init_budget
+        self.initial_design = ALL_avaliable_design[initial_design](
+            self.space, self.rng, init_budget=self.init_budget)
+        self.initial_design_configs = [
+            self.initial_design.select_configurations() for _ in range(num_tr)
+        ]
+        self.trials = Trials(sparse_dim=self.sparse_dimension,
+                             dense_dim=self.dense_dimension)
+        self.n_training_steps = kwargs.get("n_training_steps", 50)
+        self.max_cholesky_size = kwargs.get("max_cholesky_size", 2000)
+        self.n_candidates = min(100 * self.dense_dimension, 5000)
+        self.use_ard = kwargs.get("use_ard", True)
         self.num_tr = num_tr
-        self.use_design = use_design
         self.succtol = 3
         self.n_evals = 0
-        self.verbose = True
         self.candidates = []
         # Save the full history
         self.X = np.zeros((0, self.dense_dimension))
         self.fX = np.zeros((0, 1))
         # Trust region sizes
-        self.length_min = 0.5 ** 7
+        self.length_min = 0.5**7
         self.length_max = 1.6
         self.length_init = 0.8
         self.hypers = [{} for _ in range(self.num_tr)]
 
         self._restart()
 
-
     def _restart(self):
-        self._idx = np.zeros((0, 1), dtype=int)  # Track what trust region proposed what using an index vector
+        self._idx = np.zeros(
+            (0, 1), dtype=int
+        )  # Track what trust region proposed what using an index vector
         self.failcount = np.zeros(self.num_tr, dtype=int)
         self.succcount = np.zeros(self.num_tr, dtype=int)
         self.length = self.length_init * np.ones(self.num_tr)
 
-    def _create_candidates(self, X, fX, length, n_training_steps, hypers, batch_size):
+    def _create_candidates(self, X, fX, length, n_training_steps, hypers,
+                           batch_size):
         """Generate candidates assuming X has been scaled to [0,1]^d."""
         # Pick the center as the point with the smallest function values
         # NOTE: This may not be robust to noise, in which case the posterior mean of the GP can be used instead
@@ -104,36 +105,45 @@ class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
         # We use CG + Lanczos for training if we have enough data
         with gpytorch.settings.max_cholesky_size(self.max_cholesky_size):
             X_torch = torch.tensor(X)  # .to(device=device, dtype=dtype)
-            y_torch = torch.tensor(fX.ravel())  # .to(device=device, dtype=dtype)
-            gp = train_gp(
-                train_x=X_torch, train_y=y_torch, use_ard=self.use_ard, num_steps=n_training_steps, hypers=hypers
-            )
+            y_torch = torch.tensor(
+                fX.ravel())  # .to(device=device, dtype=dtype)
+            gp = train_gp(train_x=X_torch,
+                          train_y=y_torch,
+                          use_ard=self.use_ard,
+                          num_steps=n_training_steps,
+                          hypers=hypers)
 
             # Save state dict
             hypers = gp.state_dict()
 
         # Create the trust region boundaries
         x_center = X[fX.argmin().item(), :][None, :]
-        weights = gp.covar_module.base_kernel.lengthscale.cpu().detach().numpy().ravel()
-        weights = weights / weights.mean()  # This will make the next line more stable
-        weights = weights / np.prod(np.power(weights, 1.0 / len(weights)))  # We now have weights.prod() = 1
+        weights = gp.covar_module.base_kernel.lengthscale.cpu().detach().numpy(
+        ).ravel()
+        weights = weights / weights.mean(
+        )  # This will make the next line more stable
+        weights = weights / np.prod(np.power(
+            weights, 1.0 / len(weights)))  # We now have weights.prod() = 1
         lb = np.clip(x_center - weights * length / 2.0, 0.0, 1.0)
         ub = np.clip(x_center + weights * length / 2.0, 0.0, 1.0)
 
         # Draw a Sobolev sequence in [lb, ub]
-        seed = np.random.randint(int(1e6))
+        seed = self.rng.randint(MAXINT)
         sobol = SobolEngine(self.dense_dimension, scramble=True, seed=seed)
-        pert = sobol.draw(self.n_cand).cpu().detach().numpy()
+        pert = sobol.draw(self.n_candidates).cpu().detach().numpy()
         pert = lb + (ub - lb) * pert
 
         # Create a perturbation mask
         prob_perturb = min(20.0 / self.dense_dimension, 1.0)
-        mask = np.random.rand(self.n_cand, self.dense_dimension) <= prob_perturb
+        mask = self.rng.rand(self.n_candidates,
+                             self.dense_dimension) <= prob_perturb
         ind = np.where(np.sum(mask, axis=1) == 0)[0]
-        mask[ind, np.random.randint(0, self.dense_dimension - 1, size=len(ind))] = 1
+        mask[ind,
+             self.rng.randint(0, self.dense_dimension - 1, size=len(ind))] = 1
 
         # Create candidate points
-        X_cand = x_center.copy() * np.ones((self.n_cand, self.dense_dimension))
+        X_cand = x_center.copy() * np.ones(
+            (self.n_candidates, self.dense_dimension))
         X_cand[mask] = pert[mask]
 
         # # Figure out what device we are running on
@@ -146,9 +156,12 @@ class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
         # gp = gp.to(dtype=dtype, device=device)
 
         # We use Lanczos for sampling if we have enough data
-        with torch.no_grad(), gpytorch.settings.max_cholesky_size(self.max_cholesky_size):
-            X_cand_torch = torch.tensor(X_cand)  # .to(device=device, dtype=dtype)
-            y_cand = gp.likelihood(gp(X_cand_torch)).sample(torch.Size([batch_size])).t().cpu().detach().numpy()
+        with torch.no_grad(), gpytorch.settings.max_cholesky_size(
+                self.max_cholesky_size):
+            X_cand_torch = torch.tensor(
+                X_cand)  # .to(device=device, dtype=dtype)
+            y_cand = gp.likelihood(gp(X_cand_torch)).sample(
+                torch.Size([batch_size])).t().cpu().detach().numpy()
 
         # Remove the torch variables
         del X_torch, y_torch, X_cand_torch, gp
@@ -160,84 +173,96 @@ class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
 
     def suggest(self, n_suggestions=1):
         if not hasattr(self, 'failtol'):
-            self.failtol = np.ceil(np.max([4.0 / n_suggestions, self.dense_dimension / n_suggestions]))
+            self.failtol = np.ceil(
+                np.max([
+                    4.0 / n_suggestions, self.dense_dimension / n_suggestions
+                ]))
 
         for m in range(self.num_tr):
-            if (self._idx == m).sum() < self.min_sample:
+            if (self._idx == m).sum() < self.n_min_sample:
                 # raise NotImplemented
-                self._idx = np.vstack((self._idx, np.full((n_suggestions,1), m, dtype=int)))
-                return self._random_suggest(n_suggestions)
+                self._idx = np.vstack(
+                    (self._idx, np.full((n_suggestions, 1), m, dtype=int)))
+                return self._random_suggest(n_suggestions, m)
 
-        x_unwarpeds = []
-        sas = []
-        X_cand = np.zeros((self.num_tr, self.n_cand, self.dense_dimension))
-        y_cand = np.inf * np.ones((self.num_tr, self.n_cand, n_suggestions))
+        X_cand = np.zeros(
+            (self.num_tr, self.n_candidates, self.dense_dimension))
+        y_cand = np.inf * np.ones(
+            (self.num_tr, self.n_candidates, n_suggestions))
         for m in range(self.num_tr):
-            idx = np.where(self._idx == m)[0]
-            X = self.X[idx]
-            Y = self.fX[idx]
-            X_cand[m, :, :], y_cand[m, :, :], self.hypers[m] = self._create_candidates(X, Y, self.length[m],
-                                                                                       self.n_training_steps,
-                                                                                       self.hypers[m],
-                                                                                       n_suggestions)
+            indicator = np.where(self._idx == m)[0]
+            X = np.asarray(self.trials.get_dense_array())[indicator]
+            Y = np.asarray(self.trials._his_observe_value)[indicator]
+            X_cand[m, :, :], y_cand[
+                m, :, :], self.hypers[m] = self._create_candidates(
+                    X, Y, self.length[m], self.n_training_steps,
+                    self.hypers[m], n_suggestions)
         X_next = np.zeros((n_suggestions, self.dense_dimension))
         idx_next = np.zeros((n_suggestions, 1), dtype=int)
+        trial_list = []
         for b in range(n_suggestions):
-            i, j = np.unravel_index(np.argmin(y_cand[:, :, b]), (self.num_tr, self.n_cand))
-            X_next[b, :] = deepcopy(X_cand[i, j, :])
+            i, j = np.unravel_index(np.argmin(y_cand[:, :, b]),
+                                    (self.num_tr, self.n_candidates))
             idx_next[b, 0] = i
-            assert np.isfinite(y_cand[i, j, b])  # Just to make sure we never select nan or inf
+            X_next[b, :] = deepcopy(X_cand[i, j, :])
+            assert np.isfinite(
+                y_cand[i, j,
+                       b])  # Just to make sure we never select nan or inf
             # Make sure we never pick this point again
             y_cand[i, j, :] = np.inf
-            x_array = self.feature_to_array(X_next[b, :], self.sparse_dimension)
-            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
-            x_unwarpeds.append(x_unwarped)
-            sas.append(X_next[b, :])
+            config = DenseConfiguration.from_dense_array(
+                self.space, X_next[b, :])
+            trial_list.append(
+                Trial(config,
+                      config_dict=config.get_dictionary(),
+                      dense_array=X_next[b, :],
+                      origin='TuRBO-region-{}'.format(i),
+                      region=i))
         self._idx = np.vstack((self._idx, idx_next))
-        self.trials.params_history.extend(x_unwarpeds)
-        return x_unwarpeds, sas
+        return trial_list
 
-    def observe(self, x, y):
-        # print(y)
-        batch_num = len(x)
-        self.trials.history.extend(x)
-        self.trials.history_y.extend(y)
-        self.trials.trials_num += batch_num
-        # self.history_x = np.array(self.trials.history)
-        # self.history_y = np.array(self.trials.history_y)
-        X_next = np.array(x)
-        fX_next = np.atleast_2d(y).T
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial)
         # Update trust regions
+        f_min = min([np.inf] +
+                    self.trials._his_observe_value[:-len(trial_list)])
         for i in range(self.num_tr):
-            if (self._idx == i).sum() <= self.min_sample:
-                continue # don't update
-            idx_i = np.where(self._idx[-batch_num:] == i)[0]
-            if len(idx_i) > 0:
+            # indicator = [
+            #     trial.region == i for trial in self.trials.traj_history
+            # ]
+            if (self._idx == i).sum() <= self.n_min_sample:
+                continue  # don't update
+            new_trial_idxs = np.where(self._idx[-len(trial_list):] == i)[0]
+            if len(new_trial_idxs) > 0:
                 self.hypers[i] = {}  # Remove model hypers
-                fX_i = fX_next[idx_i]
+                next_fX_i = []
+                for new_trial_idx in new_trial_idxs:
+                    next_fX_i.append(trial_list[new_trial_idx].observe_value)
 
-                if self.verbose and (fX_i.min() < self.fX.min() - 1e-3 * math.fabs(
-                        self.fX.min())):
-                    n_evals, fbest = self.n_evals, fX_i.min()
-                    print(f"{n_evals}) New best @ TR-{i}: {fbest:.4}")
-                    sys.stdout.flush()
-                self._adjust_length(fX_i, i)
-
-        # Update budget and append data
-        self.n_evals += batch_num
-        self.X = np.vstack((self.X, deepcopy(X_next)))
-        self.fX = np.vstack((self.fX, deepcopy(fX_next)))
-        # self._idx = np.vstack((self._idx, deepcopy(idx_next)))
+                if (min(next_fX_i) < f_min - 1e-3 * math.fabs(f_min)):
+                    n_evals, fbest = self.trials.trials_num, f_min
+                    logger.info(f"{n_evals}) New best @ TR-{i}: {fbest:.4}")
+                self._adjust_length(
+                    next_fX_i, i,
+                    min([
+                        trial.observe_value for trial in
+                        self.trials.traj_history[:-len(trial_list)]
+                        if trial.region == i
+                    ]))
 
         # Check if any TR needs to be restarted
+        f = np.asarray(self.trials._his_observe_value)
         for i in range(self.num_tr):
-            if self.length[i] < self.length_min:  # Restart trust region if converged
+            if self.length[
+                    i] < self.length_min:  # Restart trust region if converged
+                # indicator = [
+                #     trial.region == i for trial in self.trials.traj_history
+                # ]
                 idx_i = self._idx[:, 0] == i
 
-                if self.verbose:
-                    n_evals, fbest = self.n_evals, self.fX[idx_i, 0].min()
-                    print(f"{n_evals}) TR-{i} converged to: : {fbest:.4}")
-                    sys.stdout.flush()
+                n_evals, fbest = self.trials.trials_num, f[idx_i].min()
+                logger.info(f"{n_evals}) TR-{i} converged to: : {fbest:.4}")
 
                 # Reset length and counters, remove old data from trust region
                 self.length[i] = self.length_init
@@ -246,45 +271,38 @@ class TuRBO(AbstractOptimizer, FeatureSpace_uniform):
                 self._idx[idx_i, 0] = -1  # Remove points from trust region
                 self.hypers[i] = {}  # Remove model hypers
 
-
-    def _adjust_length(self, fX_next, i):
+    def _adjust_length(self, fX_next, i, f_min):
         assert i >= 0 and i <= self.num_tr - 1
 
-        fX_min = self.fX[self._idx[:len(self.fX), 0] == i].min()  # Target value
-        if fX_next.min() < fX_min - 1e-3 * math.fabs(fX_min):
+        # fX_min = self.fX[self._idx[:len(self.fX),
+        #    0] == i].min()  # Target value
+        if min(fX_next) < f_min - 1e-3 * math.fabs(f_min):
             self.succcount[i] += 1
             self.failcount[i] = 0
         else:
             self.succcount[i] = 0
-            self.failcount[i] += len(fX_next)  # NOTE: Add size of the batch for this TR
+            self.failcount[i] += len(
+                fX_next)  # NOTE: Add size of the batch for this TR
 
         if self.succcount[i] == self.succtol:  # Expand trust region
             self.length[i] = min([2.0 * self.length[i], self.length_max])
             self.succcount[i] = 0
-        elif self.failcount[i] >= self.failtol:  # Shrink trust region (we may have exceeded the failtol)
+        elif self.failcount[
+                i] >= self.failtol:  # Shrink trust region (we may have exceeded the failtol)
             self.length[i] /= 2.0
             self.failcount[i] = 0
 
-
-    def _random_suggest(self, n_suggestions=1):
-        sas = []
-        x_unwarpeds = []
-        if self.use_design:
-            for n in range(n_suggestions):
-                if len(self.candidates) == 0:
-                    self.candidates = latin_hypercube(self.min_sample, self.dense_dimension)
-                rm_id = np.random.randint(low=0, high=len(self.candidates))
-                sas.append(self.candidates[rm_id])
-                x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
-                x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
-                x_unwarpeds.append(x_unwarped)
-                self.candidates = np.delete(self.candidates, rm_id, axis=0)  # TODO
-        else:
-            x_unwarpeds = (self.space.sample_configuration(n_suggestions))
-            for n in range(n_suggestions):
-                array = DenseConfiguration.dict_to_array(self.space, x_unwarpeds[n])
-                sas.append(self.array_to_feature(array, self.dense_dimension))
-        return x_unwarpeds, sas
+    def _random_suggest(self, n_suggestions=1, region=0):
+        trial_list = []
+        for n in range(n_suggestions):
+            config = self.initial_design_configs[region].pop(0)
+            trial_list.append(
+                Trial(configuration=config,
+                      config_dict=config.get_dictionary(),
+                      dense_array=config.get_dense_array(),
+                      origion='turbo-design',
+                      region=region), )
+        return trial_list
 
 
 opt_class = TuRBO

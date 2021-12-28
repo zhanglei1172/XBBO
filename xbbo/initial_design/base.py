@@ -16,7 +16,7 @@ class InitialDesign:
         self,
         cs: DenseConfigurationSpace,
         rng:np.random.RandomState,
-        ta_run_limit: int,
+        ta_run_limit: typing.Optional[int] = None,
         n_configs_x_params: typing.Optional[int] = 10,
         init_budget: typing.Optional[int] = None,
         max_config_fracs: float = 0.25,
@@ -26,7 +26,7 @@ class InitialDesign:
         self.rng = rng
         # n_params = len(self.cs.get_hyperparameters())
         if init_budget is not None:
-            self.init_budge = init_budget
+            self.init_budget = init_budget
         elif n_configs_x_params is not None:
             self.init_budget = int(
                 max(

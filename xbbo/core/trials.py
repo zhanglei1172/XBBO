@@ -6,13 +6,14 @@ from xbbo.configspace.space import DenseConfiguration
 
 class Trial:
     def __init__(self,
+                 configuration,
                  config_dict,
                  observe_value=None,
                  dense_array=None,
                  sparse_array=None,
-                 configuration=None,
                  time=None,
-                 origin: str = '') -> None:
+                 origin: str = '',
+                 **kwargs) -> None:
         self.config_dict = config_dict
         self.dense_array = dense_array
         self.sparse_array = sparse_array
@@ -20,6 +21,8 @@ class Trial:
         self.observe_value = observe_value
         self.time = time
         self.origin = origin
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
 
     def add_observe_value(self, observe_value, time=None):
         self.time = time
@@ -39,13 +42,13 @@ class Trials:
         self.trials_num = 0
         # self.run_id = 0
         # self.run_history = {}
-        self._traj_history = []
+        self.traj_history = []
 
     def add_a_trial(self, trial: Trial):
         assert trial.configuation not in self._his_configs_set
         self._his_configs_set.add(trial.configuation)
         self._his_configs.append(trial.configuation)
-        self._traj_history.append(trial)
+        self.traj_history.append(trial)
         self._his_configs_dict.append(trial.config_dict)
         self._his_observe_value.append(trial.observe_value)
         if trial.dense_array is not None:
