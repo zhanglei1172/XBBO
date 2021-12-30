@@ -1,5 +1,3 @@
-import math
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -9,6 +7,8 @@ from torch.autograd import Variable
 from torch.nn.parameter import Parameter
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader, Dataset
+
+from xbbo.utils.constants import MAXINT
 
 from xbbo.core import TestFunction
 
@@ -20,26 +20,26 @@ class LossIsNaN(Exception):
 
 class Model(TestFunction):
 
-    def __init__(self, cfg, **kwargs):
+    def __init__(self, cfg, seed, **kwargs):
         # np.random.seed(cfg.GENERAL.random_seed)
         self.cfg = cfg
         # self.dim = 30
         # assert self.dim % 2 == 0
-        super().__init__()
+        super().__init__(seed=seed)
 
         self.api_config = self._load_api_config()
-
+        torch.seed(self.rng.randint(MAXINT))
+        torch.manual_seed(self.rng.randint(MAXINT))
         self.device = torch.device(kwargs.get('device', 'cpu'))
 
         self.theta = Parameter(torch.FloatTensor([0.9, 0.9]).to(self.device))
         # self.opt_wrap = lambda params: optim.SGD(self.net.parameters(), lr=lr, momentum=momentum)
         self.opt = optim.SGD([self.theta], lr=0.01)
         self.step_num = 0
-        self.ready = False # not ready
         self.history_hp = [] # for record strategy
         self.trajectory_hp = []
-        self.trajectory_score = [] # 记录该个体score过程
-        self.history_score = [] # 记录使用了（考虑权重迁移）hp-stategy后的score过程
+        self.trajectory_loss = [] # 记录该个体score过程
+        self.history_loss = [] # 记录使用了（考虑权重迁移）hp-stategy后的score过程
         self.hp = torch.empty(2, device=self.device)
         self.obj_val_func = lambda theta: 1.2 - (theta ** 2).sum()
         self.obj_train_func = lambda theta, h: 1.2 - ((h * theta) ** 2).sum()
@@ -59,7 +59,7 @@ class Model(TestFunction):
     def step(self, num): # train need training(optimizer)
         for it in range(num):
             self.trajectory_theta.append(self.theta.detach().cpu().numpy())
-            loss = -self.obj_train_func(self.theta, self.hp)
+            loss = self.obj_train_func(self.theta, self.hp)
             if np.isnan(loss.item()):
                 print("Loss is NaN.")
                 self.step_num += 1
@@ -73,11 +73,11 @@ class Model(TestFunction):
 
     def evaluate(self): # val no training need(optimizer)
         with torch.no_grad():
-            score = self.obj_val_func(self.theta).item()
-        self.score = -100 if np.isnan(score) else score
-        self.trajectory_score.append((self.step_num, self.score))
-        self.history_score.append((self.step_num, self.score))
-        return self.score
+            loss = self.obj_val_func(self.theta).item()
+        self.loss = np.inf if np.isnan(loss) else loss
+        self.trajectory_loss.append((self.step_num, self.loss))
+        self.history_loss.append((self.step_num, self.loss))
+        return self.loss
 
     def load_checkpoint(self, checkpoint):
         with torch.no_grad():
