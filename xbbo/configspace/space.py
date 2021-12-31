@@ -132,6 +132,8 @@ class DenseConfiguration(CS.Configuration):
         vector:inner representation
         '''
         assert isinstance(configuration_space, DenseConfigurationSpace)
+        if 'vector' in kwargs and configuration_space.cats:
+            kwargs['vector'][configuration_space.cat_src] = np.round(kwargs['vector'][configuration_space.cat_src])
         super(DenseConfiguration, self).__init__(configuration_space, *args,
                                                  **kwargs)
 

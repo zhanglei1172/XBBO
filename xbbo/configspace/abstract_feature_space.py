@@ -17,7 +17,7 @@ class AbstractFeatureSpace(ABC):
         pass
 
     # @abstractmethod
-    def array_to_feature(self, array, dense_dim):
+    def array_to_feature(self, array):
         '''
         array: expressed by configspace
         feature: expressed by optimizer
@@ -25,7 +25,7 @@ class AbstractFeatureSpace(ABC):
         pass
 
     # @abstractmethod
-    def feature_to_array(self, feature, sparse_dim):
+    def feature_to_array(self, feature):
         pass
 
 class Identity():
