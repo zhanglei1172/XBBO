@@ -1,8 +1,8 @@
 import warnings
 import ConfigSpace as CS
 import numpy as np
+from scipy import stats
 
-from xbbo.configspace.space import Array_idx_map
 from xbbo.configspace.abstract_feature_space import (
     AbstractFeatureSpace,
     Identity,
@@ -259,6 +259,7 @@ class FeatureSpace_uniform(AbstractFeatureSpace):
         self.features_.append(feature)
 
 class FeatureSpace_gaussian(AbstractFeatureSpace):
+
     '''
     sparse array <=> feature space
     all variable i.i.d ~ Normal distribution N(0, 1)
@@ -339,3 +340,13 @@ class FeatureSpace_gaussian(AbstractFeatureSpace):
 
     def record_feature(self, feature):
         self.features_.append(feature)
+
+class Uniform2Gaussian(AbstractFeatureSpace):
+    def __init__(self):
+        super().__init__()
+    
+    def array_to_feature(self, array):
+        return stats.norm.ppf(array)
+
+    def feature_to_array(self, feature):
+        return stats.norm.cdf(feature)

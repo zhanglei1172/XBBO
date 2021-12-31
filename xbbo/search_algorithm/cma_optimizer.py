@@ -3,63 +3,67 @@ from typing import Optional, List, Tuple, cast
 
 import numpy as np
 import cma
-from xbbo.configspace.feature_space import FeatureSpace_gaussian
+from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration
-from xbbo.core.trials import Trials
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+from xbbo.core.trials import Trial, Trials
 
 _EPS = 1e-8
 _MEAN_MAX = 1e32
 _SIGMA_MAX = 1e32
 
-class CMAES(AbstractOptimizer, FeatureSpace_gaussian):
 
+class CMAES(AbstractOptimizer, Uniform2Gaussian):
     def __init__(self,
-                 config_spaces,):
-        AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
-        # configs = self.space.get_hyperparameters()
+                 space: DenseConfigurationSpace,
+                 seed: int = 42,
+                 **kwargs):
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        Uniform2Gaussian.__init__(self, )
+
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         self.es = cma.CMAEvolutionStrategy([0.] * self.dense_dimension, 1.0)
         # self.hp_num = len(configs)
 
-        self.trials = Trials()
+        self.trials = Trials(sparse_dim=self.sparse_dimension,
+                             dense_dim=self.dense_dimension)
         self.listx = []
         self.listy = []
 
     def suggest(self, n_suggestions=1):
-
-        sas = []
-        x_arrays = []
+        trial_list = []
         for n in range(n_suggestions):
             new_individual = self.es.ask(1)[0]
-            sas.append(new_individual)
-            x_arrays.append(self.feature_to_array(np.asarray(new_individual), self.sparse_dimension))
+            dense_array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_dense_array(self.space,dense_array)
+            trial_list.append(
+                Trial(config,
+                      config_dict=config.get_dictionary(),
+                      dense_array=dense_array,
+                      origin='cma-es'))
 
-        x = [DenseConfiguration.array_to_dict(self.space,
-                                                  np.array(sa)) for sa in x_arrays]
-        self.trials.params_history.extend(x)
-        # self._num_suggestions += n_suggestions
-        return x, sas
+        return trial_list
 
-    def observe(self, x, y):
-        self.trials.history.extend(x)
-        self.trials.history_y.extend(y)
-        self.trials.trials_num += 1
-        self.listx += x
-        self.listy += y
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial)
+            self.listx.append(self.array_to_feature(trial.dense_array))
+            self.listy.append(trial.observe_value)
         if len(self.listx) >= self.es.popsize:
             self.es.tell(self.listx, self.listy)
-            self.listx, self.listy = [], []
+            self.listx = []
+            self.listy = []
 
-class CMA(AbstractOptimizer, FeatureSpace_gaussian):
+
+class CMA(AbstractOptimizer):
     '''
     reference: https://github.com/CyberAgentAILab/cmaes/blob/main/cmaes/_cma.py
     '''
-
-    def __init__(self,
-                 config_spaces,):
+    def __init__(
+        self,
+        config_spaces,
+    ):
         AbstractOptimizer.__init__(self, config_spaces)
         FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
         # configs = self.space.get_hyperparameters()
@@ -67,31 +71,27 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         mean = np.zeros(n_dim)
         sigma = 1.0
-        popsize = 4 + math.floor(3 * math.log(n_dim)) # (eq. 48)
+        popsize = 4 + math.floor(3 * math.log(n_dim))  # (eq. 48)
         mu = popsize // 2
 
-
         # (eq.49)
-        weights_prime = np.array(
-            [
-                math.log((popsize + 1) / 2) - math.log(i + 1)
-                for i in range(popsize)
-            ]
-        )
-        mu_eff = (np.sum(weights_prime[:mu]) ** 2) / np.sum(weights_prime[:mu] ** 2)
-        mu_eff_minus = (np.sum(weights_prime[mu:]) ** 2) / np.sum(
-            weights_prime[mu:] ** 2
-        )
+        weights_prime = np.array([
+            math.log((popsize + 1) / 2) - math.log(i + 1)
+            for i in range(popsize)
+        ])
+        mu_eff = (np.sum(weights_prime[:mu])**2) / np.sum(weights_prime[:mu]**
+                                                          2)
+        mu_eff_minus = (np.sum(weights_prime[mu:])**2) / np.sum(
+            weights_prime[mu:]**2)
 
         # learning rate for the rank-one update
         alpha_cov = 2
-        c1 = alpha_cov / ((n_dim + 1.3) ** 2 + mu_eff)
+        c1 = alpha_cov / ((n_dim + 1.3)**2 + mu_eff)
         # learning rate for the rank-μ update
         cmu = min(
             1 - c1 - 1e-8,  # 1e-8 is for large popsize.
-            alpha_cov
-            * (mu_eff - 2 + 1 / mu_eff)
-            / ((n_dim + 2) ** 2 + alpha_cov * mu_eff / 2),
+            alpha_cov * (mu_eff - 2 + 1 / mu_eff) /
+            ((n_dim + 2)**2 + alpha_cov * mu_eff / 2),
         )
         assert c1 <= 1 - cmu, "invalid learning rate for the rank-one update"
         assert cmu <= 1 - c1, "invalid learning rate for the rank-μ update"
@@ -114,9 +114,11 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
 
         # learning rate for the cumulation for the step-size control (eq.55)
         c_sigma = (mu_eff + 2) / (n_dim + mu_eff + 5)
-        d_sigma = 1 + 2 * max(0, math.sqrt((mu_eff - 1) / (n_dim + 1)) - 1) + c_sigma
+        d_sigma = 1 + 2 * max(0,
+                              math.sqrt(
+                                  (mu_eff - 1) / (n_dim + 1)) - 1) + c_sigma
         assert (
-                c_sigma < 1
+            c_sigma < 1
         ), "invalid learning rate for cumulation for the step-size control"
 
         # learning rate for cumulation for the rank-one update (eq.56)
@@ -136,9 +138,10 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
         self._cm = cm
 
         # E||N(0, I)|| (p.28)
-        self._chi_n = math.sqrt(self._n_dim) * (
-                1.0 - (1.0 / (4.0 * self._n_dim)) + 1.0 / (21.0 * (self._n_dim ** 2))
-        )
+        self._chi_n = math.sqrt(self._n_dim) * (1.0 -
+                                                (1.0 /
+                                                 (4.0 * self._n_dim)) + 1.0 /
+                                                (21.0 * (self._n_dim**2)))
 
         self._weights = weights
 
@@ -148,16 +151,16 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
 
         self._mean = mean
 
-
         self._C = np.eye(n_dim)
-
 
         self._sigma = sigma
         self._D: Optional[np.ndarray] = None
         self._B: Optional[np.ndarray] = None
 
         # bounds contains low and high of each parameter.
-        self._bounds = np.stack([np.full_like(mean, -np.inf),np.full_like(mean, np.inf)], axis=1)
+        self._bounds = np.stack(
+            [np.full_like(mean, -np.inf),
+             np.full_like(mean, np.inf)], axis=1)
         self._n_max_resampling = 100
 
         self._g = 0
@@ -182,10 +185,14 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
         for n in range(n_suggestions):
             new_individual = self.ask()
             sas.append(new_individual)
-            x_arrays.append(self.feature_to_array(np.asarray(new_individual), self.sparse_dimension))
+            x_arrays.append(
+                self.feature_to_array(np.asarray(new_individual),
+                                      self.sparse_dimension))
 
-        x = [DenseConfiguration.array_to_dict(self.space,
-                                                  np.array(sa)) for sa in x_arrays]
+        x = [
+            DenseConfiguration.array_to_dict(self.space, np.array(sa))
+            for sa in x_arrays
+        ]
         self.trials.params_history.extend(x)
         # self._num_suggestions += n_suggestions
         return x, sas
@@ -217,7 +224,7 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
         self._C = (self._C + self._C.T) / 2
         D2, B = np.linalg.eigh(self._C)
         D = np.sqrt(np.where(D2 < 0, _EPS, D2))
-        self._C = np.dot(np.dot(B, np.diag(D ** 2)), B.T)
+        self._C = np.dot(np.dot(B, np.diag(D**2)), B.T)
 
         self._B, self._D = B, D
         return B, D
@@ -234,7 +241,8 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
             return True
         return cast(
             bool,
-            np.all(param >= self._bounds[:, 0]) and np.all(param <= self._bounds[:, 1]),
+            np.all(param >= self._bounds[:, 0])
+            and np.all(param <= self._bounds[:, 1]),
         )  # Cast bool_ to bool.
 
     def _repair_infeasible_params(self, param: np.ndarray) -> np.ndarray:
@@ -249,7 +257,8 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
     def tell(self, solutions: List[Tuple[np.ndarray, float]]) -> None:
         """Tell evaluation values"""
 
-        assert len(solutions) == self._popsize, "Must tell popsize-length solutions."
+        assert len(
+            solutions) == self._popsize, "Must tell popsize-length solutions."
         for s in solutions:
             assert np.all(
                 np.abs(s[0]) < _MEAN_MAX
@@ -272,40 +281,37 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
         y_k = (x_k - self._mean) / self._sigma  # ~ N(0, C)
 
         # Selection and recombination
-        y_w = np.sum(y_k[: self._mu].T * self._weights[: self._mu], axis=1)  # eq.41
+        y_w = np.sum(y_k[:self._mu].T * self._weights[:self._mu],
+                     axis=1)  # eq.41
         self._mean += self._cm * self._sigma * y_w
 
         # Step-size control
-        C_2 = cast(
-            np.ndarray, cast(np.ndarray, B.dot(np.diag(1 / D))).dot(B.T)
-        )  # C^(-1/2) = B D^(-1) B^T
+        C_2 = cast(np.ndarray,
+                   cast(np.ndarray, B.dot(np.diag(1 / D))).dot(
+                       B.T))  # C^(-1/2) = B D^(-1) B^T
         self._p_sigma = (1 - self._c_sigma) * self._p_sigma + math.sqrt(
-            self._c_sigma * (2 - self._c_sigma) * self._mu_eff
-        ) * C_2.dot(y_w)
+            self._c_sigma * (2 - self._c_sigma) * self._mu_eff) * C_2.dot(y_w)
 
         norm_p_sigma = np.linalg.norm(self._p_sigma)
         self._sigma *= np.exp(
-            (self._c_sigma / self._d_sigma) * (norm_p_sigma / self._chi_n - 1)
-        )
+            (self._c_sigma / self._d_sigma) * (norm_p_sigma / self._chi_n - 1))
         self._sigma = min(self._sigma, _SIGMA_MAX)
 
         # Covariance matrix adaption
-        h_sigma_cond_left = norm_p_sigma / math.sqrt(
-            1 - (1 - self._c_sigma) ** (2 * (self._g + 1))
-        )
+        h_sigma_cond_left = norm_p_sigma / math.sqrt(1 - (1 - self._c_sigma)**
+                                                     (2 * (self._g + 1)))
         h_sigma_cond_right = (1.4 + 2 / (self._n_dim + 1)) * self._chi_n
         h_sigma = 1.0 if h_sigma_cond_left < h_sigma_cond_right else 0.0  # (p.28)
 
         # (eq.45)
         self._pc = (1 - self._cc) * self._pc + h_sigma * math.sqrt(
-            self._cc * (2 - self._cc) * self._mu_eff
-        ) * y_w
+            self._cc * (2 - self._cc) * self._mu_eff) * y_w
 
         # (eq.46)
         w_io = self._weights * np.where(
             self._weights >= 0,
             1,
-            self._n_dim / (np.linalg.norm(C_2.dot(y_k.T), axis=0) ** 2 + _EPS),
+            self._n_dim / (np.linalg.norm(C_2.dot(y_k.T), axis=0)**2 + _EPS),
         )
 
         delta_h_sigma = (1 - h_sigma) * self._cc * (2 - self._cc)  # (p.28)
@@ -313,20 +319,12 @@ class CMA(AbstractOptimizer, FeatureSpace_gaussian):
 
         # (eq.47)
         rank_one = np.outer(self._pc, self._pc)
-        rank_mu = np.sum(
-            np.array([w * np.outer(y, y) for w, y in zip(w_io, y_k)]), axis=0
-        )
-        self._C = (
-            (
-                1
-                + self._c1 * delta_h_sigma
-                - self._c1
-                - self._cmu * np.sum(self._weights)
-            )
-            * self._C
-            + self._c1 * rank_one
-            + self._cmu * rank_mu
-        )
+        rank_mu = np.sum(np.array(
+            [w * np.outer(y, y) for w, y in zip(w_io, y_k)]),
+                         axis=0)
+        self._C = ((1 + self._c1 * delta_h_sigma - self._c1 -
+                    self._cmu * np.sum(self._weights)) * self._C +
+                   self._c1 * rank_one + self._cmu * rank_mu)
 
 
 opt_class = CMA
