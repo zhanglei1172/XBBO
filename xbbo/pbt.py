@@ -1,5 +1,4 @@
 import numpy as np
-import json
 from time import time
 import tqdm
 from matplotlib import pyplot as plt
@@ -7,7 +6,6 @@ from matplotlib import pyplot as plt
 from xbbo.search_space import build_test_problem
 from xbbo.search_algorithm import get_opt_class
 from xbbo.configspace import build_space
-from xbbo.utils.record import Record
 
 
 class PBT:
