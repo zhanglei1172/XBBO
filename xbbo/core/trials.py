@@ -17,7 +17,7 @@ class Trial:
         self.config_dict = config_dict
         self.dense_array = dense_array
         self.sparse_array = sparse_array
-        self.configuation = configuration
+        self.configuration = configuration
         self.observe_value = observe_value
         self.time = time
         self.origin = origin
@@ -45,9 +45,9 @@ class Trials:
         self.traj_history = []
 
     def add_a_trial(self, trial: Trial):
-        assert trial.configuation not in self._his_configs_set
-        self._his_configs_set.add(trial.configuation)
-        self._his_configs.append(trial.configuation)
+        assert trial.configuration not in self._his_configs_set
+        self._his_configs_set.add(trial.configuration)
+        self._his_configs.append(trial.configuration)
         self.traj_history.append(trial)
         self._his_configs_dict.append(trial.config_dict)
         self._his_observe_value.append(trial.observe_value)
