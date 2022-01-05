@@ -47,8 +47,8 @@ class DE(AbstractOptimizer, Uniform2Gaussian):
                 self.population[idx] = new_individual
             else:
                 new_individual = individual + self.F1 * (a - b) + self.F2 * (self.current_best - individual)
+                R = self.rng.randint(self.dense_dimension)
                 for i in range(self.dense_dimension):
-                    R = self.rng.randint(self.dense_dimension)
                     if i != R and self.rng.uniform(0, 1) > self.CR:
                         new_individual[i] = individual[i]
                 # self.candidates[idx] = tuple(new_individual)
@@ -59,7 +59,7 @@ class DE(AbstractOptimizer, Uniform2Gaussian):
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      dense_array=dense_array,
+                      dense_array=new_individual,
                       origin='DE', loc=idx))
 
         return trial_list
