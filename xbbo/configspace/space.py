@@ -218,8 +218,9 @@ def convert_denseConfigurations_to_array(configs: List[DenseConfiguration]) -> n
     """
     configs_array = np.array([config.get_sparse_array() for config in configs],
                              dtype=np.float64)
-    configuration_space = configs[0].configuration_space
-    return impute_default_values(configuration_space, configs_array)
+    # configuration_space = configs[0].configuration_space
+    return configs_array
+    # return impute_default_values(configuration_space, configs_array)
 
 
 def impute_default_values(

@@ -1,66 +1,116 @@
 import numpy as np
 
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration
-from xbbo.configspace.feature_space import FeatureSpace_gaussian
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+# from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.core import AbstractOptimizer
+from xbbo.core.trials import Trial, Trials
 
-class CEM(AbstractOptimizer, FeatureSpace_gaussian):
-    def __init__(self, config_spaces):
-        AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
+
+class CEM(AbstractOptimizer):
+    def __init__(self,
+                 space: DenseConfigurationSpace,
+                 seed: int = 42,
+                 llambda=10,
+                 elite_ratio=0.3,
+                 sample_method: str = 'Gaussian',
+                 **kwargs):
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        # Uniform2Gaussian.__init__(self, )
 
         # configs = self.space.get_hyperparameters()
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.bounds = self.space.get_bounds()
+        if sample_method == 'Gaussian':
+            self.sampler = Gaussian_sampler(self.dense_dimension, self.bounds,
+                                            self.rng)
+        elif sample_method == 'Uniform':
+            self.sampler = Uniform_sampler(self.dense_dimension, self.bounds,
+                                           self.rng)
 
-        self.hp_range = []
-        for k in range(self.dense_dimension):
-            self.hp_range.append([0, 1])
-        self.mean = np.zeros(self.dense_dimension)+0.5
-        self.std = np.ones(self.dense_dimension)
         self.buffer_x = []
         self.buffer_y = []
-        self.lam = 10
-        self.elite_ratio = 0.3
-        self.history_y = []
+        self.llambda = llambda
+        self.elite_ratio = elite_ratio
+        self.trials = Trials(sparse_dim=self.sparse_dimension,
+                             dense_dim=self.dense_dimension)
 
     def suggest(self, n_suggestions=1):
-        sas = []
-        x = []
+        trial_list = []
         for n in range(n_suggestions):
-            suggest_array = np.random.normal(self.mean, self.std)
-            for d in range(self.dense_dimension):
-                suggest_array[d] = suggest_array[d].clip(self.hp_range[d][0],
-                                                         self.hp_range[d][1])
-            sas.append((suggest_array))
-            x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
+            # new_individual = self.feature_to_array(new_individual, )
+            new_individual = self.sampler.sample()
 
-            x.append(DenseConfiguration.array_to_dict(self.space, x_array))
+            config = DenseConfiguration.from_dense_array(
+                self.space, new_individual)
+            trial_list.append(
+                Trial(config,
+                      config_dict=config.get_dictionary(),
+                      dense_array=new_individual,
+                      origin='CEM'))
 
-        return x, sas
+        return trial_list
 
     def _get_elite(self):
         self.buffer_x = np.asarray(self.buffer_x)
         self.buffer_y = np.asarray(self.buffer_y)
-        idx = np.argsort(self.buffer_y)[:int(self.lam * self.elite_ratio)]
+        idx = np.argsort(self.buffer_y)[:int(self.llambda * self.elite_ratio)]
         return self.buffer_x[idx, :], self.buffer_y[idx]
 
-    def observe(self, x, y):
-        for n_suggest in range(len(x)):
-            suggest_array = (x[n_suggest])
-            self.buffer_x.append(suggest_array)
-            self.buffer_y.append(y[n_suggest])
-            self.history_y.append(y[n_suggest])
-        if len(self.buffer_x) < self.lam:
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial)
+            self.buffer_x.append(trial.dense_array)
+            self.buffer_y.append(trial.observe_value)
+        if len(self.buffer_x) < self.llambda:
             return
         elite_x, elite_y = self._get_elite()
-        self.mean = np.mean(elite_x, axis=0)
-        self.std = np.std(elite_x, axis=0)
+        self.sampler.update(elite_x, elite_y)
         self.buffer_x = []
         self.buffer_y = []
 
 
+class Gaussian_sampler():
+    def __init__(self, dim, bounds, rng) -> None:
+        self.bounds = bounds
+        u = bounds.ub
+        l = bounds.lb
+        self.mean = (u + l) / 2
+        self.std = (u - l) / 6
+        self.dim = dim
+        self.rng = rng
+
+    def update(self, elite_x, elite_y):
+        self.mean = np.mean(elite_x, axis=0)
+        self.std = np.std(elite_x, axis=0)
+
+    def sample(self, ):
+        new_individual = self.rng.normal(self.mean, self.std + 1e-17)
+        new_individual = np.clip(new_individual, self.bounds.lb,
+                                 self.bounds.ub)
+        return new_individual
+
+
+class Uniform_sampler():
+    def __init__(self, dim, bounds, rng) -> None:
+        self.bounds = bounds
+        u = bounds.ub
+        l = bounds.lb
+        self.min = np.copy(l)
+        self.max = np.copy(u)
+        self.dim = dim
+        self.rng = rng
+
+    def update(self, elite_x, elite_y):
+        self.min = np.amin(elite_x, axis=0)
+        self.max = np.amax(elite_x, axis=0)
+
+    def sample(self, ):
+        new_individual = self.rng.uniform(self.min, self.max)
+        new_individual = np.clip(new_individual, self.bounds.lb,
+                                 self.bounds.ub)
+        return new_individual
 
 
 opt_class = CEM
