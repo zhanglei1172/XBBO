@@ -1,12 +1,12 @@
 import numpy as np
 
-from xbbo.configspace.feature_space import Uniform2Gaussian
+# from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 
 
-class DE(AbstractOptimizer, Uniform2Gaussian):
+class DE(AbstractOptimizer):
 
     def __init__(self,
                  space:DenseConfigurationSpace,
@@ -14,9 +14,10 @@ class DE(AbstractOptimizer, Uniform2Gaussian):
                  llambda=10, **kwargs):
         AbstractOptimizer.__init__(self, space, seed, **kwargs)
 
-        Uniform2Gaussian.__init__(self,)
+        # Uniform2Gaussian.__init__(self,)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.bounds = self.space.get_bounds()
 
         # self.dense_dimension = len(configs)
         self.llambda = llambda
@@ -40,7 +41,8 @@ class DE(AbstractOptimizer, Uniform2Gaussian):
             individual = self.population[idx]
             a, b = (self.population[self.rng.randint(self.llambda)] for _ in range(2))
             if any(x is None for x in [individual, a, b]): # population not enough
-                new_individual = self.rng.normal(0, 1, self.dense_dimension)
+                # new_individual = self.rng.normal(0, 1, self.dense_dimension)
+                new_individual = self.rng.normal(self.bounds.lb, self.bounds.ub, self.dense_dimension)
                 # if (self.trials.trials_num) <= self.llambda:
                 # assert self.candidates[idx] is None
                 # self.candidates[idx] = tuple(new_individual)
@@ -54,8 +56,10 @@ class DE(AbstractOptimizer, Uniform2Gaussian):
                 # self.candidates[idx] = tuple(new_individual)
                 # self.population[idx] = new_individual
             self._num_suggestions += 1
-            dense_array = self.feature_to_array(new_individual)
-            config = DenseConfiguration.from_dense_array(self.space,dense_array)
+            new_individual = np.clip(new_individual, self.bounds.lb,
+                                 self.bounds.ub)
+            # dense_array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_dense_array(self.space,new_individual)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
@@ -66,7 +70,7 @@ class DE(AbstractOptimizer, Uniform2Gaussian):
 
     def observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, permit_duplicagte=True)
             # idx = self.candidates.index(tuple(trial.dense_array))
             idx = trial.loc
             self.population[idx] = trial.dense_array

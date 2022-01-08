@@ -44,8 +44,9 @@ class Trials:
         # self.run_history = {}
         self.traj_history = []
 
-    def add_a_trial(self, trial: Trial):
-        assert trial.configuration not in self._his_configs_set
+    def add_a_trial(self, trial: Trial, permit_duplicagte=False):
+        if not permit_duplicagte:
+            assert trial.configuration not in self._his_configs_set
         self._his_configs_set.add(trial.configuration)
         self._his_configs.append(trial.configuration)
         self.traj_history.append(trial)

@@ -2,9 +2,8 @@ import numpy as np
 # import matplotlib.pyplot as plt
 from xbbo.configspace.space import DenseConfigurationSpace
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
-from ConfigSpace.conditions import LessThanCondition
 
-from xbbo.search_algorithm.bo_optimizer import BO
+from xbbo.search_algorithm.regularizedEA_optimizer import RegularizedEA
 
 def rosenbrock_2d(x):
     """ The 2 dimensional Rosenbrock function as a toy model
@@ -16,8 +15,7 @@ def rosenbrock_2d(x):
     """
 
     x1 = x["x0"]
-    # x2 = x["x1"]
-    x2 = x.get('x1', x1)
+    x2 = x["x1"]
 
     val = 100. * (x2 - x1 ** 2.) ** 2. + (1 - x1) ** 2.
     return val
@@ -33,8 +31,6 @@ def build_space(rng):
     x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
-    con = LessThanCondition(x1, x0, 1.)
-    cs.add_condition(con)
     return cs
 
 def build_branin_space(rng):
@@ -45,7 +41,7 @@ def build_branin_space(rng):
     return cs
 
 if __name__ == "__main__":
-    MAX_CALL = 30
+    MAX_CALL = 1000
     rng = np.random.RandomState(42)
 
     # define black box function
@@ -53,7 +49,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_space(rng)
     # define black box optimizer
-    hpopt = BO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_optzhuan='rs_ls')
+    hpopt = RegularizedEA(space=cs, seed=rng.randint(10000),llambda=30)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)

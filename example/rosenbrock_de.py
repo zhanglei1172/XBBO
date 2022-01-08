@@ -41,7 +41,7 @@ def build_branin_space(rng):
     return cs
 
 if __name__ == "__main__":
-    MAX_CALL = 100
+    MAX_CALL = 1000
     rng = np.random.RandomState(42)
 
     # define black box function
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_space(rng)
     # define black box optimizer
-    hpopt = DE(space=cs, seed=rng.randint(10000),llambda=10)
+    hpopt = DE(space=cs, seed=rng.randint(10000),llambda=100)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
