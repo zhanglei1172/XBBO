@@ -7,12 +7,13 @@ from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
+from . import alg_register
 
 _EPS = 1e-8
 _MEAN_MAX = 1e32
 _SIGMA_MAX = 1e32
 
-
+@alg_register.register('cma-es')
 class CMAES(AbstractOptimizer, Uniform2Gaussian):
     def __init__(self,
                  space: DenseConfigurationSpace,
@@ -327,4 +328,4 @@ class CMA(AbstractOptimizer):
                    self._c1 * rank_one + self._cmu * rank_mu)
 
 
-opt_class = CMA
+opt_class = CMAES

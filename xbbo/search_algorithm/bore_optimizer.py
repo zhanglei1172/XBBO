@@ -7,12 +7,13 @@ from sklearn.ensemble import RandomForestClassifier
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 
+from . import alg_register
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
 
 logger = logging.getLogger(__name__)
 
-
+@alg_register.register('bore')
 class BORE(AbstractOptimizer):
     '''
     ref: https://github.com/ltiao/bore

@@ -15,6 +15,7 @@ from xbbo.initial_design import ALL_avaliable_design
 #     GaussianProcessRegressorARD_torch
 from xbbo.utils.constants import MAXINT
 from xbbo.surrogate.gp import train_gp
+from . import alg_register
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def latin_hypercube(n_pts, dim):
     X += pert
     return X
 
-
+@alg_register.register('turbo')
 class TuRBO(AbstractOptimizer):
     '''
     reference: https://github.com/uber-research/TuRBO/blob/master/turbo/turbo_m.py

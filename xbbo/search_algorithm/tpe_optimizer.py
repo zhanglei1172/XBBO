@@ -3,16 +3,17 @@ import numpy as np
 import statsmodels.api as sm
 import scipy.stats as sps
 import ConfigSpace
-import traceback
 
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
+from xbbo.utils.constants import MAXINT
+from . import alg_register
 from xbbo.initial_design import ALL_avaliable_design
 
 logger = logging.getLogger(__name__)
 
-
+@alg_register.register('baisc-bo')
 class TPE(AbstractOptimizer):
     '''
     reference: https://github.com/thomas-young-2013/open-box/blob/master/openbox/core/tpe_advisor.py
@@ -230,7 +231,7 @@ class TPE(AbstractOptimizer):
             return
 
         bw_estimation = 'normal_reference'
-
+        np.random.seed(self.rng.randint(MAXINT))
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,
                                                    var_type=self.kde_vartypes,
                                                    bw=bw_estimation)

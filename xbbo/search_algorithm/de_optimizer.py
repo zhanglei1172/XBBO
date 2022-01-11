@@ -4,8 +4,9 @@ import numpy as np
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
+from . import alg_register
 
-
+@alg_register.register('de')
 class DE(AbstractOptimizer):
 
     def __init__(self,

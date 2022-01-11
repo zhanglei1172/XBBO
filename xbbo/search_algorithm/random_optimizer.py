@@ -1,8 +1,9 @@
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.search_algorithm.base import AbstractOptimizer
+from . import alg_register
 
-
+@alg_register.register('rs')
 class RandomOptimizer(AbstractOptimizer):
     def __init__(
             self,

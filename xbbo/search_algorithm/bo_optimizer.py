@@ -9,6 +9,7 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
 # from xbbo.core import trials
 # from xbbo.core.stochastic import Category, Uniform
+from . import alg_register
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
@@ -20,6 +21,7 @@ from xbbo.utils.util import get_types
 
 logger = logging.getLogger(__name__)
 
+@alg_register.register('baisc-bo')
 class BO(AbstractOptimizer):
     def __init__(
             self,
@@ -109,7 +111,7 @@ class BO(AbstractOptimizer):
                           config_dict=config.get_dictionary(),
                           sparse_array=config.get_sparse_array()))
         else:
-            self.surrogate_model._train(
+            self.surrogate_model.train(
                 np.asarray(self.trials.get_sparse_array()),
                 np.asarray(self.trials.get_history()[0]))
             configs = []

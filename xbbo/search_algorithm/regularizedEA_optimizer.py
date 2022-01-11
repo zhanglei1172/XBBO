@@ -6,8 +6,9 @@ from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
+from . import alg_register
 
-
+@alg_register.register('rea')
 class RegularizedEA(AbstractOptimizer):
     '''
     Regularized Evolution for Image Classifier Architecture Search
