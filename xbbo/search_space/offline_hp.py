@@ -229,15 +229,14 @@ def evaluations_np(
 
 class Model(TestFunction):
 
-    def __init__(self, cfg, **kwargs):
-        # np.random.seed(cfg.GENERAL.random_seed)
+    def __init__(self, cfg, seed, **kwargs):
         self.cfg = cfg
         # self.dim = 30
         # assert self.dim % 2 == 0
-        super().__init__()
+        super().__init__(seed=seed)
         name = kwargs.get('func_name', None)
         if name is None:
-            test_task = cfg.TEST_PROBLEM.kwargs.test_task
+            test_task = cfg.TEST_PROBLEM.kwargs.test_task if cfg else kwargs['test_task']
             # assert test_task in tasks
             # self.data_path = kwargs.get('data_path')+ kwargs.get('func_name')
             for bb, tasks in blackbox_tasks.items():
@@ -282,21 +281,19 @@ class Model(TestFunction):
         if self.noise_std == 0:
             random_noise = 1
         else:
-            random_noise = np.random.randn() * self.noise_std + 1.
-        regret = (f - self.best_err) / self.err_range
-        res_out = {
-            # 'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1)/len(self.func.sorted_new_D_y),
-            # 'rank': (np.searchsorted(self.sorted_new_D_y, f) + 1) / len(self.sorted_new_D_y),
-            'regret': regret,
-            'log_regret': np.log10(regret)
+            random_noise = self.rng.randn() * self.noise_std + 1.
+        # regret = (f - self.best_err) / self.err_range
+        # res_out = {
+        #     # 'rank': (np.searchsorted(self.func.sorted_new_D_y, -f)+1)/len(self.func.sorted_new_D_y),
+        #     # 'rank': (np.searchsorted(self.sorted_new_D_y, f) + 1) / len(self.sorted_new_D_y),
+        #     'regret': regret,
+        #     'log_regret': np.log10(regret)
 
-        }
+        # }
         res_loss = {
-            'test': f,
             'val': f * random_noise,
         }
-        return ([res_out[k] for k in self.cfg.TEST_PROBLEM.func_evals],
-                [res_loss[k] for k in self.cfg.TEST_PROBLEM.losses])
+        return res_loss['val']
 
     def _load_api_config(self):
         return {

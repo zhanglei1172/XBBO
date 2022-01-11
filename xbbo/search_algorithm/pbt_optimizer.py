@@ -6,8 +6,9 @@ import numpy as np
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, convert_denseConfigurations_to_array
 from xbbo.core.trials import Trials
 from xbbo.initial_design import ALL_avaliable_design
+from . import alg_register
 
-
+@alg_register.register('pbt')
 class PBT():
     def __init__(self,
                  space: DenseConfigurationSpace,

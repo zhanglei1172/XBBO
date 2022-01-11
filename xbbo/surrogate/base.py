@@ -49,6 +49,7 @@ class SurrogateModel(object):
         bounds: typing.List[typing.Tuple[float, float]],
         instance_features: np.ndarray = None,
         pca_components: float = None,
+        **kwargs
     ):
         """Constructor
 
@@ -93,6 +94,8 @@ class SurrogateModel(object):
         self.types = types
         # Initial types array which is used to reset the type array at every call to train()
         self._initial_types = types.copy()
+        self.do_optimize = kwargs.get('do_optimize', False)
+
 
     def train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the Model on X and Y.
@@ -143,7 +146,7 @@ class SurrogateModel(object):
                     dtype=np.uint,
                 )
 
-        return self._train(X, Y)
+        return self._train(X, Y, self.do_optimize)
 
     def _train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the random forest on X and y.
@@ -301,6 +304,7 @@ class BaseGP(SurrogateModel):
         normalize_y: bool = True,
         instance_features: Optional[np.ndarray] = None,
         pca_components: Optional[int] = None,
+        **kwargs
     ):
         """
         Abstract base class for all Gaussian process models.
@@ -310,6 +314,7 @@ class BaseGP(SurrogateModel):
             bounds=bounds,
             instance_features=instance_features,
             pca_components=pca_components,
+            **kwargs
         )
 
         self.configspace = configspace
