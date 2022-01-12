@@ -1,16 +1,14 @@
-import glob
 import logging
 from posixpath import basename
 import typing
 import numpy as np
 from matplotlib import pyplot as plt
-
 # import tqdm, random
 from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
 from xbbo.initial_design import ALL_avaliable_design
 
 from . import alg_register
-from xbbo.acquisition_function.ei import EI, EI_AcqFunc
+from xbbo.acquisition_function.ei import EI_AcqFunc
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
@@ -47,21 +45,16 @@ class SMBO(AbstractOptimizer):
         self.trials = Trials(sparse_dim=self.sparse_dimension,
                              dense_dim=self.dense_dimension)
 
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
-
-        self.rho = kwargs.get("rho", 0.75)
+        self.rho = kwargs.get("rho", 1)
         self.bandwidth = kwargs.get("bandwdth", 0.4)
-        if surrogate == 'gp':
-            base_models = kwargs.get("base_models")
-            if base_models:
-                assert isinstance(base_models[0], BaseModel)
-            self.surrogate_model = TST_surrogate(self.space,
-                                                 base_models,
-                                                 self.rho,
-                                                 rng=self.rng)
+        self.base_models = kwargs.get("base_models")
+        if self.base_models:
+            assert isinstance(self.base_models[0], BaseModel)
+            if surrogate == 'gp':
+                self.surrogate_model = TST_surrogate(self.space,
+                                                     self.base_models,
+                                                     self.rho,
+                                                     rng=self.rng)
         else:
             raise NotImplementedError()
 
@@ -97,66 +90,6 @@ class SMBO(AbstractOptimizer):
             "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
             .format(surrogate, acq_func, acq_opt))
 
-    def prepare(self,
-                old_D_x_params,
-                old_D_y,
-                new_D_x_param,
-                sort_idx=None,
-                params=True):
-        if params:
-            old_D_x = []
-            for insts_param in old_D_x_params:
-                insts_feature = []
-                for inst_param in insts_param:
-                    array = DenseConfiguration.dict_to_array(
-                        self.space, inst_param)
-                    insts_feature.append(
-                        self.array_to_feature(array, self.dense_dimension))
-                old_D_x.append(np.asarray(insts_feature))
-            insts_feature = []
-            if new_D_x_param:
-                for inst_param in new_D_x_param:
-                    array = DenseConfiguration.dict_to_array(
-                        self.space, inst_param)
-                    insts_feature.append(
-                        self.array_to_feature(array, self.dense_dimension))
-                new_D_x = (np.asarray(insts_feature))
-                self.candidates = new_D_x
-            else:
-                self.candidates = None
-        else:
-            old_D_x = []
-            for insts_param in old_D_x_params:
-                # insts_feature = []
-                old_D_x.append(insts_param[:, sort_idx])
-
-            if new_D_x_param is not None:
-                new_D_x = new_D_x_param[:, sort_idx]
-                self.candidates = new_D_x
-            else:
-                self.candidates = None
-
-        self.old_D_num = len(old_D_x)
-        self.gps = []
-        for d in range(self.old_D_num):
-            # self.gps.append(GaussianProcessRegressor())
-            # observed_idx = np.random.randint(0, len(old_D_y[d]), size=50)
-            # observed_idx = np.random.randint(0, len(old_D_y[d]), size=len())
-            observed_idx = list(range(len(old_D_y[d])))
-            # observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
-            x = (old_D_x[d][observed_idx, :])  # TODO
-            y = (old_D_y[d][observed_idx])
-            # train_yvar = np.full_like(y, self.noise_std ** 2)
-            # self.gps.append(get_fitted_model(x, y, train_yvar))
-            self.gps.append(GaussianProcessRegressorARD_gpy(self.hp_num))
-            self.gps[-1].fit(x, y)
-        # print(1)
-        # if new_D_x is not None:
-        #     candidates = new_D_x
-        # else:  #
-        #     raise NotImplemented
-        # self.candidates = candidates
-
     def _kendallTauCorrelation(self, base_model_means, y):
         if y is None or len(y) < 2:
             return np.full(base_model_means.shape[0], self.rho)
@@ -164,7 +97,7 @@ class SMBO(AbstractOptimizer):
                      base_model_means[..., None, :]) ^ (y[..., None] <
                                                         y[..., None, :])
         t = rank_loss.mean(axis=(-1, -2)) / self.bandwidth
-        return (t < 1) * (1 - t * t) * self.rho
+        return (t < 1) * (1 - t * t) * 3 / 4
         # return self.rho * (1 - t * t) if t < 1 else 0
 
     def suggest(self, n_suggestions=1):
@@ -216,14 +149,14 @@ class SMBO(AbstractOptimizer):
 
     def _get_similarity(self, ):
         base_model_means = []
-        for model in self.surrogate_model.base_models:
+        for model in self.base_models:
             base_model_means.append(
-                model._cached_predict(self.trials.get_sparse_array(), None)[0])
+                model._predict_normalize(self.trials.get_sparse_array(), None)[0])
         if not base_model_means:
             return []
         base_model_means = np.stack(base_model_means)  # [model, obs_num, 1]
-        return self._kendallTauCorrelation(base_model_means,
-                                           np.asarray(self.trials._his_observe_value))
+        return self._kendallTauCorrelation(
+            base_model_means, np.asarray(self.trials._his_observe_value))
 
     def observe(self, trial_list):
         # print(y)

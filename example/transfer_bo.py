@@ -4,7 +4,8 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.conditions import LessThanCondition
 
-from xbbo.search_algorithm.transfer_tst_optimizer import SMBO
+# from xbbo.search_algorithm.transfer_tst_optimizer import SMBO
+from xbbo.search_algorithm.transfer_taf_optimizer import SMBO
 from xbbo.search_space.offline_hp import Model
 from xbbo.utils.constants import MAXINT
 from xbbo.surrogate.tst import BaseModel

@@ -43,14 +43,12 @@ class SurrogateModel(object):
     types : list
         If set, contains a list with feature types (cat,const) of input vector
     """
-    def __init__(
-        self,
-        types: np.ndarray,
-        bounds: typing.List[typing.Tuple[float, float]],
-        instance_features: np.ndarray = None,
-        pca_components: float = None,
-        **kwargs
-    ):
+    def __init__(self,
+                 types: np.ndarray,
+                 bounds: typing.List[typing.Tuple[float, float]],
+                 instance_features: np.ndarray = None,
+                 pca_components: float = None,
+                 **kwargs):
         """Constructor
 
         Parameters
@@ -95,7 +93,6 @@ class SurrogateModel(object):
         # Initial types array which is used to reset the type array at every call to train()
         self._initial_types = types.copy()
         self.do_optimize = kwargs.get('do_optimize', False)
-
 
     def train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the Model on X and Y.
@@ -165,7 +162,10 @@ class SurrogateModel(object):
         """
         raise NotImplementedError
 
-    def predict(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def predict(
+        self,
+        X: np.ndarray,
+    ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """
         Predict means and variances for given X.
 
@@ -295,27 +295,23 @@ class SurrogateModel(object):
 
 
 class BaseGP(SurrogateModel):
-    def __init__(
-        self,
-        configspace: DenseConfigurationSpace,
-        types: List[int],
-        bounds: List[Tuple[float, float]],
-        rng: np.random.RandomState,
-        normalize_y: bool = True,
-        instance_features: Optional[np.ndarray] = None,
-        pca_components: Optional[int] = None,
-        **kwargs
-    ):
+    def __init__(self,
+                 configspace: DenseConfigurationSpace,
+                 types: List[int],
+                 bounds: List[Tuple[float, float]],
+                 rng: np.random.RandomState,
+                 normalize_y: bool = True,
+                 instance_features: Optional[np.ndarray] = None,
+                 pca_components: Optional[int] = None,
+                 **kwargs):
         """
         Abstract base class for all Gaussian process models.
         """
-        super().__init__(
-            types=types,
-            bounds=bounds,
-            instance_features=instance_features,
-            pca_components=pca_components,
-            **kwargs
-        )
+        super().__init__(types=types,
+                         bounds=bounds,
+                         instance_features=instance_features,
+                         pca_components=pca_components,
+                         **kwargs)
 
         self.configspace = configspace
         self.rng = rng
@@ -497,26 +493,22 @@ class Surrogate():
 
 
 class BaseRF(SurrogateModel):
-    def __init__(
-        self,
-        configspace: DenseConfigurationSpace,
-        types: typing.List[int],
-        bounds: List[Tuple[float, float]],
-        instance_features: Optional[np.ndarray] = None,
-        pca_components: Optional[int] = None,
-        **kwargs
-    ) -> None:
+    def __init__(self,
+                 configspace: DenseConfigurationSpace,
+                 types: typing.List[int],
+                 bounds: List[Tuple[float, float]],
+                 instance_features: Optional[np.ndarray] = None,
+                 pca_components: Optional[int] = None,
+                 **kwargs) -> None:
         """
         Abstract base class for all random forest models.
         """
         self.configspace = configspace
-        super().__init__(
-            types=types,
-            bounds=bounds,
-            instance_features=instance_features,
-            pca_components=pca_components,
-            **kwargs
-        )
+        super().__init__(types=types,
+                         bounds=bounds,
+                         instance_features=instance_features,
+                         pca_components=pca_components,
+                         **kwargs)
 
         self.conditional = dict()  # type: Dict[int, bool]
         self.impute_values = dict()  # type: Dict[int, float]

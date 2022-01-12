@@ -31,8 +31,12 @@ class BaseModel(GPR_sklearn):
             pca_components=pca_components,**kwargs)
         self.cached = {}
 
-    def _predict(self, X_test, cov_return_type: typing.Optional[str] = 'diagonal_cov'):
+    def _predict_normalize(self, X_test, cov_return_type: typing.Optional[str] = 'diagonal_cov'):
         assert self.is_fited
+        key = hash(X_test.data.tobytes()+bytes(cov_return_type if cov_return_type else '', 'utf-8'))
+        if key in self.cached:
+            return self.cached[key]
+        
         X_test = self._impute_inactive(X_test)
         if cov_return_type is None:
             mu = self.gp.predict(X_test)
@@ -61,16 +65,55 @@ class BaseModel(GPR_sklearn):
             if cov_return_type == 'diagonal_std':
                 var = np.sqrt(
                     var)  # converting variance to std deviation if specified
-
+        self.cached[key] = (mu, var)
+        
         return mu, var
-
-    def _cached_predict(self, X_test, cov_return_type: typing.Optional[str] = 'diagonal_cov'):
+    
+    def _predict(self, X_test, cov_return_type: typing.Optional[str] = 'diagonal_cov'):
+        assert self.is_fited
         key = hash(X_test.data.tobytes()+bytes(cov_return_type if cov_return_type else '', 'utf-8'))
         if key in self.cached:
             return self.cached[key]
-        if key not in self.cached:
-            self.cached[key] = self._predict(X_test, cov_return_type)
-        return self.cached[key]
+        
+        X_test = self._impute_inactive(X_test)
+        if cov_return_type is None:
+            mu = self.gp.predict(X_test)
+            var = None
+
+            if self.normalize_y:
+                mu = self._untransform_y(mu)
+
+        else:
+            predict_kwargs = {'return_cov': False, 'return_std': True}
+            if cov_return_type == 'full_cov':
+                predict_kwargs = {'return_cov': True, 'return_std': False}
+
+            mu, var = self.gp.predict(X_test, **predict_kwargs)
+
+            if cov_return_type != 'full_cov':
+                var = var**2  # since we get standard deviation for faster computation
+
+            # Clip negative variances and set them to the smallest
+            # positive float value
+            var = np.clip(var, VERY_SMALL_NUMBER, np.inf)
+
+            if self.normalize_y:
+                mu, var = self._untransform_y(mu, var)
+
+            if cov_return_type == 'diagonal_std':
+                var = np.sqrt(
+                    var)  # converting variance to std deviation if specified
+        self.cached[key] = (mu, var)
+        
+        return mu, var   
+
+    # def _cached_predict(self, X_test, cov_return_type: typing.Optional[str] = 'diagonal_cov'):
+    #     key = hash(X_test.data.tobytes()+bytes(cov_return_type if cov_return_type else '', 'utf-8'))
+    #     if key in self.cached:
+    #         return self.cached[key]
+    #     if key not in self.cached:
+    #         self.cached[key] = self._predict(X_test, cov_return_type)
+    #     return self.cached[key]
     
 
 
@@ -129,7 +172,12 @@ class TST_surrogate(GPR_sklearn):
         self.selfsimilarity = selfsimilarity
 
     def update_similarity(self, similarity):
-        self.similarity = similarity
+        self.similarity = np.array(similarity)
+        non_zero_weight_indices = (self.similarity ** 2 > 0).nonzero()[0]
+        self.pre_weight_model = []
+        for idx in non_zero_weight_indices:
+            self.pre_weight_model.append(self.base_models[idx])
+        self.weight = self.similarity[non_zero_weight_indices]
 
     def _predict(self,
                 X_test,
@@ -145,9 +193,9 @@ class TST_surrogate(GPR_sklearn):
             mu = self.gp.predict(X_test)
             var = None
             mu *= self.selfsimilarity
-            for d in range(len(self.similarity)):
-                mu += self.similarity[d] * self.base_models[d]._cached_predict(X_test, cov_return_type=None)[0]
-                denominator += self.similarity[d]
+            for d in range(len(self.weight)):
+                mu += self.weight[d] * self.pre_weight_model[d]._predict_normalize(X_test, cov_return_type=None)[0]
+                denominator += self.weight[d]
             mu /= denominator
             if self.normalize_y:
                 mu = self._untransform_y(mu)
@@ -159,9 +207,9 @@ class TST_surrogate(GPR_sklearn):
 
             mu, var = self.gp.predict(X_test, **predict_kwargs)
             mu *= self.selfsimilarity
-            for d in range(len(self.similarity)):
-                mu += self.similarity[d] * self.base_models[d]._cached_predict(X_test, cov_return_type=None)[0]
-                denominator += self.similarity[d]
+            for d in range(len(self.weight)):
+                mu += self.weight[d] * self.pre_weight_model[d]._predict_normalize(X_test, cov_return_type=None)[0]
+                denominator += self.weight[d]
             mu /= denominator
 
             if cov_return_type != 'full_cov':
