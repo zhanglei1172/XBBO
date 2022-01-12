@@ -78,7 +78,7 @@ def get_opt_class(opt_name):
     elif opt_name == "transfer_tst_optimizer_":
         from xbbo.search_algorithm import transfer_tst_optimizer_ as opt
     elif opt_name == "transfer_taf_optimizer_":
-        from xbbo.search_algorithm import transfer_taf_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_taf_optimizer as opt
     elif opt_name == "transfer_rgpe_mean_optimizer_":
         from xbbo.search_algorithm import transfer_rgpe_mean_optimizer_ as opt
     elif opt_name == "transfer_taf_rgpe_optimizer_":
