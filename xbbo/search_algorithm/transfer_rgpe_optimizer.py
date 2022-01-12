@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 import tqdm, random
 
 from xbbo.acquisition_function.ei import EI
-from xbbo.acquisition_function.taf import TAF
+from xbbo.acquisition_function.transfer.taf import TAF
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
@@ -16,7 +16,7 @@ from xbbo.core.trials import Trials
 from xbbo.surrogate.gaussian_process import (
     GaussianProcessRegressorARD_sklearn, GaussianProcessRegressor,
     GaussianProcessRegressorARD_gpy)
-from xbbo.surrogate.rgpe import RGPE_surrogate
+from xbbo.surrogate.transfer.weight_stategy import RGPE_surrogate
 
 
 class SMBO_test():

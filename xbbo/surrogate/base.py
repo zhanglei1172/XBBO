@@ -92,7 +92,7 @@ class SurrogateModel(object):
         self.types = types
         # Initial types array which is used to reset the type array at every call to train()
         self._initial_types = types.copy()
-        self.do_optimize = kwargs.get('do_optimize', False)
+        self.do_optimize = kwargs.get('do_optimize', True)
 
     def train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the Model on X and Y.
@@ -165,6 +165,7 @@ class SurrogateModel(object):
     def predict(
         self,
         X: np.ndarray,
+        cov_return_type: typing.Optional[str] = 'diagonal_cov'
     ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """
         Predict means and variances for given X.
@@ -207,7 +208,7 @@ class SurrogateModel(object):
                     'Rows in X should have %d entries but have %d!' %
                     (len(self.types), X.shape[1]))
 
-            mean, var = self._predict(X)
+            mean, var = self._predict(X, cov_return_type)
 
             if len(mean.shape) == 1:
                 mean = mean.reshape((-1, 1))
@@ -216,7 +217,11 @@ class SurrogateModel(object):
 
             return mean, var
 
-    def _predict(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def _predict(
+        self,
+        X: np.ndarray,
+        cov_return_type: typing.Optional[str] = 'diagonal_cov'
+    ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """
         Predict means and variances for given X.
 
@@ -235,7 +240,7 @@ class SurrogateModel(object):
         raise NotImplementedError()
 
     def predict_marginalized_over_instances(
-            self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+            self, X: np.ndarray, cov_return_type: typing.Optional[str] = 'diagonal_cov') -> typing.Tuple[np.ndarray, np.ndarray]:
         """Predict mean and variance marginalized over all instances.
 
         Returns the predictive mean and variance marginalised over all
@@ -263,7 +268,7 @@ class SurrogateModel(object):
 
         if self.instance_features is None or \
                 len(self.instance_features) == 0:
-            mean, var = self.predict(X)
+            mean, var = self.predict(X, cov_return_type)
             var[var < self.var_threshold] = self.var_threshold
             var[np.isnan(var)] = self.var_threshold
             return mean, var
@@ -275,7 +280,7 @@ class SurrogateModel(object):
         for i, x in enumerate(X):
             X_ = np.hstack((np.tile(x,
                                     (n_instances, 1)), self.instance_features))
-            means, vars = self.predict(X_)
+            means, vars = self.predict(X_, cov_return_type)
             # VAR[1/n (X_1 + ... + X_n)] =
             # 1/n^2 * ( VAR(X_1) + ... + VAR(X_n))
             # for independent X_1 ... X_n
@@ -316,7 +321,8 @@ class BaseGP(SurrogateModel):
         self.configspace = configspace
         self.rng = rng
         self.normalize_y = normalize_y
-        self.kernel = self._get_kernel()
+        kernel = kwargs.get('kernel')
+        self.kernel = kernel if kernel else self._get_kernel()
         self.gp = self._get_gp()
 
     def _get_kernel(self) -> Kernel:

@@ -3,11 +3,12 @@ import typing
 import numpy as np
 
 from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
-from xbbo.acquisition_function.taf import TAF_AcqFunc
+from xbbo.acquisition_function.transfer.taf import TAF_AcqFunc
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.surrogate.gaussian_process import GPR_sklearn
-from xbbo.surrogate.tst import BaseModel
+from xbbo.surrogate.transfer.tst import BaseModel
+from xbbo.surrogate.transfer.weight_stategy import KernelRegress
 from . import alg_register
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
@@ -15,7 +16,7 @@ from xbbo.initial_design import ALL_avaliable_design
 logger = logging.getLogger(__name__)
 
 
-@alg_register.register('bo-taf')
+@alg_register.register('bo-kr_taf')
 class SMBO(AbstractOptimizer):
     '''
     reference: https://github.com/boschresearch/MetaBO/blob/3f458bd32db340fbe2d5f072a92cfd782072342c/metabo/policies/policies.py
@@ -45,7 +46,7 @@ class SMBO(AbstractOptimizer):
 
         # self.surrogate = GaussianProcessRegressor(self.hp_num)
         self.rho = kwargs.get("rho", 1)
-        self.bandwidth = kwargs.get("bandwdth", 0.4)
+        self.bandwidth = kwargs.get("bandwdth", 0.1)
         self.base_models = kwargs.get("base_models")
         if self.base_models:
             assert isinstance(self.base_models[0], BaseModel)
@@ -54,7 +55,8 @@ class SMBO(AbstractOptimizer):
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         else:
             raise NotImplementedError()
-
+        self.weight_sratety = KernelRegress(self.space, self.base_models,
+                                            self.surrogate_model, self.rng)
         if acq_func == 'ei':
 
             self.acquisition_func = TAF_AcqFunc(self.surrogate_model,
@@ -130,7 +132,7 @@ class SMBO(AbstractOptimizer):
             self.acquisition_func.update(surrogate_model=self.surrogate_model,
                                          y_best=best_val,
                                          _base_incuments=base_incuments)
-            self.acquisition_func.update_weight(self._get_similarity())
+            self.acquisition_func.update_weight(self.weight_sratety.get_weight(self.trials))
             configs = self.acq_maximizer.maximize(self.trials,
                                                   1000,
                                                   drop_self_duplicate=True)

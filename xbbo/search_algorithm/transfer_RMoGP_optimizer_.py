@@ -7,10 +7,10 @@ from matplotlib import pyplot as plt
 from botorch.optim import optimize_acqf
 import tqdm, random
 
-from xbbo.acquisition_function import mogp
+from xbbo.acquisition_function.transfer import mogp
 from xbbo.acquisition_function.ei import EI
-from xbbo.acquisition_function.mogp import MoGP_
-from xbbo.acquisition_function.taf import TAF_
+from xbbo.acquisition_function.transfer.mogp import MoGP_
+from xbbo.acquisition_function.transfer.taf import TAF_
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
@@ -19,8 +19,8 @@ from xbbo.core.trials import Trials
 from xbbo.surrogate import get_fitted_model
 from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
     GaussianProcessRegressorARD_torch
-from xbbo.surrogate.rgpe import RGPE_mean_surrogate_
-from xbbo.surrogate.tst import TST_surrogate_
+from xbbo.surrogate.transfer.weight_stategy import RGPE_mean_surrogate_
+from xbbo.surrogate.transfer.tst import TST_surrogate_
 
 
 

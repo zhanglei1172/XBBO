@@ -1,27 +1,21 @@
-import logging
-from posixpath import basename
-import typing
+import logging, typing
 import numpy as np
-from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
-from xbbo.initial_design import ALL_avaliable_design
-from xbbo.surrogate.transfer.weight_stategy import KernelRegress,  ZeroWeight
-
-from . import alg_register
 from xbbo.acquisition_function.ei import EI_AcqFunc
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
-
+from . import alg_register
 from xbbo.core.trials import Trial, Trials
-# from xbbo.surrogate.gaussian_process import GPR_sklearn, GaussianProcessRegressorARD_gpy
+from xbbo.initial_design import ALL_avaliable_design
+from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
+from xbbo.surrogate.transfer.weight_stategy import RankingWeight
 from xbbo.surrogate.transfer.tst import BaseModel, TST_surrogate
 
 logger = logging.getLogger(__name__)
 
-
-@alg_register.register('bo-kr_surrogate')
+@alg_register.register('bo-rw_surrogate')
 class SMBO(AbstractOptimizer):
     '''
-    tst
+    RGPE(mean)
     '''
     def __init__(self,
                  space: DenseConfigurationSpace,
@@ -39,7 +33,7 @@ class SMBO(AbstractOptimizer):
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit, init_budget=kwargs.get('init_budget'))
+            self.space, self.rng, ta_run_limit=total_limit)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
@@ -47,7 +41,8 @@ class SMBO(AbstractOptimizer):
         self.trials = Trials(sparse_dim=self.sparse_dimension,
                              dense_dim=self.dense_dimension)
 
-        self.bandwidth = kwargs.get("bandwdth", 0.1)
+        # self.rho = kwargs.get("rho", 1)
+        self.bandwidth = kwargs.get("bandwdth", 0.9)
         self.base_models = kwargs.get("base_models")
         if self.base_models:
             assert isinstance(self.base_models[0], BaseModel)
@@ -57,10 +52,7 @@ class SMBO(AbstractOptimizer):
                                                      rng=self.rng)
         else:
             raise NotImplementedError()
-        self.weight_sratety = KernelRegress(self.space, self.base_models,
-                                            self.surrogate_model, self.rng, bandwidth=self.bandwidth)
-        # self.weight_sratety = ZeroWeight(self.space, self.base_models, self.surrogate_model, self.rng)
-        # self.weight_sratety = ProductExpert(self.space, self.base_models, self.surrogate_model, self.rng)
+        self.weight_sratety = RankingWeight(self.space, self.base_models, self.surrogate_model, self.rng, is_purn=True)
 
         if acq_func == 'ei':
             self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
@@ -94,6 +86,8 @@ class SMBO(AbstractOptimizer):
             "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
             .format(surrogate, acq_func, acq_opt))
 
+
+
     def suggest(self, n_suggestions=1):
         trial_list = []
         # currently only suggest one
@@ -109,19 +103,10 @@ class SMBO(AbstractOptimizer):
                           config_dict=config.get_dictionary(),
                           sparse_array=config.get_sparse_array()))
         else:
-            if self.trials.trials_num < 1:
-                configs = self.space.sample_configuration(n_suggestions)
-                for config in configs:
-                    trial_list.append(
-                        Trial(configuration=config,
-                                config_dict=config.get_dictionary(),
-                                sparse_array=config.get_sparse_array()))
-                return trial_list
             self.surrogate_model.train(
                 np.asarray(self.trials.get_sparse_array()),
                 np.asarray(self.trials.get_history()[0]))
-            self.surrogate_model.update_weight(
-                self.weight_sratety.get_weight(self.trials))
+            self.surrogate_model.update_weight(self.weight_sratety.get_weight(self.trials))
             configs = []
             _, best_val = self._get_x_best(self.predict_x_best)
             self.acquisition_func.update(surrogate_model=self.surrogate_model,
@@ -150,16 +135,6 @@ class SMBO(AbstractOptimizer):
 
         return trial_list
 
-    # def _get_similarity(self, ):
-    #     base_model_means = []
-    #     for model in self.base_models:
-    #         base_model_means.append(
-    #             model._predict_normalize(self.trials.get_sparse_array(), None)[0])
-    #     if not base_model_means:
-    #         return []
-    #     base_model_means = np.stack(base_model_means)  # [model, obs_num, 1]
-    #     return self._kendallTauCorrelation(
-    #         base_model_means, np.asarray(self.trials._his_observe_value))
 
     def observe(self, trial_list):
         # print(y)
@@ -204,3 +179,6 @@ class SMBO(AbstractOptimizer):
             best_observation = self.trials.best_observe_value
 
         return x_best_array, best_observation
+
+
+opt_class = SMBO
