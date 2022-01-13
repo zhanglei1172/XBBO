@@ -45,8 +45,6 @@ class NevergradOptimizer(AbstractOptimizer, FeatureSpace_gaussian):
         self.optim = opt_class(dimension=self.dense_dimension, budget=budget)
         self.x = []
 
-    def transform_sparseArray_to_optSpace(self, sparse_array):
-        return [self.array_to_feature(x, self.dense_dimension) for x in sparse_array]
 
     def suggest(self, n_suggestions=1):
         """Get suggestion from nevergrad.
