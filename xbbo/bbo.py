@@ -3,8 +3,8 @@ import json
 from time import time
 import tqdm
 
-from xbbo.search_space import build_test_problem
-from xbbo.search_algorithm import get_opt_class
+from xbbo.search_space import problem_register
+from xbbo.search_algorithm import alg_register
 from xbbo.configspace import build_space
 from xbbo.utils.constants import MAXINT
 from xbbo.utils.record import Record
@@ -16,13 +16,13 @@ class BBO:
         # setup TestProblem
         self.cfg = cfg
         self.rng = np.random.RandomState(seed)
-        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg, seed=self.rng.randint(MAXINT))
+        self.function_instance = problem_register[cfg.TEST_PROBLEM.name](seed=self.rng.randint(MAXINT), **cfg.TEST_PROBLEM.kwargs)
 
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
         self.config_spaces = build_space(self.api_config,seed=self.rng.randint(MAXINT))
 
         # Setup optimizer
-        opt_class = get_opt_class(cfg.OPTM.name)
+        opt_class = alg_register[cfg.OPTM.name]
         self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
 
 

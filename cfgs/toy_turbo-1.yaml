@@ -19,7 +19,7 @@ OPTM:
 TEST_PROBLEM:
   SEARCH_SPACE:
     hp:
-      cat_dim: 2
+      dim: 2
   kwargs:
     func_name: branin
     noise_std: 0.0

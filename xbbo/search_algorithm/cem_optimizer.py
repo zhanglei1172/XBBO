@@ -1,10 +1,10 @@
 import numpy as np
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from . import alg_register
 # from xbbo.configspace.feature_space import Uniform2Gaussian
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.core.trials import Trial, Trials
 
 @alg_register.register('cem')

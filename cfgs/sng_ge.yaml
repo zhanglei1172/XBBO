@@ -18,7 +18,7 @@ OPTM:
 TEST_PROBLEM:
   SEARCH_SPACE:
     hp:
-      cat_dim: 30
+      dim: 30
       t: 0.45
   kwargs:
     func_name: branin

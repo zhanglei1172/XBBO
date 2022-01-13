@@ -66,7 +66,7 @@ from ConfigSpace.hyperparameters import (
     OrdinalHyperparameter
 )
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
 
 DEFAULT_TECHNIQUES = ("AUCBanditMetaTechniqueA",)

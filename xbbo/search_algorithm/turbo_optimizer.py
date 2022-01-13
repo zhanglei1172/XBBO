@@ -6,7 +6,7 @@ import gpytorch
 import numpy as np
 import torch
 from torch.quasirandom import SobolEngine
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
 from xbbo.core.trials import Trial, Trials
