@@ -161,13 +161,13 @@ class RegularizedEA(AbstractOptimizer):
         # t = child1[i]
         # child1[i] = child2[i]
         # child2[i] = t
-        return np.clip(child1, 0, 1), np.clip(child2, 0, 1)
+        return np.clip(child1, self.bounds.lb, self.bounds.ub), np.clip(child2, self.bounds.lb, self.bounds.ub)
 
     def __mutate(self, parent):
         child = parent.copy()
         r = self.rng.rand(len(child))
         delta = np.where(r<0.5, (2 * r) ** (1 / (self.mum + 1)) - 1, 1 - (2*(1 - r))**(1/(self.mum+1)))
-        return np.clip(child + delta, 0, 1)
+        return np.clip(child + delta, self.bounds.lb, self.bounds.ub)
 
     def __tournament(self, rank):
         participants = self.rng.choice(len(self.population), self.num_of_tour_particips, replace=False)

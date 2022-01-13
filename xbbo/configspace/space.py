@@ -55,10 +55,14 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
 
         return configs
 
-    def get_bounds(self):
-        lowers = np.zeros(self.size_dense)
-        uppers = np.ones(self.size_dense)
-
+    def get_bounds(self, sparse=False):
+        if sparse:
+            lowers = np.zeros(self.size_dense)
+            uppers = np.ones(self.size_dense)
+            uppers[self.cat_src] = self.cat_sizes
+        else:
+            lowers = np.zeros(self.size_dense)
+            uppers = np.ones(self.size_dense)
         # return list(zip(lowers, uppers))
         return Bounds(lowers, uppers)
 
