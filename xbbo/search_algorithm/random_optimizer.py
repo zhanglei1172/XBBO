@@ -1,20 +1,21 @@
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.search_algorithm.base import AbstractOptimizer
+from . import alg_register
 
-
+@alg_register.register('rs')
 class RandomOptimizer(AbstractOptimizer):
     def __init__(
             self,
-            config_spaces,
+            space,
             seed: int = 42,
             initial_design: str = 'sobol',
             #  min_sample=1,
             total_limit: int = 10,
             **kwargs):
-        AbstractOptimizer.__init__(self, config_spaces, seed, **kwargs)
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit)
+            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
         self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
         )
@@ -23,8 +24,6 @@ class RandomOptimizer(AbstractOptimizer):
         self.trials = Trials(sparse_dim=self.sparse_dimension,
                              dense_dim=self.dense_dimension)
 
-    def transform_sparseArray_to_optSpace(self, sparse_array):
-        return sparse_array
 
     def suggest(self, n_suggestions=1):
         trial_list = []

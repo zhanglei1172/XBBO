@@ -1,3 +1,42 @@
+class Register():
+    def __init__(self, registry_name):
+        self._dict = {}
+        self._name = registry_name
+
+    def __setitem__(self, key, value):
+        if not callable(value):
+            raise Exception(f"Value of a Registry must be a callable!\nValue: {value}")
+        if key is None:
+            key = value.__name__
+        if key in self._dict:
+            print("Key %s already in registry %s." % (key, self._name))
+        self._dict[key] = value
+
+    def register(self, target):
+        """Decorator to register a function or class."""
+
+        def add(key, value):
+            self[key] = value
+            return value
+
+        if callable(target):
+            # @reg.register
+            return add(None, target)
+        # @reg.register('alias')
+        return lambda x: add(target, x)
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+    def __contains__(self, key):
+        return key in self._dict
+
+    def keys(self):
+        """key"""
+        return self._dict.keys()
+
+alg_register = Register("all avaliable search algorithms")
+
 def get_opt_class(opt_name):
 
     if opt_name == "hyperopt_optimizer":
@@ -31,7 +70,7 @@ def get_opt_class(opt_name):
     elif opt_name == "transfer_baseline_optimizer":
         from xbbo.search_algorithm import transfer_baseline_optimizer as opt
     elif opt_name == "transfer_rgpe_optimizer":
-        from xbbo.search_algorithm import transfer_rgpe_optimizer as opt
+        from xbbo.search_algorithm import _transfer_rgpe_optimizer as opt
     elif opt_name == "transfer_rs_optimizer":
         from xbbo.search_algorithm import transfer_rs_optimizer as opt
     elif opt_name == "transfer_baseline_optimizer_":
@@ -39,13 +78,13 @@ def get_opt_class(opt_name):
     elif opt_name == "transfer_tst_optimizer_":
         from xbbo.search_algorithm import transfer_tst_optimizer_ as opt
     elif opt_name == "transfer_taf_optimizer_":
-        from xbbo.search_algorithm import transfer_taf_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_taf_optimizer as opt
     elif opt_name == "transfer_rgpe_mean_optimizer_":
-        from xbbo.search_algorithm import transfer_rgpe_mean_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_rgpe_mean_optimizer as opt
     elif opt_name == "transfer_taf_rgpe_optimizer_":
-        from xbbo.search_algorithm import transfer_taf_rgpe_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_taf_rgpe_optimizer as opt
     elif opt_name == "transfer_RMoGP_optimizer_":
-        from xbbo.search_algorithm import transfer_RMoGP_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_RMoGP_optimizer as opt
     elif opt_name == "de_optimizer":
         from xbbo.search_algorithm import de_optimizer as opt
     elif opt_name == "cma_optimizer":

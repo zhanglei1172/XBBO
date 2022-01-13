@@ -1,83 +1,86 @@
 import numpy as np
 
-from xbbo.configspace.feature_space import FeatureSpace_gaussian
+# from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration
-from xbbo.core.trials import Trials
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+from xbbo.core.trials import Trials, Trial
+from . import alg_register
 
-
-class DE(AbstractOptimizer, FeatureSpace_gaussian):
+@alg_register.register('de')
+class DE(AbstractOptimizer):
 
     def __init__(self,
-                 config_spaces,
-                 llambda=10):
-        AbstractOptimizer.__init__(self, config_spaces)
-        FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
-        configs = self.space.get_hyperparameters()
+                 space:DenseConfigurationSpace,
+                 seed:int = 42,
+                 llambda=10, **kwargs):
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+
+        # Uniform2Gaussian.__init__(self,)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.bounds = self.space.get_bounds()
 
-        self.hp_num = len(configs)
+        # self.dense_dimension = len(configs)
         self.llambda = llambda
         self.population = [None] * self.llambda
         self.population_fitness = [None] * self.llambda
-        self.candidates = [None] * self.llambda
-
+        # self.candidates = [None] * self.llambda
+        self.trials = Trials(sparse_dim=self.sparse_dimension,
+                             dense_dim=self.dense_dimension)
         self.current_best = None
         self.current_best_fitness = np.inf
         self._num_suggestions = 0
-        self.F1 = 0.8
-        self.F2 = 0.8
-        self.CR = 0.5
-        self.trials = Trials()
+        self.F1 = kwargs.get('F1', 0.8)
+        self.F2 = kwargs.get('F2',0.8)
+        self.CR = kwargs.get('CR',0.5)
 
     def suggest(self, n_suggestions=1):
-
-        sas = []
-        x_arrays = []
+        trial_list = []
         for n in range(n_suggestions):
             # suggest_array = []
             idx = self._num_suggestions % self.llambda
             individual = self.population[idx]
-            a, b = (self.population[np.random.randint(self.llambda)] for _ in range(2))
-            if any(x is None for x in [individual, a, b]):
-                new_individual = np.random.normal(0, 1, self.hp_num)
+            a, b = (self.population[self.rng.randint(self.llambda)] for _ in range(2))
+            if any(x is None for x in [individual, a, b]): # population not enough
+                # new_individual = self.rng.normal(0, 1, self.dense_dimension)
+                new_individual = self.rng.normal(self.bounds.lb, self.bounds.ub, self.dense_dimension)
                 # if (self.trials.trials_num) <= self.llambda:
-                assert self.candidates[idx] is None
-                self.candidates[idx] = tuple(new_individual)
+                # assert self.candidates[idx] is None
+                # self.candidates[idx] = tuple(new_individual)
                 self.population[idx] = new_individual
             else:
                 new_individual = individual + self.F1 * (a - b) + self.F2 * (self.current_best - individual)
-                for i in range(self.hp_num):
-                    R = np.random.randint(self.hp_num)
-                    if i != R and np.random.uniform(0, 1) > self.CR:
+                R = self.rng.randint(self.dense_dimension)
+                for i in range(self.dense_dimension):
+                    if i != R and self.rng.uniform(0, 1) > self.CR:
                         new_individual[i] = individual[i]
-                self.candidates[idx] = tuple(new_individual)
+                # self.candidates[idx] = tuple(new_individual)
                 # self.population[idx] = new_individual
             self._num_suggestions += 1
-            sas.append(new_individual)
-            x_arrays.append(self.feature_to_array(np.asarray(new_individual), self.sparse_dimension))
+            new_individual = np.clip(new_individual, self.bounds.lb,
+                                 self.bounds.ub)
+            # dense_array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_dense_array(self.space,new_individual)
+            trial_list.append(
+                Trial(config,
+                      config_dict=config.get_dictionary(),
+                      dense_array=new_individual,
+                      origin='DE', loc=idx))
 
-        x = [DenseConfiguration.array_to_dict(self.space,
-                                                  np.array(sa)) for sa in x_arrays]
-        self.trials.params_history.extend(x)
-        # self._num_suggestions += n_suggestions
-        return x, sas
+        return trial_list
 
-    def observe(self, x, y):
-        self.trials.history.extend(x)
-        self.trials.history_y.extend(y)
-        self.trials.trials_num += 1
-
-        for xx, yy in zip(x, y):
-            idx = self.candidates.index(tuple(xx))
-            self.population[idx] = np.asarray(xx)
-            self.population_fitness[idx] = yy
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial, permit_duplicagte=True)
+            # idx = self.candidates.index(tuple(trial.dense_array))
+            idx = trial.loc
+            self.population[idx] = trial.dense_array
+            self.population_fitness[idx] = trial.observe_value
             # self._num_suggestions += 1
-            self.candidates[idx] = None
-            if yy < self.current_best_fitness:
+            # self.candidates[idx] = None
+            if trial.observe_value < self.current_best_fitness:
                 self.current_best = self.population[idx]
-                self.current_best_fitness = yy
+                self.current_best_fitness = trial.observe_value
 
 
 opt_class = DE

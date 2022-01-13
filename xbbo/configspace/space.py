@@ -9,6 +9,7 @@ import ConfigSpace as CS
 import ConfigSpace.hyperparameters as CSH
 import numpy as np
 from scipy.optimize import Bounds
+from ConfigSpace.conditions import ConditionComponent
 from ConfigSpace.util import deactivate_inactive_hyperparameters as _deactivate_inactive_hyperparameters
 # from xbbo.configspace.warp import WARP_DICT, UNWARP_DICT
 from ConfigSpace.util import get_one_exchange_neighbourhood as _get_one_exchange_neighbourhood
@@ -22,7 +23,9 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
     #     # self.all_warp = all_warp
     #     # self.meta_param = meta_param
     #     self.warp = warp
-    def add_hyperparameters(self, hyperparameters: List[CSH.Hyperparameter]) -> List[CSH.Hyperparameter]:
+    def add_hyperparameters(
+            self, hyperparameters: List[CSH.Hyperparameter]
+    ) -> List[CSH.Hyperparameter]:
         for hp in hyperparameters:
             self.add_hyperparameter(hp)
         return hyperparameters
@@ -32,6 +35,16 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         hyperparameter = super().add_hyperparameter(hyperparameter)
         self._creat_mappings()
         return hyperparameter
+
+    def add_conditions(self, conditions: List[ConditionComponent]) -> List[ConditionComponent]:      
+        for hp in conditions:
+            self.add_condition(hp)
+        return conditions
+    
+    def add_condition(self, condition: ConditionComponent) -> ConditionComponent:
+        con = super().add_condition(condition)
+        self._creat_mappings()
+        return con
 
     def get_dimensions(self, sparse=False):
         '''
@@ -50,15 +63,18 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         configs = []
         for config in configs_sparse_list:
             configs.append(
-                DenseConfiguration(self,
-                                   values=config.get_dictionary()))
+                DenseConfiguration(self, values=config.get_dictionary()))
 
         return configs
 
-    def get_bounds(self):
-        lowers = np.zeros(self.size_dense)
-        uppers = np.ones(self.size_dense)
-
+    def get_bounds(self, sparse=False):
+        if sparse:
+            lowers = np.zeros(self.size_dense)
+            uppers = np.ones(self.size_dense)
+            uppers[self.cat_src] = self.cat_sizes
+        else:
+            lowers = np.zeros(self.size_dense)
+            uppers = np.ones(self.size_dense)
         # return list(zip(lowers, uppers))
         return Bounds(lowers, uppers)
 
@@ -86,12 +102,13 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
 
         size_sparse = src_ind + 1
         size_dense = trg_ind
-        if nums:
-            self.num_src, self.num_trg = map(np.uintp, zip(*nums))
+        # if nums:
+        self.num_src, self.num_trg = list(map(np.uintp, zip(
+            *nums))) if nums else ([], [])
 
-        if cats:
-            self.cat_src, self.cat_trg, self.cat_sizes = \
-                map(np.uintp, zip(*cats))
+        # if cats:
+        self.cat_src, self.cat_trg, self.cat_sizes = \
+                list(map(np.uintp, zip(*cats))) if cats else ([], [],[])
 
         self.nums = nums
         self.cats = cats
@@ -122,7 +139,7 @@ class DenseConfiguration(CS.Configuration):
         return cls(configuration_space=configuration_space,
                    vector=array_sparse)
 
-    def get_sparse_array(self,):
+    def get_sparse_array(self, ):
         return self.get_array()
 
     def __init__(self, configuration_space: DenseConfigurationSpace, *args,
@@ -132,6 +149,9 @@ class DenseConfiguration(CS.Configuration):
         vector:inner representation
         '''
         assert isinstance(configuration_space, DenseConfigurationSpace)
+        if 'vector' in kwargs and configuration_space.cats:
+            kwargs['vector'][configuration_space.cat_src] = np.round(
+                kwargs['vector'][configuration_space.cat_src])
         super(DenseConfiguration, self).__init__(configuration_space, *args,
                                                  **kwargs)
 
@@ -193,12 +213,15 @@ class DenseConfiguration(CS.Configuration):
 
         # process categorical hyperparameters
         if cs.cats:
-            cat_trg_offset = np.uintp(array_sparse[cs.cat_src])
-            array_dense[cs.cat_trg + cat_trg_offset] = 1
+            choice = array_sparse[cs.cat_src] # conditional=>nan
+            cat_trg_offset = np.uintp(choice)
+            array_dense[cs.cat_trg + cat_trg_offset] = 1 if choice else choice
 
         return array_dense
 
-def convert_denseConfigurations_to_array(configs: List[DenseConfiguration]) -> np.ndarray:
+
+def convert_denseConfigurations_to_array(
+        configs: List[DenseConfiguration]) -> np.ndarray:
     """Impute inactive hyperparameters in configurations with their default.
 
     Necessary to apply an EPM to the data.
@@ -216,14 +239,13 @@ def convert_denseConfigurations_to_array(configs: List[DenseConfiguration]) -> n
     """
     configs_array = np.array([config.get_sparse_array() for config in configs],
                              dtype=np.float64)
-    configuration_space = configs[0].configuration_space
-    return impute_default_values(configuration_space, configs_array)
+    # configuration_space = configs[0].configuration_space
+    return configs_array
+    # return impute_default_values(configuration_space, configs_array)
 
 
-def impute_default_values(
-        configuration_space: DenseConfigurationSpace,
-        configs_array: np.ndarray
-) -> np.ndarray:
+def impute_default_values(configuration_space: DenseConfigurationSpace,
+                          configs_array: np.ndarray) -> np.ndarray:
     """Impute inactive hyperparameters in configuration array with their default.
 
     Necessary to apply an EPM to the data.
@@ -249,16 +271,24 @@ def impute_default_values(
 
     return configs_array
 
-def deactivate_inactive_hyperparameters(*arg,**kwargs):
-    configuration = _deactivate_inactive_hyperparameters(*arg,**kwargs)
+
+def deactivate_inactive_hyperparameters(*arg, **kwargs):
+    configuration = _deactivate_inactive_hyperparameters(*arg, **kwargs)
     # return DenseConfiguration(configuration_space=configuration.configuration_space,values=configuration.get_dictionary())
     return convert_denseConfiguration(configuration)
 
-def convert_denseConfiguration(conf:CS.Configuration):
+
+def convert_denseConfiguration(conf: CS.Configuration):
     # return DenseConfiguration(configuration_space=conf.configuration_space,values=conf.get_dictionary())
     conf.__class__ = DenseConfiguration
     return conf
 
-def get_one_exchange_neighbourhood(*args,**kwargs):
-    configs = map(convert_denseConfiguration,_get_one_exchange_neighbourhood(*args,stdev=0.05, num_neighbors=8,**kwargs))
+
+def get_one_exchange_neighbourhood(*args, **kwargs):
+    configs = map(
+        convert_denseConfiguration,
+        _get_one_exchange_neighbourhood(*args,
+                                        stdev=0.05,
+                                        num_neighbors=8,
+                                        **kwargs))
     return configs

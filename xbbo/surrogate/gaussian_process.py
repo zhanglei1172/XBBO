@@ -195,12 +195,13 @@ class GPR_sklearn(BaseGP):
         n_opt_restarts: int = 10,
         instance_features: typing.Optional[np.ndarray] = None,
         pca_components: typing.Optional[int] = None,
+        **kwargs
     ):
         types, bounds = get_types(cs)
         # self.cached = {}
 
         super(GPR_sklearn, self).__init__(cs, types, bounds, rng,instance_features=instance_features,
-            pca_components=pca_components,)
+            pca_components=pca_components,**kwargs)
 
         self.is_fited = False
         # self.alpha = alpha  # Fix RBF kernel error

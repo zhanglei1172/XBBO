@@ -2,11 +2,10 @@ import numpy as np
 # import matplotlib.pyplot as plt
 from xbbo.search_space.fast_example_problem import build_space_hard, rosenbrock_2d_hard
 
-from xbbo.search_algorithm.random_optimizer import RandomOptimizer
-
+from xbbo.search_algorithm.tpe_optimizer import TPE
 
 if __name__ == "__main__":
-    MAX_CALL = 1000
+    MAX_CALL = 30
     rng = np.random.RandomState(42)
 
     # define black box function
@@ -14,7 +13,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_space_hard(rng)
     # define black box optimizer
-    hpopt = RandomOptimizer(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol')
+    hpopt = TPE(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol',)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
@@ -31,7 +30,7 @@ if __name__ == "__main__":
         print(value)
     
     # plt.plot(hpopt.trials.get_history()[0])
-    # plt.savefig('./out/rosenbrock_bo_rs.png')
+    # plt.savefig('./out/rosenbrock_bo_gp.png')
     # plt.show()
     print('find best value:{}'.format(hpopt.trials.get_best()[0]))
 

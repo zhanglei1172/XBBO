@@ -43,13 +43,12 @@ class SurrogateModel(object):
     types : list
         If set, contains a list with feature types (cat,const) of input vector
     """
-    def __init__(
-        self,
-        types: np.ndarray,
-        bounds: typing.List[typing.Tuple[float, float]],
-        instance_features: np.ndarray = None,
-        pca_components: float = None,
-    ):
+    def __init__(self,
+                 types: np.ndarray,
+                 bounds: typing.List[typing.Tuple[float, float]],
+                 instance_features: np.ndarray = None,
+                 pca_components: float = None,
+                 **kwargs):
         """Constructor
 
         Parameters
@@ -93,6 +92,7 @@ class SurrogateModel(object):
         self.types = types
         # Initial types array which is used to reset the type array at every call to train()
         self._initial_types = types.copy()
+        self.do_optimize = kwargs.get('do_optimize', True)
 
     def train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the Model on X and Y.
@@ -143,7 +143,7 @@ class SurrogateModel(object):
                     dtype=np.uint,
                 )
 
-        return self._train(X, Y)
+        return self._train(X, Y, self.do_optimize)
 
     def _train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
         """Trains the random forest on X and y.
@@ -162,7 +162,11 @@ class SurrogateModel(object):
         """
         raise NotImplementedError
 
-    def predict(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def predict(
+        self,
+        X: np.ndarray,
+        cov_return_type: typing.Optional[str] = 'diagonal_cov'
+    ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """
         Predict means and variances for given X.
 
@@ -204,8 +208,9 @@ class SurrogateModel(object):
                     'Rows in X should have %d entries but have %d!' %
                     (len(self.types), X.shape[1]))
 
-            mean, var = self._predict(X)
-
+            mean, var = self._predict(X, cov_return_type)
+            if cov_return_type is None:
+                return mean, var
             if len(mean.shape) == 1:
                 mean = mean.reshape((-1, 1))
             if len(var.shape) == 1:
@@ -213,7 +218,11 @@ class SurrogateModel(object):
 
             return mean, var
 
-    def _predict(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def _predict(
+        self,
+        X: np.ndarray,
+        cov_return_type: typing.Optional[str] = 'diagonal_cov'
+    ) -> typing.Tuple[np.ndarray, np.ndarray]:
         """
         Predict means and variances for given X.
 
@@ -232,7 +241,7 @@ class SurrogateModel(object):
         raise NotImplementedError()
 
     def predict_marginalized_over_instances(
-            self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+            self, X: np.ndarray, cov_return_type: typing.Optional[str] = 'diagonal_cov') -> typing.Tuple[np.ndarray, np.ndarray]:
         """Predict mean and variance marginalized over all instances.
 
         Returns the predictive mean and variance marginalised over all
@@ -260,7 +269,7 @@ class SurrogateModel(object):
 
         if self.instance_features is None or \
                 len(self.instance_features) == 0:
-            mean, var = self.predict(X)
+            mean, var = self.predict(X, cov_return_type)
             var[var < self.var_threshold] = self.var_threshold
             var[np.isnan(var)] = self.var_threshold
             return mean, var
@@ -272,7 +281,7 @@ class SurrogateModel(object):
         for i, x in enumerate(X):
             X_ = np.hstack((np.tile(x,
                                     (n_instances, 1)), self.instance_features))
-            means, vars = self.predict(X_)
+            means, vars = self.predict(X_, cov_return_type)
             # VAR[1/n (X_1 + ... + X_n)] =
             # 1/n^2 * ( VAR(X_1) + ... + VAR(X_n))
             # for independent X_1 ... X_n
@@ -289,33 +298,35 @@ class SurrogateModel(object):
             var = var.reshape((-1, 1))
 
         return mean, var
+    
+    def update_weight(self, w, rho=None):
+        pass
 
 
 class BaseGP(SurrogateModel):
-    def __init__(
-        self,
-        configspace: DenseConfigurationSpace,
-        types: List[int],
-        bounds: List[Tuple[float, float]],
-        rng: np.random.RandomState,
-        normalize_y: bool = True,
-        instance_features: Optional[np.ndarray] = None,
-        pca_components: Optional[int] = None,
-    ):
+    def __init__(self,
+                 configspace: DenseConfigurationSpace,
+                 types: List[int],
+                 bounds: List[Tuple[float, float]],
+                 rng: np.random.RandomState,
+                 normalize_y: bool = True,
+                 instance_features: Optional[np.ndarray] = None,
+                 pca_components: Optional[int] = None,
+                 **kwargs):
         """
         Abstract base class for all Gaussian process models.
         """
-        super().__init__(
-            types=types,
-            bounds=bounds,
-            instance_features=instance_features,
-            pca_components=pca_components,
-        )
+        super().__init__(types=types,
+                         bounds=bounds,
+                         instance_features=instance_features,
+                         pca_components=pca_components,
+                         **kwargs)
 
         self.configspace = configspace
         self.rng = rng
         self.normalize_y = normalize_y
-        self.kernel = self._get_kernel()
+        kernel = kwargs.get('kernel')
+        self.kernel = kernel if kernel else self._get_kernel()
         self.gp = self._get_gp()
 
     def _get_kernel(self) -> Kernel:
@@ -492,26 +503,22 @@ class Surrogate():
 
 
 class BaseRF(SurrogateModel):
-    def __init__(
-        self,
-        configspace: DenseConfigurationSpace,
-        types: typing.List[int],
-        bounds: List[Tuple[float, float]],
-        instance_features: Optional[np.ndarray] = None,
-        pca_components: Optional[int] = None,
-        **kwargs
-    ) -> None:
+    def __init__(self,
+                 configspace: DenseConfigurationSpace,
+                 types: typing.List[int],
+                 bounds: List[Tuple[float, float]],
+                 instance_features: Optional[np.ndarray] = None,
+                 pca_components: Optional[int] = None,
+                 **kwargs) -> None:
         """
         Abstract base class for all random forest models.
         """
         self.configspace = configspace
-        super().__init__(
-            types=types,
-            bounds=bounds,
-            instance_features=instance_features,
-            pca_components=pca_components,
-            **kwargs
-        )
+        super().__init__(types=types,
+                         bounds=bounds,
+                         instance_features=instance_features,
+                         pca_components=pca_components,
+                         **kwargs)
 
         self.conditional = dict()  # type: Dict[int, bool]
         self.impute_values = dict()  # type: Dict[int, float]
