@@ -1,24 +1,16 @@
 import glob
+import typing
 import numpy as np
 import torch
-from botorch.acquisition import ExpectedImprovement, qNoisyExpectedImprovement
-from botorch.sampling import SobolQMCNormalSampler
-from matplotlib import pyplot as plt
-from botorch.optim import optimize_acqf
-import tqdm, random
-
 from xbbo.acquisition_function.ei import EI
-from xbbo.acquisition_function.taf import TAF_
+from xbbo.acquisition_function.transfer.taf import TAF_
 from xbbo.configspace.feature_space import FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
 
-from xbbo.core.trials import Trials
-from xbbo.surrogate import get_fitted_model
-from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
-    GaussianProcessRegressorARD_torch
-from xbbo.surrogate.rgpe import RGPE_mean_surrogate_
-from xbbo.surrogate.tst import TST_surrogate_
+from xbbo.core.trials import Trial, Trials
+from xbbo.surrogate.transfer.weight_stategy import RGPE_mean_surrogate_
+from xbbo.surrogate.transfer.tst import TST_surrogate_
 
 
 class SMBO(AbstractOptimizer, FeatureSpace_uniform):
@@ -63,242 +55,99 @@ class SMBO(AbstractOptimizer, FeatureSpace_uniform):
         self.purn = purn
         self.alpha = alpha
 
-    def prepare(self, old_D_x_params, old_D_y, new_D_x_param, sort_idx=None, params=True):
-        if params:
-            old_D_x = []
-            for insts_param in old_D_x_params:
-                insts_feature = []
-                for inst_param in insts_param:
-                    array = DenseConfiguration.dict_to_array(self.space, inst_param)
-                    insts_feature.append(self.array_to_feature(array, self.dense_dimension))
-                old_D_x.append(np.asarray(insts_feature))
-            insts_feature = []
-            if new_D_x_param:
-                for inst_param in new_D_x_param:
-                    array = DenseConfiguration.dict_to_array(self.space, inst_param)
-                    insts_feature.append(self.array_to_feature(array, self.dense_dimension))
-                new_D_x = (np.asarray(insts_feature))
-                self.candidates = new_D_x
-            else:
-                self.candidates = None
-        else:
-            old_D_x = []
-            for insts_param in old_D_x_params:
-                # insts_feature = []
-                old_D_x.append(insts_param[:, sort_idx])
-
-            if new_D_x_param is not None:
-                new_D_x = new_D_x_param[:, sort_idx]
-                self.candidates = new_D_x
-            else:
-                self.candidates = None
-
-        self.old_D_num = len(old_D_x)
-        self.gps = []
-        self.base_model_best = []
-        for d in range(self.old_D_num):
-            # self.gps.append(GaussianProcessRegressor())
-            # observed_idx = np.random.randint(0, len(old_D_y[d]), size=50)
-            # observed_idx = np.random.randint(0, len(old_D_y[d]), size=len())
-            observed_idx = list(range(len(old_D_y[d])))
-            # observed_idx = np.random.choice(len(old_D_y[d]), size=50, replace=False)
-            x = torch.Tensor(old_D_x[d][observed_idx, :])  # TODO
-            y = torch.Tensor(old_D_y[d][observed_idx])
-            train_yvar = torch.full_like(y, self.noise_std ** 2)
-            self.gps.append(get_fitted_model(x, y, train_yvar))
-            self.base_model_best.append(np.inf)
-            # g = GaussianProcessRegressorARD_torch(self.hp_num)
-            # self.gps.append(g.fit(x, y.squeeze()))
-        print(1)
-        # if new_D_x is not None:
-        #     candidates = new_D_x
-        # else:  #
-        #     raise NotImplemented
-        # self.candidates = candidates
-
-    def kendallTauCorrelation(self, base_model_means, y):
-        if y is None or len(y) < 2:
-            return torch.full(base_model_means.shape[0], self.rho)
-        rank_loss = (base_model_means.unsqueeze(-1) < base_model_means.unsqueeze(-2)) ^ (
-                y.unsqueeze(-1) < y.unsqueeze(-2))
-        t = rank_loss.float().mean(dim=-1).mean(dim=-1) / self.bandwidth
-        return (t < 1) * (1 - t * t) * self.rho
-        # return self.rho * (1 - t * t) if t < 1 else 0
 
     def suggest(self, n_suggestions=1):
-        # 只suggest 一个
-        if (self.trials.trials_num) < self.min_sample:
-            # raise NotImplemented
-            return self._random_suggest()
+        trial_list = []
+        # currently only suggest one
+        if (self.trials.trials_num) < self.init_budget:
+            assert self.trials.trials_num % n_suggestions == 0
+            configs = self.initial_design_configs[
+                int(n_suggestions *
+                    self.trials.trials_num):int(n_suggestions *
+                                                (self.trials.trials_num + 1))]
+            for config in configs:
+                trial_list.append(
+                    Trial(configuration=config,
+                          config_dict=config.get_dictionary(),
+                          sparse_array=config.get_sparse_array()))
         else:
-            x_unwarpeds = []
-            sas = []
+            self.surrogate_model.update_weight(self._get_similarity())
+            self.surrogate_model.train(
+                np.asarray(self.trials.get_sparse_array()),
+                np.asarray(self.trials.get_history()[0]))
+            configs = []
+            _, best_val = self._get_x_best(self.predict_x_best)
+            self.acquisition_func.update(surrogate_model=self.surrogate_model,
+                                         y_best=best_val)
+            configs = self.acq_maximizer.maximize(self.trials,
+                                                  1000,
+                                                  drop_self_duplicate=True)
+            _idx = 0
             for n in range(n_suggestions):
-                acq = self.acq_class(self.surrogate.gpr, self.surrogate.z_observed.min(), self.gps,
-                                     self.base_model_best,
-                                     self.weights, maximize=False)
-                # acq = self.acq_class(self.surrogate.gpr,
-                #                      self.surrogate.transform_outputs(
-                #                          np.asarray(self.trials.history_y)[..., None]).min().astype(np.float32), maximize=False)
-                if self.candidates is None:
-                    # optimize
-                    candidate, acq_value = optimize_acqf(
-                        acq, bounds=self.bounds_tensor, q=1, num_restarts=5, raw_samples=self.raw_samples,
-                    )
-                    suggest_array = candidate[0].detach().cpu().numpy()
-                    x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
-                    x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
+                while _idx < len(configs):  # remove history suggest
+                    if not self.trials.is_contain(configs[_idx]):
+                        config = configs[_idx]
+                        configs.append(config)
+                        trial_list.append(
+                            Trial(configuration=config,
+                                  config_dict=config.get_dictionary(),
+                                  sparse_array=config.get_sparse_array()))
+                        _idx += 1
 
-                    sas.append(suggest_array)
-                    x_unwarpeds.append(x_unwarped)
+                        break
+                    _idx += 1
                 else:
-                    with torch.no_grad():
-                        ei = acq(torch.Tensor(self.candidates).unsqueeze(dim=-2))
-                    rm_id = ei.argmax()
-                    suggest_array = self.candidates[rm_id]
-                    self.candidates = np.delete(self.candidates, rm_id, axis=0)  # TODO
-                    x_array = self.feature_to_array(suggest_array, self.sparse_dimension)
-                    x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
+                    assert False, "no more configs can be suggest"
+                # surrogate = TST_surrogate(self.gps, self.target_model,
+                #   self.similarity, self.rho)
 
-                    sas.append(suggest_array)
-                    x_unwarpeds.append(x_unwarped)
-        # x = [Configurations.array_to_dictUnwarped(self.space,
-        #                                           np.asarray(sa)) for sa in sas]
-        self.trials.params_history.extend(x_unwarpeds)
-        return x_unwarpeds, sas
+        return trial_list
 
-    def observe(self, x, y):
+
+    def observe(self, trial_list):
         # print(y)
-        self.trials.history.extend(x)
-        self.trials.history_y.extend(y)
-        self.surrogate.fit(x, y)
-        self.trials.trials_num += 1
-        if len(self.trials.history_y) < self.min_sample:
-            return
-        self.is_fited = True
-        self.x = torch.Tensor(self.trials.history)
-        self.y = torch.Tensor(self.trials.history_y).unsqueeze(-1)
-        with torch.no_grad():
-            for d in range(len(self.gps)):
-                model = self.gps[d]
-                self.base_model_best[d] = model.Y_std*model.posterior(self.x).mean.min() + model.Y_mean
-        self.weights = self._get_weight(self.x, self.y.squeeze())
-        # self.kendallTauCorrelation(base_model_means.squeeze(), self.y.squeeze())
+        for trial in trial_list:
+            self.trials.add_a_trial(trial)
 
-    def _delete_noise_knowledge(self, ranking_losses):
-        if self.purn:
-            p_drop = 1 - (1 - self.x.shape[0] / 30) * (ranking_losses[:-1, :] < ranking_losses[-1, :]).sum(axis=-1) / (
-                    self.mc_samples * (1 + self.alpha))
-            drop_mask = np.random.binomial(1, p_drop) == 1
-            # target_loss = ranking_losses[-1]
-            # threshold = np.percentile(target_loss, 95)
-            # mask_to_remove = np.median(ranking_losses, axis=1) > threshold  # 中位数样本loss 比 95% 的target model结果差
-            idx_to_remove = np.argwhere(drop_mask).ravel()
-            ranking_losses = np.delete(ranking_losses, idx_to_remove, axis=0)
-            # ranking_losses[idx_to_remove] = self.rank_sample_num
-            for idx in reversed(idx_to_remove):  # TODO Remove permanent
-                self.gps.pop(idx)
-            self.old_D_num -= len(idx_to_remove)
-        return ranking_losses
+    def _get_x_best(self, predict: bool) -> typing.Tuple[float, np.ndarray]:
+        """Get value, configuration, and array representation of the "best" configuration.
 
-    def _compute_ranking_loss(self, f_samples, f_target):
-        '''
-        f_samples 'n_samples x (n) x n' -dim
-        '''
-        if f_samples.ndim == 3:  # for target model
-            rank_loss = ((f_samples.diagonal(dim1=-2, dim2=-1)[:, :, None] < f_samples) ^ (
-                    torch.unsqueeze(f_target, dim=-1) < torch.unsqueeze(f_target, dim=-2)
-            )).sum(dim=-1).sum(dim=-1)
+        The definition of best varies depending on the argument ``predict``. If set to ``True``,
+        this function will return the stats of the best configuration as predicted by the model,
+        otherwise it will return the stats for the best observed configuration.
+
+        Parameters
+        ----------
+        predict : bool
+            Whether to use the predicted or observed best.
+
+        Returns
+        -------
+        float
+        np.ndarry
+        Configuration
+        """
+        if predict:
+            X = self.trials.get_sparse_array()
+            costs = list(
+                map(
+                    lambda x: (
+                        self.surrogate_model.predict(x.reshape((1, -1)))[0][0],
+                        x,
+                    ),
+                    X,
+                ))
+            costs = sorted(costs, key=lambda t: t[0])
+            x_best_array = costs[0][1]
+            best_observation = costs[0][0]
+            # won't need log(y) if EPM was already trained on log(y)
         else:
-            rank_loss = ((torch.unsqueeze(f_samples, dim=-1) < torch.unsqueeze(f_samples, dim=-2)) ^ (
-                    torch.unsqueeze(f_target, dim=-1) < torch.unsqueeze(f_target, dim=-2)
-            )).sum(dim=-1).sum(dim=-1)
-        return rank_loss
+            best_idx = self.trials.best_id
+            x_best_array = self.trials.get_sparse_array()[best_idx]
+            best_observation = self.trials.best_observe_value
 
-    def _get_min_index(self, array):
-        best_model_idxs = np.zeros(array.shape[1], dtype=np.int64)
-        is_best_model = (array == array.min(axis=0))
-        # idxs = np.argwhere(is_best_model)
-        # mod, samp = idxs[:,0], idxs[:, 1]
-        # np.random.randint(np.bincount())
-        for i in range(array.shape[1]):
-            if is_best_model[-1, i]:
-                best_model_idxs[i] = self.old_D_num
-            else:
-                best_model_idxs[i] = np.random.choice(np.argwhere(is_best_model[:, i]).ravel().tolist())
-        return best_model_idxs
+        return x_best_array, best_observation
 
-    def _get_weight(self, t_x, t_y):
-        ranking_losses = []
-        with torch.no_grad():
-            for d in range(self.old_D_num):
-                posterior = self.gps[d].posterior(t_x)
-                sampler = SobolQMCNormalSampler(num_samples=self.mc_samples)
-                base_f_samps = sampler(posterior).squeeze(-1).squeeze(-1)
-                ranking_losses.append(self._compute_ranking_loss(base_f_samps, t_y))
-        ranking_losses.append(self._compute_ranking_loss(self._get_loocv_preds(t_x, t_y.unsqueeze(-1)), t_y))
-        ranking_losses = torch.stack(ranking_losses).numpy()
-        ranking_losses = self._delete_noise_knowledge(ranking_losses)
-        # TODO argmin 多个最小处理
-        # best_model_idxs = ranking_losses.argmin(axis=0)  # per sample都有一个best idx
-        best_model_idxs = self._get_min_index(ranking_losses)
-
-        # rank_weight = np.bincount(best_model_idxs, minlength=ranking_losses.shape[0]) / self.rank_sample_num
-        rank_weight = np.bincount(best_model_idxs, minlength=ranking_losses.shape[0])
-
-        return (rank_weight / rank_weight.sum())
-
-    def _get_loocv_preds(self, x, y):
-        try_num = len(y)
-        masks = ~torch.eye(try_num, dtype=torch.bool)
-        x_cv = ([x[m] for m in masks])
-        y_cv = ([y[m] for m in masks])
-        samples = []
-        state_dict = self.surrogate.gpr.state_dict()
-        # expand to batch size of batch_mode LOOCV model
-        # state_dict_expanded = {
-        #     name: t.expand(try_num, *[-1 for _ in range(t.ndim)])
-        #     for name, t in state_dict.items()
-        # }
-        with torch.no_grad():
-            for i in range(len(y)):
-                # kernel = self.new_gp.kernel.copy()
-                model = get_fitted_model(x_cv[i], y_cv[i], None, state_dict=state_dict)
-
-                posterior = model.posterior(x)
-                sampler = SobolQMCNormalSampler(num_samples=self.mc_samples)
-                samples.append(sampler(posterior).squeeze(-1))
-            return torch.stack(samples, dim=1)
-
-    def _random_suggest_explore(self, n_suggestions=1):
-        sas = []
-        x_unwarpeds = []
-        for n in range(n_suggestions):
-            rm_id = np.random.choice(len(self.candidates))
-            sas.append(self.candidates[rm_id])
-            x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
-            x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
-            x_unwarpeds.append(x_unwarped)
-            self.candidates = np.delete(self.candidates, rm_id, axis=0)
-        return x_unwarpeds, sas
-
-    def _random_suggest(self, n_suggestions=1):
-        sas = []
-        x_unwarpeds = []
-        if self.candidates is not None:
-            for n in range(n_suggestions):
-                rm_id = np.random.randint(low=0, high=len(self.candidates))
-                sas.append(self.candidates[rm_id])
-                x_array = self.feature_to_array(sas[-1], self.sparse_dimension)
-                x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
-                x_unwarpeds.append(x_unwarped)
-                self.candidates = np.delete(self.candidates, rm_id, axis=0)  # TODO
-        else:
-            x_unwarpeds = (self.space.sample_configuration(n_suggestions))
-            for n in range(n_suggestions):
-                array = DenseConfiguration.dict_to_array(self.space, x_unwarpeds[-1])
-                sas.append(self.array_to_feature(array, self.dense_dimension))
-        return x_unwarpeds, sas
 
 
 opt_class = SMBO
