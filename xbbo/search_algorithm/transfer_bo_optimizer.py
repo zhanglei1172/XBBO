@@ -1,6 +1,8 @@
 import logging, typing
 import numpy as np
+from xbbo.acquisition_function.transfer.mogp import MoGP_AcqFunc
 from xbbo.acquisition_function.transfer.taf import TAF_AcqFunc
+from xbbo.acquisition_function.ei import EI_AcqFunc
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.surrogate.gaussian_process import GPR_sklearn
@@ -8,25 +10,24 @@ from . import alg_register
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
-from xbbo.surrogate.transfer.weight_stategy import RankingWeight
-from xbbo.surrogate.transfer.tst import BaseModel
+from xbbo.surrogate.transfer.weight_stategy import KernelRegress, RankingWeight, ZeroWeight
+from xbbo.surrogate.transfer.tst import BaseModel, TST_surrogate
 
 logger = logging.getLogger(__name__)
 
-@alg_register.register('bo-rw_taf')
+
+@alg_register.register('bo-transfer')
 class SMBO(AbstractOptimizer):
-    '''
-    TAF(RGPE)
-    '''
     def __init__(self,
                  space: DenseConfigurationSpace,
                  seed: int = 42,
                  initial_design: str = 'sobol',
-                 total_limit: int = 10,
+                 total_limit: int = 100,
                  surrogate: str = 'gp',
                  acq_func: str = 'ei',
                  acq_opt: str = 'rs_ls',
                  predict_x_best: bool = False,
+                 weight_srategy: str = 'kernel',
                  **kwargs):
         AbstractOptimizer.__init__(self, space, seed, **kwargs)
         self.predict_x_best = predict_x_best
@@ -43,23 +44,44 @@ class SMBO(AbstractOptimizer):
                              dense_dim=self.dense_dimension)
 
         # self.rho = kwargs.get("rho", 1)
-        self.bandwidth = kwargs.get("bandwdth", 0.9)
+        self.bandwidth = kwargs.get("bandwdth", 0.1)
         self.base_models = kwargs.get("base_models")
         if self.base_models:
             assert isinstance(self.base_models[0], BaseModel)
             if surrogate == 'gp':
                 self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
+            elif surrogate == 'tst':
+                self.surrogate_model = TST_surrogate(self.space,
+                                                     self.base_models,
+                                                     rng=self.rng)
         else:
             raise NotImplementedError()
-        self.weight_sratety = RankingWeight(self.space, self.base_models, self.surrogate_model, self.rng, is_purn=True)
+        if weight_srategy == 'kernel':
+            self.weight_sratety = KernelRegress(self.space, self.base_models,
+                                                self.surrogate_model, self.rng)
+        elif weight_srategy == 'rw':
+            self.weight_sratety = RankingWeight(self.space,
+                                                self.base_models,
+                                                self.surrogate_model,
+                                                self.rng,budget=total_limit,
+                                                is_purn=True)
+        elif weight_srategy == 'zero':
+            self.weight_sratety = ZeroWeight(self.space, self.base_models,
+                                             self.surrogate_model, self.rng)
+        else:
+            raise NotImplementedError()
 
-        if acq_func == 'ei':
+        if acq_func == 'mogp':
+            self.acquisition_func = MoGP_AcqFunc(self.surrogate_model,
+                                                 self.base_models, self.rng)
+        elif acq_func == 'taf':
             self.acquisition_func = TAF_AcqFunc(self.surrogate_model,
                                                 self.base_models, self.rng)
-        # elif acq_func == 'rf':
-        #     self.acquisition_func = None
+        elif acq_func == 'ei':
+            self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
         else:
-            raise ValueError('acq_func {} not in {}'.format(acq_func, ['ei']))
+            raise NotImplementedError()
+
         if acq_opt == 'ls':
             self.acq_maximizer = LocalSearch(self.acquisition_func, self.space,
                                              self.rng)
@@ -86,8 +108,6 @@ class SMBO(AbstractOptimizer):
             "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
             .format(surrogate, acq_func, acq_opt))
 
-
-
     def suggest(self, n_suggestions=1):
         trial_list = []
         # currently only suggest one
@@ -103,24 +123,29 @@ class SMBO(AbstractOptimizer):
                           config_dict=config.get_dictionary(),
                           sparse_array=config.get_sparse_array()))
         else:
+            # update target surrogate model
             self.surrogate_model.train(
                 np.asarray(self.trials.get_sparse_array()),
                 np.asarray(self.trials.get_history()[0]))
-            # calculate base incuments
+            # calculate base incuments (only use for acq base EI)
             observed_X = self.trials.get_sparse_array()
             base_incuments = []
-            for model in self.base_models:
-                base_incuments.append(
-                    model.predict(observed_X)[0].min())
+            for model in self.base_models: # TODO make sure untransform ?
+                base_incuments.append(model.predict(observed_X, None)[0].min())
             _, best_val = self._get_x_best(self.predict_x_best)
             self.acquisition_func.update(surrogate_model=self.surrogate_model,
                                          y_best=best_val,
                                          _base_incuments=base_incuments)
-            self.acquisition_func.update_weight(self.weight_sratety.get_weight(self.trials))
+            # caculate weight for base+target model
+            weight = self.weight_sratety.get_weight(self.trials)
+            self.surrogate_model.update_weight(weight)
+            self.acquisition_func.update_weight(weight
+                )
+            # acq maximize
             configs = []
             configs = self.acq_maximizer.maximize(self.trials,
                                                   1000,
-                                                  drop_self_duplicate=True)
+                                                  drop_self_duplicate=True, _sorted=True)
             _idx = 0
             for n in range(n_suggestions):
                 while _idx < len(configs):  # remove history suggest
@@ -141,7 +166,6 @@ class SMBO(AbstractOptimizer):
                 #   self.similarity, self.rho)
 
         return trial_list
-
 
     def observe(self, trial_list):
         # print(y)

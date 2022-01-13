@@ -1,6 +1,6 @@
 import logging, typing
 import numpy as np
-from xbbo.acquisition_function.transfer.taf import TAF_AcqFunc
+from xbbo.acquisition_function.transfer.mogp import MoGP_AcqFunc
 from xbbo.core import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.surrogate.gaussian_process import GPR_sklearn
@@ -13,10 +13,10 @@ from xbbo.surrogate.transfer.tst import BaseModel
 
 logger = logging.getLogger(__name__)
 
-@alg_register.register('bo-rw_taf')
+@alg_register.register('bo-rw_mogp')
 class SMBO(AbstractOptimizer):
     '''
-    TAF(RGPE)
+    MoGP(RGPE)
     '''
     def __init__(self,
                  space: DenseConfigurationSpace,
@@ -54,7 +54,7 @@ class SMBO(AbstractOptimizer):
         self.weight_sratety = RankingWeight(self.space, self.base_models, self.surrogate_model, self.rng, is_purn=True)
 
         if acq_func == 'ei':
-            self.acquisition_func = TAF_AcqFunc(self.surrogate_model,
+            self.acquisition_func = MoGP_AcqFunc(self.surrogate_model,
                                                 self.base_models, self.rng)
         # elif acq_func == 'rf':
         #     self.acquisition_func = None

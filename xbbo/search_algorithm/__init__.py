@@ -70,7 +70,7 @@ def get_opt_class(opt_name):
     elif opt_name == "transfer_baseline_optimizer":
         from xbbo.search_algorithm import transfer_baseline_optimizer as opt
     elif opt_name == "transfer_rgpe_optimizer":
-        from xbbo.search_algorithm import transfer_rgpe_optimizer as opt
+        from xbbo.search_algorithm import _transfer_rgpe_optimizer as opt
     elif opt_name == "transfer_rs_optimizer":
         from xbbo.search_algorithm import transfer_rs_optimizer as opt
     elif opt_name == "transfer_baseline_optimizer_":
@@ -82,9 +82,9 @@ def get_opt_class(opt_name):
     elif opt_name == "transfer_rgpe_mean_optimizer_":
         from xbbo.search_algorithm import transfer_rgpe_mean_optimizer as opt
     elif opt_name == "transfer_taf_rgpe_optimizer_":
-        from xbbo.search_algorithm import transfer_taf_rgpe_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_taf_rgpe_optimizer as opt
     elif opt_name == "transfer_RMoGP_optimizer_":
-        from xbbo.search_algorithm import transfer_RMoGP_optimizer_ as opt
+        from xbbo.search_algorithm import transfer_RMoGP_optimizer as opt
     elif opt_name == "de_optimizer":
         from xbbo.search_algorithm import de_optimizer as opt
     elif opt_name == "cma_optimizer":

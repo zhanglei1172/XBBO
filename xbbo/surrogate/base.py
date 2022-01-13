@@ -209,7 +209,8 @@ class SurrogateModel(object):
                     (len(self.types), X.shape[1]))
 
             mean, var = self._predict(X, cov_return_type)
-
+            if cov_return_type is None:
+                return mean, var
             if len(mean.shape) == 1:
                 mean = mean.reshape((-1, 1))
             if len(var.shape) == 1:
@@ -297,6 +298,9 @@ class SurrogateModel(object):
             var = var.reshape((-1, 1))
 
         return mean, var
+    
+    def update_weight(self, w, rho=None):
+        pass
 
 
 class BaseGP(SurrogateModel):

@@ -24,12 +24,11 @@ class RandomSearch(AcquisitionFunctionMaximizer):
 
     rng : np.random.RandomState or int, optional
     """
-    def _maximize(
-        self,
-        trials: Trials,
-        num_points: int,
-        _sorted: bool = False,
-    ) -> List[Tuple[float, DenseConfiguration]]:
+    def _maximize(self,
+                  trials: Trials,
+                  num_points: int,
+                  _sorted: bool = False,
+                  **kwargs) -> List[Tuple[float, DenseConfiguration]]:
         """Randomly sampled configurations
 
         Parameters
@@ -200,12 +199,12 @@ class LocalSearch(AcquisitionFunctionMaximizer):
             if (not changed_inc) or \
                     (self.max_steps is not None and
                      local_search_steps == self.max_steps):
-                logger.debug("Local search took %d steps and looked at %d "
-                                  "configurations. Computing the acquisition "
-                                  "value for one DenseConfiguration took %f seconds"
-                                  " on average.",
-                                  local_search_steps, neighbors_looked_at,
-                                  np.mean(time_n))
+                logger.debug(
+                    "Local search took %d steps and looked at %d "
+                    "configurations. Computing the acquisition "
+                    "value for one DenseConfiguration took %f seconds"
+                    " on average.", local_search_steps, neighbors_looked_at,
+                    np.mean(time_n))
                 break
 
         return acq_val_incumbent, incumbent
@@ -236,7 +235,7 @@ class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
     def maximize(self,
                  trials: Trials,
                  initial_config=None,
-                 drop_self_duplicate: bool=False,
+                 drop_self_duplicate: bool = False,
                  **kwargs) -> List[Tuple[float, DenseConfiguration]]:
         def negative_acquisition(x):
             # shape of x = (d,)
@@ -268,6 +267,7 @@ class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
                   **kwargs) -> Iterable[Tuple[float, DenseConfiguration]]:
         raise NotImplementedError()
 
+
 class RandomScipyOptimizer(AcquisitionFunctionMaximizer):
     """
     Use scipy.optimize with start points chosen by random search. Only on continuous dims.
@@ -280,50 +280,49 @@ class RandomScipyOptimizer(AcquisitionFunctionMaximizer):
 
     rng : np.random.RandomState or int, optional
     """
-
     def __init__(
-            self,
-            acquisition_function: AbstractAcquisitionFunction,
-            config_space: DenseConfigurationSpace,
-            rng: Union[bool, np.random.RandomState] = None,
+        self,
+        acquisition_function: AbstractAcquisitionFunction,
+        config_space: DenseConfigurationSpace,
+        rng: Union[bool, np.random.RandomState] = None,
     ):
         super().__init__(acquisition_function, config_space, rng)
 
         self.random_search = InterleavedLocalAndRandomSearch(
             acquisition_function=acquisition_function,
             config_space=config_space,
-            rng=rng
-        )
+            rng=rng)
         self.scipy_optimizer = ScipyOptimizer(
             acquisition_function=acquisition_function,
             config_space=config_space,
-            rng=rng
-        )
+            rng=rng)
 
-    def maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            drop_self_duplicate: bool=False,
-            num_trials=10,
-            **kwargs
-    ) -> List[Tuple[float, DenseConfiguration]]:
+    def maximize(self,
+                 trials: Trials,
+                 num_points: int,
+                 drop_self_duplicate: bool = False,
+                 num_trials=10,
+                 **kwargs) -> List[Tuple[float, DenseConfiguration]]:
         acq_configs = []
 
-        initial_configs = self.random_search.maximize(trials, num_points, **kwargs).challengers
+        initial_configs = self.random_search.maximize(trials, num_points,
+                                                      **kwargs).challengers
         initial_acqs = self.acquisition_function(initial_configs)
         acq_configs.extend(zip(initial_acqs, initial_configs))
 
         success_count = 0
         for config in initial_configs[:num_trials]:
-            scipy_configs = self.scipy_optimizer.maximize(trials, initial_config=config).challengers
-            if not scipy_configs:   # empty
+            scipy_configs = self.scipy_optimizer.maximize(
+                trials, initial_config=config).challengers
+            if not scipy_configs:  # empty
                 continue
             scipy_acqs = self.acquisition_function(scipy_configs)
             acq_configs.extend(zip(scipy_acqs, scipy_configs))
             success_count += 1
         if success_count == 0:
-            logger.warning('None of Scipy optimizations are successful in RandomScipyOptimizer.')
+            logger.warning(
+                'None of Scipy optimizations are successful in RandomScipyOptimizer.'
+            )
 
         # shuffle for random tie-break
         self.rng.shuffle(acq_configs)
@@ -333,15 +332,10 @@ class RandomScipyOptimizer(AcquisitionFunctionMaximizer):
 
         configs = [_[1] for _ in acq_configs]
 
-    
         return self.unique(configs=configs) if drop_self_duplicate else configs
 
-    def _maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            **kwargs
-    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+    def _maximize(self, trials: Trials, num_points: int,
+                  **kwargs) -> Iterable[Tuple[float, DenseConfiguration]]:
         raise NotImplementedError()
 
 
@@ -357,34 +351,34 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
 
     rng : np.random.RandomState or int, optional
     """
-
     def __init__(
-            self,
-            acquisition_function: AbstractAcquisitionFunction,
-            config_space: DenseConfigurationSpace,
-            rng: Union[bool, np.random.RandomState] = None,
+        self,
+        acquisition_function: AbstractAcquisitionFunction,
+        config_space: DenseConfigurationSpace,
+        rng: Union[bool, np.random.RandomState] = None,
     ):
         super().__init__(acquisition_function, config_space, rng)
 
-        types, bounds = get_types(self.config_space)    # todo: support constant hp in scipy optimizer
-        assert all(types == 0), 'Scipy optimizer (L-BFGS-B) only supports Integer and Float parameters.'
+        types, bounds = get_types(
+            self.config_space)  # todo: support constant hp in scipy optimizer
+        assert all(
+            types == 0
+        ), 'Scipy optimizer (L-BFGS-B) only supports Integer and Float parameters.'
         self.bounds = bounds
 
         options = dict(disp=False, maxiter=1000)
         self.scipy_config = dict(tol=None, method='L-BFGS-B', options=options)
 
-    def maximize(
-            self,
-            trials: Trials,
-            initial_config=None,
-            drop_self_duplicate: bool=False,
-            **kwargs
-    ) -> List[Tuple[float, DenseConfiguration]]:
-
+    def maximize(self,
+                 trials: Trials,
+                 initial_config=None,
+                 drop_self_duplicate: bool = False,
+                 **kwargs) -> List[Tuple[float, DenseConfiguration]]:
         def negative_acquisition(x):
             # shape of x = (d,)
-            x = np.clip(x, 0.0, 1.0)    # fix numerical problem in L-BFGS-B
-            return -self.acquisition_function(x, convert=False)[0]  # shape=(1,)
+            x = np.clip(x, 0.0, 1.0)  # fix numerical problem in L-BFGS-B
+            return -self.acquisition_function(x,
+                                              convert=False)[0]  # shape=(1,)
 
         if initial_config is None:
             initial_config = self.config_space.sample_configuration()
@@ -398,9 +392,10 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
         # if result.success:
         #     acq_configs.append((result.fun, DenseConfiguration(self.config_space, vector=result.x)))
         if not result.success:
-            logger.debug('Scipy optimizer failed. Info:\n%s' % (result,))
+            logger.debug('Scipy optimizer failed. Info:\n%s' % (result, ))
         try:
-            x = np.clip(result.x, 0.0, 1.0)  # fix numerical problem in L-BFGS-B
+            x = np.clip(result.x, 0.0,
+                        1.0)  # fix numerical problem in L-BFGS-B
             config = DenseConfiguration(self.config_space, vector=x)
             acq = self.acquisition_function(x, convert=False)
             acq_configs.append((acq, config))
@@ -408,19 +403,17 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
             pass
 
         if not acq_configs:  # empty
-            logger.warning('Scipy optimizer failed. Return empty config list. Info:\n%s' % (result,))
+            logger.warning(
+                'Scipy optimizer failed. Return empty config list. Info:\n%s' %
+                (result, ))
 
         configs = [config for _, config in acq_configs]
         return self.unique(configs=configs) if drop_self_duplicate else configs
 
-
-    def _maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            **kwargs
-    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+    def _maximize(self, trials: Trials, num_points: int,
+                  **kwargs) -> Iterable[Tuple[float, DenseConfiguration]]:
         raise NotImplementedError()
+
 
 class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
     """Implements xbbo's default acquisition function optimization.
@@ -448,29 +441,26 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
         [Local Search] number of local search iterations
 
     """
-
     def __init__(
-            self,
-            acquisition_function: AbstractAcquisitionFunction,
-            config_space: DenseConfigurationSpace,
-            rng: Union[bool, np.random.RandomState] = None,
-            max_steps: Optional[int] = None,
-            n_steps_plateau_walk: int = 10,
-            n_sls_iterations: int = 10,
+        self,
+        acquisition_function: AbstractAcquisitionFunction,
+        config_space: DenseConfigurationSpace,
+        rng: Union[bool, np.random.RandomState] = None,
+        max_steps: Optional[int] = None,
+        n_steps_plateau_walk: int = 10,
+        n_sls_iterations: int = 10,
     ):
         super().__init__(acquisition_function, config_space, rng)
         self.random_search = RandomSearch(
             acquisition_function=acquisition_function,
             config_space=config_space,
-            rng=rng
-        )
+            rng=rng)
         self.local_search = LocalSearch(
             acquisition_function=acquisition_function,
             config_space=config_space,
             rng=rng,
             max_steps=max_steps,
-            n_steps_plateau_walk=n_steps_plateau_walk
-        )
+            n_steps_plateau_walk=n_steps_plateau_walk)
         self.n_sls_iterations = n_sls_iterations
 
         # =======================================================================
@@ -481,13 +471,11 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
         # )
         # =======================================================================
 
-    def maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            drop_self_duplicate: bool=False,
-            **kwargs
-    ) -> Iterable[DenseConfiguration]:
+    def maximize(self,
+                 trials: Trials,
+                 num_points: int,
+                 drop_self_duplicate: bool = False,
+                 **kwargs) -> Iterable[DenseConfiguration]:
         """Maximize acquisition function using ``_maximize``.
 
         Parameters
@@ -512,15 +500,14 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
         """
 
         next_configs_by_local_search = self.local_search._maximize(
-            trials, self.n_sls_iterations, **kwargs
-        )
+            trials, self.n_sls_iterations, **kwargs)
 
         # Get configurations sorted by EI
         next_configs_by_random_search_sorted = self.random_search._maximize(
             trials,
             num_points - len(next_configs_by_local_search),
             _sorted=True,
-        )
+            **kwargs)
 
         # Having the configurations from random search, sorted by their
         # acquisition function value is important for the first few iterations
@@ -528,23 +515,15 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
         # want to use only random configurations. Having them at the begging of
         # the list ensures this (even after adding the configurations by local
         # search, and then sorting them)
-        next_configs_by_acq_value = (
-                next_configs_by_random_search_sorted
-                + next_configs_by_local_search
-        )
+        next_configs_by_acq_value = (next_configs_by_random_search_sorted +
+                                     next_configs_by_local_search)
         next_configs_by_acq_value.sort(reverse=True, key=lambda x: x[0])
         logger.debug(
             "First 10 acq func (origin) values of selected configurations: %s",
-            str([[_[0], _[1].origin] for _ in next_configs_by_acq_value[:10]])
-        )
+            str([[_[0], _[1].origin] for _ in next_configs_by_acq_value[:10]]))
         configs = [_[1] for _ in next_configs_by_acq_value]
         return self.unique(configs=configs) if drop_self_duplicate else configs
 
-
-    def _maximize(
-            self,
-            trials: Trials,
-            num_points: int,
-            **kwargs
-    ) -> Iterable[Tuple[float, DenseConfiguration]]:
+    def _maximize(self, trials: Trials, num_points: int,
+                  **kwargs) -> Iterable[Tuple[float, DenseConfiguration]]:
         raise NotImplementedError()
