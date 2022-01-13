@@ -101,6 +101,9 @@ class AbstractAcquisitionFunction(object, metaclass=abc.ABCMeta):
             Acquisition function values wrt X
         """
         raise NotImplementedError()
+    
+    def update_weight(self, w, rho=None):
+        pass
 
 
 class AcquisitionFunctionMaximizer(object, metaclass=abc.ABCMeta):

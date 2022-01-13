@@ -4,9 +4,13 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.conditions import LessThanCondition
 
-from xbbo.search_algorithm.transfer_tst_optimizer import SMBO
+# from xbbo.search_algorithm.transfer_tst_optimizer import SMBO
 # from xbbo.search_algorithm.transfer_taf_optimizer import SMBO
 # from xbbo.search_algorithm.transfer_rgpe_mean_optimizer import SMBO
+# from xbbo.search_algorithm.transfer_taf_rgpe_optimizer import SMBO
+# from xbbo.search_algorithm.transfer_RMoGP_optimizer import SMBO
+from xbbo.search_algorithm.transfer_bo_optimizer import SMBO
+
 from xbbo.search_space.offline_hp import Model
 from xbbo.utils.constants import MAXINT
 from xbbo.surrogate.transfer.base_surrogate import BaseModel
@@ -66,7 +70,12 @@ if __name__ == "__main__":
         base_models[-1].train(test_model.old_D_x[i], test_model.old_D_y[i])
 
     # use transfer
-    hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_optzhuan='rs_ls', base_models=base_models)
+    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='ei', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # vanila bo
+    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='tst', acq_func='ei', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # TST-R
+    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # TAF
+    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='tst', acq_func='ei', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RGPE(mean)
+    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='rw', acq_opt='rs', base_models=base_models) # TAF(rw)
+    hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='mogp', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RMoGP
     # not use transfer
     # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_optzhuan='rs_ls', base_models=[]]) 
     # Example call of the black-box function

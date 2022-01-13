@@ -1,3 +1,6 @@
+import abc
+import csv
+from curses import A_ATTRIBUTES
 import typing
 import numpy as np
 from xbbo.core.trials import Trials
@@ -6,6 +9,20 @@ from xbbo.core.trials import Trials
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.surrogate.transfer.tst import BaseModel
 from xbbo.utils.constants import VERY_SMALL_NUMBER
+
+class ABCWeightStategy(metaclass=abc.ABCMeta):
+    def __init__(self,
+                 cs,
+                 base_models,
+                 target_model,
+                 rng,**kwargs):
+        self.space = cs
+        self.base_models = base_models
+        self.target_model = target_model
+        self.rng = rng
+    @abc.abstractclassmethod
+    def get_weight(self, trials: Trials):
+        raise NotImplementedError()
 
 # class RGPE_mean_surrogate_(GP, GPyTorchModel):
 #     num_outputs = 1
@@ -75,21 +92,23 @@ from xbbo.utils.constants import VERY_SMALL_NUMBER
 #         return MultivariateNormal(-mean_x, posterior_cov)
 
 
-class RankingWeight():
+
+class RankingWeight(ABCWeightStategy):
     def __init__(self,
                  cs,
                  base_models,
                  target_model,
                  rng,
+                 budget,
                  rank_sample_num=256,
-                 is_purn=False):
-        self.space = cs
-        self.base_models = base_models
-        self.target_model = target_model
+                 is_purn=False,alpha=0, **kwargs):
+        super().__init__(cs, base_models, target_model, rng, **kwargs)
         self.rank_sample_num = rank_sample_num
         # self.iter = 0
-        self.rng = rng
+        self.budget = budget
         self.is_purn = is_purn
+        self.alpha = alpha
+
 
     def _compute_ranking_loss(self, f_samples, f_target):
         '''
@@ -124,6 +143,7 @@ class RankingWeight():
     def get_weight(self, trials: Trials):
         t_x = trials.get_sparse_array()
         t_y = np.asarray(trials._his_observe_value)
+        self.try_num = len(t_y)
         ranking_losses = []
         for base_model in self.base_models:
             mean, cov = base_model._predict(t_x, "full_cov")
@@ -148,12 +168,11 @@ class RankingWeight():
         return rank_weight  #/ rank_weight.sum()
 
     def _get_loocv_preds(self, x, y):
-        try_num = len(y)
-        masks = ~np.eye(try_num, dtype=np.bool_)
+        masks = ~np.eye(self.try_num, dtype=np.bool_)
         x_cv = [x[m] for m in masks]
         y_cv = [y[m] for m in masks]
         samples = []
-        for i in range(try_num):
+        for i in range(self.try_num):
             # kernel = self.new_gp.kernel.copy()
             model = GPR_sklearn(self.space,
                                 rng=self.rng,
@@ -178,7 +197,7 @@ class RankingWeight():
 
     #     return mu, np.sqrt(sigma)
 
-    def _delete_noise_knowledge(self, ranking_losses):
+    def __delete_noise_knowledge(self, ranking_losses):
         if self.is_purn:
             # p_drop = 1 - (1 - self.x.shape[0] / 30) * (ranking_losses[:-1, :] < ranking_losses[-1, :]).sum(axis=-1) / (
             # self.rank_sample_num * (1 + self.alpha))
@@ -196,37 +215,46 @@ class RankingWeight():
                 self.base_models.pop(idx)
             # self.old_D_num -= len(idx_to_remove)
         return ranking_losses
+    
+    def _delete_noise_knowledge(self, ranking_losses):
+        if self.is_purn:
+            p_drop = 1 - (1 - self.try_num / self.budget) * (ranking_losses[:-1, :] < ranking_losses[-1, :]).sum(axis=-1) / (
+            self.rank_sample_num * (1 + self.alpha))
+            mask_to_remove = self.rng.binomial(1, p_drop) == 1
+            idx_to_remove = np.argwhere(mask_to_remove).ravel()
+            # ranking_losses = np.delete(ranking_losses, idx_to_remove, axis=0)
+            ranking_losses[idx_to_remove] = self.rank_sample_num
+            # ranking_losses[idx_to_remove] = self.rank_sample_num
+            # for idx in reversed(idx_to_remove):  # TODO Remove permanent
+            #     self.base_models.pop(idx)
+            # self.old_D_num -= len(idx_to_remove)
+        return ranking_losses
 
+class KernelRegress(ABCWeightStategy):
+    def __init__(self, cs, base_models, target_model, rng, bandwidth=0.1,**kwargs):
+        super().__init__(cs, base_models, target_model, rng, **kwargs)
 
-class KernelRegress():
-    def __init__(self, cs, base_models, target_model, rng, bandwidth=0.1):
-        self.space = cs
-        self.base_models = base_models
-        self.target_model = target_model
-        # self.rank_sample_num = rank_sample_num
-        # self.iter = 0
-        self.rng = rng
         self.bandwidth = bandwidth
         # self.is_purn = is_purn
 
     def get_weight(self, trials: Trials):
-        base_model_vars = []
+        base_model_means = []
         for model in self.base_models:
-            base_model_vars.append(
+            base_model_means.append(
                 model._predict_normalize(trials.get_sparse_array(), None)[0])
-        if not base_model_vars:
+        if not base_model_means:
             return []
-        base_model_vars = np.stack(base_model_vars)  # [model, obs_num, 1]
+        base_model_means = np.stack(base_model_means)  # [model, obs_num, 1]
         weight = self._naiveVersion(
-            base_model_vars, np.asarray(trials._his_observe_value))
+            base_model_means, np.asarray(trials._his_observe_value))
 
         return weight  #/ weight.sum()
 
-    def _kendallTauCorrelation(self, base_model_vars, y):
+    def _kendallTauCorrelation(self, base_model_means, y):
         if y is None or len(y) < 2:
-            return np.full(base_model_vars.shape[0], 1)
+            return np.full(base_model_means.shape[0], 1)
         rank_loss = (
-            (base_model_vars[..., None] < base_model_vars[..., None, :]) ^
+            (base_model_means[..., None] < base_model_means[..., None, :]) ^
             (y[..., None] < y[..., None, :])).astype('float')
         base_num, obs_num, _ = rank_loss.shape
         # rank_loss = rank_loss
@@ -245,9 +273,9 @@ class KernelRegress():
         # t = rank_loss.mean(axis=(-1, -2)) / self.bandwidth
         # return (t < 1) * (1 - t * t) * 3 / 4
         # return self.rho * (1 - t * t) if t < 1 else 0
-    def _naiveVersion(self, base_model_vars, y):
+    def _naiveVersion(self, base_model_means, y):
         meta_features = []
-        for model_predit in base_model_vars:
+        for model_predit in base_model_means:
             meta_feature = []
             for i in range(len(y)):
                 for j in range(i):
@@ -304,15 +332,9 @@ class KernelRegress():
 #         weights.append(beta / target_model_var)
 #         return np.array(weights)
         
-class ZeroWeight():
-    def __init__(self, cs, base_models, target_model, rng):
-        self.space = cs
-        self.base_models = base_models
-        self.target_model = target_model
-        # self.rank_sample_num = rank_sample_num
-        # self.iter = 0
-        self.rng = rng
-        # self.is_purn = is_purn
+class ZeroWeight(ABCWeightStategy):
+    def __init__(self, cs, base_models, target_model, rng, **kwargs):
+        super().__init__(cs, base_models, target_model, rng, **kwargs)
 
     def get_weight(self, trials: Trials):
         weight = np.zeros(len(self.base_models)+1)

@@ -45,7 +45,7 @@ class SMBO(AbstractOptimizer):
                              dense_dim=self.dense_dimension)
 
         # self.surrogate = GaussianProcessRegressor(self.hp_num)
-        self.rho = kwargs.get("rho", 1)
+        # self.rho = kwargs.get("rho", 1)
         self.bandwidth = kwargs.get("bandwdth", 0.1)
         self.base_models = kwargs.get("base_models")
         if self.base_models:
@@ -60,8 +60,7 @@ class SMBO(AbstractOptimizer):
         if acq_func == 'ei':
 
             self.acquisition_func = TAF_AcqFunc(self.surrogate_model,
-                                                self.base_models, self.rng,
-                                                self.rho)
+                                                self.base_models, self.rng)
         # elif acq_func == 'rf':
         #     self.acquisition_func = None
         else:

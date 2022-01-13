@@ -1,11 +1,6 @@
 from typing import Optional
 
 import numpy as np
-# import torch
-# from botorch.acquisition import AnalyticAcquisitionFunction, ScalarizedObjective, ExpectedImprovement
-# from botorch.models.model import Model
-from botorch.utils import t_batch_mode_transform
-# from gpytorch.likelihoods import LikelihoodList
 from scipy import stats
 
 from xbbo.acquisition_function.base import AbstractAcquisitionFunction
@@ -75,11 +70,11 @@ class TAF_AcqFunc(AbstractAcquisitionFunction):
     def update_weight(self, w, rho=None):
         assert w.min() >= 0
         if rho:
-            self.w = np.array(w)
+            self.w = np.array(w, dtype='float')
             self.selfWeight = rho
         else:
             self.selfWeight = w[-1]
-            self.w = np.array(w[:-1])
+            self.w = np.array(w[:-1],dtype='float')
         #non_zero_weight_indices = (self.w**2 > 0).nonzero()[0]
         non_zero_weight_indices = self.w.nonzero()[0]
         self.pre_weight_model = []
@@ -145,7 +140,7 @@ class TAF_AcqFunc(AbstractAcquisitionFunction):
         f *= self.selfWeight
         for d in range(len(self.weight)):
             f += self.weight[d] * (self.base_incuments[d] - self.pre_weight_model[d].predict(
-                X)[0]).clip(0)
+                X, None)[0]).clip(0)
             # denominator += self.weight[d]
 
         return f
