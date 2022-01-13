@@ -1,3 +1,4 @@
+from typing import Iterable
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -58,8 +59,9 @@ class Trials:
         if trial.sparse_array is not None:
             self._his_sparse_array = np.vstack(
                 [self._his_sparse_array, trial.sparse_array])
-        if self.best_observe_value > trial.observe_value:
-            self.best_observe_value = trial.observe_value
+        obs = sum(trial.observe_value) if isinstance(trial.observe_value, Iterable) else trial.observe_value
+        if self.best_observe_value > obs:
+            self.best_observe_value = obs
             self.best_id = self.trials_num
         self.trials_num += 1
 

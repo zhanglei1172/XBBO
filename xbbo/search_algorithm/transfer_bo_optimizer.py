@@ -35,7 +35,7 @@ class SMBO(AbstractOptimizer):
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit)
+            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(

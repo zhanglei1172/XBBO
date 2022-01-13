@@ -1,57 +1,17 @@
 import numpy as np
 # import matplotlib.pyplot as plt
-from xbbo.configspace.space import DenseConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter
-from ConfigSpace.conditions import LessThanCondition
+from xbbo.search_space.fast_example_problem import build_space_hard, rosenbrock_2d_hard
 
 from xbbo.search_algorithm.tpe_optimizer import TPE
-
-def rosenbrock_2d(x):
-    """ The 2 dimensional Rosenbrock function as a toy model
-    The Rosenbrock function is well know in the optimization community and
-    often serves as a toy problem. It can be defined for arbitrary
-    dimensions. The minimium is always at x_i = 1 with a function value of
-    zero. All input parameters are continuous. The search domain for
-    all x's is the interval [-5, 10].
-    """
-
-    x1 = x["x0"]
-    # x2 = x["x1"]
-    x2 = x.get('x1', x1)
-
-    val = 100. * (x2 - x1 ** 2.) ** 2. + (1 - x1) ** 2.
-    return val
-
-def branin(config):
-    x1, x2 = config['x1'], config['x2']
-    y = (x2 - 5.1 / (4 * np.pi ** 2) * x1 ** 2 + 5 / np.pi * x1 - 6) ** 2 \
-        + 10 * (1 - 1 / (8 * np.pi)) * np.cos(x1) + 10
-    return y
-
-def build_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
-    x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
-    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
-    cs.add_hyperparameters([x0, x1])
-    con = LessThanCondition(x1, x0, 1.)
-    cs.add_condition(con)
-    return cs
-
-def build_branin_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
-    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
-    x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
-    cs.add_hyperparameters([x1, x2])
-    return cs
 
 if __name__ == "__main__":
     MAX_CALL = 30
     rng = np.random.RandomState(42)
 
     # define black box function
-    blackbox_func = rosenbrock_2d
+    blackbox_func = rosenbrock_2d_hard
     # define search space
-    cs = build_space(rng)
+    cs = build_space_hard(rng)
     # define black box optimizer
     hpopt = TPE(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol',)
     # Example call of the black-box function

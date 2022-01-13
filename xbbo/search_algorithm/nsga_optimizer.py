@@ -1,96 +1,108 @@
-
+import math
 from typing import Optional, List, Tuple, cast
 
 import numpy as np
 
-from xbbo.configspace.feature_space import FeatureSpace_gaussian, FeatureSpace_uniform
 from xbbo.core import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration
-from xbbo.core.trials import Trials
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+from xbbo.core.trials import Trial, Trials
+from . import alg_register
 
 
-class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
+@alg_register.register('nags2')
+class NSGAII(AbstractOptimizer):
     '''
     reference: https://zhuanlan.zhihu.com/p/144807879
     '''
-
     def __init__(self,
-                 config_spaces,):
-        AbstractOptimizer.__init__(self, config_spaces)
-        # FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
-        FeatureSpace_uniform.__init__(self, self.space.dtypes_idx_map)
-        # configs = self.space.get_hyperparameters()
-        self.num_of_tour_particips = 2
-        n_dim = self.dense_dimension = self.space.get_dimensions(sparse=False)
+                 space: DenseConfigurationSpace,
+                 seed: int = 42,
+                 llambda=None,
+                 **kwargs):
+        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.bounds = self.space.get_bounds()
 
-        self.popsize = 200 # 4 + math.floor(3 * math.log(n_dim)) # (eq. 48)
+        self.num_of_tour_particips = kwargs.get('n_part',2)
+        self.llambda = llambda if llambda else 4 + math.floor(
+            3 * math.log(self.dense_dimension))  # (eq. 48)
         self.population = self.create_initial_population()
         self.population_y = None
-        self.cur = 0
-        self.gen = 0
-        self.mu = 20 # 交叉和变异算法的分布指数
-        self.mum = 20
-        self.crossrate = 0.9
+        self.mu = kwargs.get('mu',20) # 交叉和变异算法的分布指数
+        self.mum = kwargs.get('mum',20)
+        self.crossrate = kwargs.get('crossrate',0.9)
         # ---
 
-
-
-        self.trials = Trials()
-        self.listx = []
+        self.trials = Trials(sparse_dim=self.sparse_dimension,
+                             dense_dim=self.dense_dimension)
+        self.cur = 0
+        self.gen = 0
         self.listy = []
 
     def suggest(self, n_suggestions=1):
-        assert self.popsize % n_suggestions == 0
-        sas = []
-        x_arrays = []
+        assert self.llambda % n_suggestions == 0
+        trial_list = []
         for n in range(n_suggestions):
             new_individual = self.population[self.cur]
-            sas.append(new_individual)
-
-            x_arrays.append(self.feature_to_array(np.asarray(new_individual), self.sparse_dimension))
-
+            new_individual = np.clip(new_individual, self.bounds.lb,
+                                     self.bounds.ub)
+            # dense_array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_dense_array(
+                self.space, new_individual)
             self.cur += 1
-        x = [DenseConfiguration.array_to_dict(self.space,
-                                                  np.array(sa)) for sa in x_arrays]
-        self.trials.params_history.extend(x)
+            trial_list.append(
+                Trial(config,
+                      config_dict=config.get_dictionary(),
+                      dense_array=new_individual,
+                      origin='NSGAII',
+                      loc=self.cur))
 
         # self._num_suggestions += n_suggestions
-        return x, sas
+        return trial_list
 
-    def observe(self, x, y):
-        self.trials.history.extend(x)
-        self.trials.history_y.extend(y)
-        self.trials.trials_num += 1
-        self.listy += y
+    def observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial, permit_duplicagte=True)
+            self.listy.append(trial.observe_value)
         if self.cur == len(self.population):
             if self.population_y is None:
-                self.population_y = np.array(self.listy)
+                self.population_y = np.asarray(self.listy)
             else:
-                self.population_y = np.concatenate([self.population_y, self.listy], axis=0)
-            ranks_, crowding_distance = self.fast_nondominated_sort(self.population_y)
+                self.population_y = np.concatenate(
+                    [self.population_y, self.listy], axis=0)
 
-            s_id = sorted(zip(ranks_, -crowding_distance, range(len(self.population_y))))
+            # remove dead
+            # self.population_y = np.asarray(self.population_y[-self.llambda:])
+            # self.population = np.asarray(self.population[-self.llambda:])
+            ranks_, crowding_distance = self.fast_nondominated_sort(
+                self.population_y)
+            s_id = sorted(
+                zip(ranks_, -crowding_distance, range(len(self.population_y))))
             s_id = np.array([s[-1] for s in s_id])
 
+            self.population = np.delete(self.population,
+                                        s_id[self.llambda:],
+                                        axis=0)
+            self.population_y = np.delete(self.population_y,
+                                          s_id[self.llambda:],
+                                          axis=0)
 
-            self.population = np.delete(self.population, s_id[self.popsize:], axis=0)
-            self.population_y = np.delete(self.population_y, s_id[self.popsize:], axis=0)
-
-            new_s_id = s_id[:self.popsize]
+            new_s_id = s_id[:self.llambda]
             # tmp = np.argsort(new_s_id)
-            # new_s_id[tmp] = np.arange(self.popsize)
+            # new_s_id[tmp] = np.arange(self.llambda)
             # s_id = new_s_id
             rank = np.argsort(new_s_id)
-# FIXME
-            parents_id = list(self.selection_tournament(rank, self.popsize / 2))
+            # FIXME
+            parents_id = list(self.selection_tournament(
+                rank, self.llambda / 2))
 
             self.children = self.create_children(parents_id)
 
             # ---
-            self.population = list(self.population[parents_id])
+            self.population = self.population[parents_id]
             self.population_y = self.population_y[parents_id]
-            self.population.extend(self.children)
+            self.population = np.append(self.population, self.children, axis=0)
             self.cur = len(self.population_y)
             assert self.cur < len(self.population)
 
@@ -109,6 +121,8 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
         return parents_id
 
     def fast_nondominated_sort(self, points):
+        if len(points.shape) < 2:
+            points = points[..., None]
         individual_num = len(points)
         ranks = np.zeros(individual_num)
         crowding_distance = np.zeros(individual_num)
@@ -129,17 +143,18 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
         extended = np.tile(points, (points.shape[0], 1, 1))
         dominance = np.sum(np.logical_and(
             np.all(extended <= np.swapaxes(extended, 0, 1), axis=2),
-            np.any(extended < np.swapaxes(extended, 0, 1), axis=2)), axis=1)
+            np.any(extended < np.swapaxes(extended, 0, 1), axis=2)),
+                           axis=1)
         _num = sorted(set(dominance))
         while c > 0:
             idx_r = np.where(dominance == _num[r])[0]
             assert len(idx_r) > 0
-            crowding_distance[idx_r] = self.calculate_crowding_distance(points[idx_r], m, M)
+            crowding_distance[idx_r] = self.calculate_crowding_distance(
+                points[idx_r], m, M)
             ranks[idx_r] = r
             c -= len(idx_r)
             r += 1
         return ranks, crowding_distance
-
 
     def calculate_crowding_distance(self, points, m, M):
         cd = np.zeros(len(points))
@@ -149,25 +164,29 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
             s_id = np.argsort(points[:, n])
             cd[s_id[[0, -1]]] = [np.inf, np.inf]
             for idx in range(len(s_id[1:-1])):
-                cd[s_id[idx]] += (points[s_id[idx+1], n] - points[s_id[idx-1], n]) / (M[n] - m[n])
+                cd[s_id[idx]] += (points[s_id[idx + 1], n] -
+                                  points[s_id[idx - 1], n]) / (M[n] - m[n])
         return cd
 
-
-
     def create_initial_population(self):
-        return np.random.rand(self.popsize, self.dense_dimension)
-
+        # return self.rng.rand(self.llambda, self.dense_dimension)
+        return self.rng.uniform(0,
+                                1,
+                                size=(self.llambda, self.dense_dimension))
 
     def create_children(self, parents_id):
         children = []
         num = len(parents_id)
         list(range(num))
         for i in range(num):
-            if np.random.rand() > self.crossrate:
-                child = self.__mutate(self.population[np.random.choice(parents_id)])
+            if self.rng.rand() > self.crossrate:
+                child = self.__mutate(
+                    self.population[self.rng.choice(parents_id)])
                 children.append(child)
             else:
-                parent1_id, parent2_id = np.random.choice(parents_id, 2, replace=False)
+                parent1_id, parent2_id = self.rng.choice(parents_id,
+                                                         2,
+                                                         replace=False)
                 parent1 = np.copy(self.population[parent1_id])
                 parent2 = np.copy(self.population[parent2_id])
                 child1, child2 = self.__crossover(parent1, parent2)
@@ -178,29 +197,32 @@ class NSGAII(AbstractOptimizer, FeatureSpace_uniform):
         return children
 
     def __crossover(self, individual1, individual2):
-        u = np.random.rand(len(individual1))
-        bq = np.where(u<0.5, 2*u**(1/(self.mu+1)), (1 / (2 * (1 - u))) ** (1 / (self.mu + 1)))
+        u = self.rng.rand(len(individual1))
+        bq = np.where(u < 0.5, 2 * u**(1 / (self.mu + 1)),
+                      (1 / (2 * (1 - u)))**(1 / (self.mu + 1)))
         child1 = 0.5 * (((1 + bq) * individual1) + (1 - bq) * individual2)
 
         child2 = 0.5 * (((1 - bq) * individual1) + (1 + bq) * individual2)
 
         # child1 = individual1.copy()
         # child2 = individual2.copy()
-        # i = np.random.randint(child1.shape[1])
+        # i = self.rng.randint(child1.shape[1])
         # t = child1[i]
         # child1[i] = child2[i]
         # child2[i] = t
-        return np.clip(child1, 0, 1), np.clip(child2, 0, 1)
+        return np.clip(child1, self.bounds.lb, self.bounds.ub), np.clip(child2, self.bounds.lb, self.bounds.ub)
 
     def __mutate(self, parent):
         child = parent.copy()
-        r = np.random.rand(len(child))
-        delta = np.where(r<0.5, (2 * r) ** (1 / (self.mum + 1)) - 1, 1 - (2*(1 - r))**(1/(self.mum+1)))
-        return np.clip(child + delta, 0, 1)
+        r = self.rng.rand(len(child))
+        delta = np.where(r < 0.5, (2 * r)**(1 / (self.mum + 1)) - 1,
+                         1 - (2 * (1 - r))**(1 / (self.mum + 1)))
+        return np.clip(child + delta, self.bounds.lb, self.bounds.ub)
 
     def __tournament(self, rank):
-        participants = np.random.choice(len(self.population), self.num_of_tour_particips, replace=False)
-
+        participants = self.rng.choice(len(self.population),
+                                       self.num_of_tour_particips,
+                                       replace=False)
 
         return participants[np.argsort(rank[participants])[0]]
 

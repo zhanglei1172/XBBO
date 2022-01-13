@@ -77,7 +77,7 @@ if __name__ == "__main__":
     # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='rw', acq_opt='rs', base_models=base_models) # TAF(rw)
     hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='mogp', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RMoGP
     # not use transfer
-    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_optzhuan='rs_ls', base_models=[]]) 
+    # hpopt = SMBO(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_opt='rs_ls', base_models=[]]) 
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)

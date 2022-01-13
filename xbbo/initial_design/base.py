@@ -4,7 +4,6 @@ import numpy as np
 from ConfigSpace.hyperparameters import NumericalHyperparameter, \
     Constant, CategoricalHyperparameter, OrdinalHyperparameter
 
-
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, deactivate_inactive_hyperparameters
 
 
@@ -12,15 +11,14 @@ class InitialDesign:
     '''
     reference: https://github.com/automl/SMAC3/blob/master/xbbo/initial_design/initial_design.py
     '''
-    def __init__(
-        self,
-        cs: DenseConfigurationSpace,
-        rng:np.random.RandomState,
-        ta_run_limit: typing.Optional[int] = None,
-        n_configs_x_params: typing.Optional[int] = 10,
-        init_budget: typing.Optional[int] = None,
-        max_config_fracs: float = 0.25,
-    ) -> None:
+    def __init__(self,
+                 cs: DenseConfigurationSpace,
+                 rng: np.random.RandomState,
+                 ta_run_limit: typing.Optional[int] = None,
+                 n_configs_x_params: typing.Optional[int] = 10,
+                 init_budget: typing.Optional[int] = None,
+                 max_config_fracs: float = 0.25,
+                 **kwargs) -> None:
         self.cs = cs
         self.dim = cs.get_dimensions(sparse=True)
         self.rng = rng
@@ -42,10 +40,9 @@ class InitialDesign:
     def _select_configurations(self) -> typing.List[DenseConfiguration]:
         raise NotImplementedError
 
-    def _transform_continuous_designs(self,
-                                      design: np.ndarray,
-                                      origin: str,
-                                      cs: DenseConfigurationSpace) -> typing.List[DenseConfiguration]:
+    def _transform_continuous_designs(
+            self, design: np.ndarray, origin: str,
+            cs: DenseConfigurationSpace) -> typing.List[DenseConfiguration]:
 
         params = cs.get_hyperparameters()
         for idx, param in enumerate(params):
@@ -60,11 +57,13 @@ class InitialDesign:
             elif isinstance(param, CategoricalHyperparameter):
                 v_design = design[:, idx]
                 v_design[v_design == 1] = 1 - 10**-10
-                design[:, idx] = np.array(v_design * len(param.choices), dtype=np.int)
+                design[:, idx] = np.array(v_design * len(param.choices),
+                                          dtype=np.int)
             elif isinstance(param, OrdinalHyperparameter):
                 v_design = design[:, idx]
                 v_design[v_design == 1] = 1 - 10**-10
-                design[:, idx] = np.array(v_design * len(param.sequence), dtype=np.int)
+                design[:, idx] = np.array(v_design * len(param.sequence),
+                                          dtype=np.int)
             else:
                 raise ValueError("Hyperparameter not supported in LHD")
 
@@ -76,6 +75,4 @@ class InitialDesign:
             conf.origin = origin
             configs.append(conf)
 
-
         return configs
-

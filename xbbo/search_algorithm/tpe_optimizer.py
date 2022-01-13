@@ -13,7 +13,7 @@ from xbbo.initial_design import ALL_avaliable_design
 
 logger = logging.getLogger(__name__)
 
-@alg_register.register('baisc-bo')
+@alg_register.register('tpe')
 class TPE(AbstractOptimizer):
     '''
     reference: https://github.com/thomas-young-2013/open-box/blob/master/openbox/core/tpe_advisor.py
@@ -39,7 +39,7 @@ class TPE(AbstractOptimizer):
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit)
+            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
@@ -183,7 +183,7 @@ class TPE(AbstractOptimizer):
                                     np.rint(best_vector[i]))
 
                         config = DenseConfiguration.from_sparse_array(
-                            self.space, best_vector)
+                            self.space, np.asarray(best_vector))
                     trial_list.append(
                         Trial(configuration=config,
                                 config_dict=config.get_dictionary(),
@@ -254,12 +254,12 @@ class TPE(AbstractOptimizer):
 
         for i in range(array.shape[0]):
             datum = np.copy(array[i])
-            nan_indices = np.argwhere(np.isnan(datum)).flatten()
+            nan_indices = np.argwhere(np.isnan(datum)).ravel()
 
             while np.any(nan_indices):
                 nan_idx = nan_indices[0]
                 valid_indices = np.argwhere(np.isfinite(
-                    array[:, nan_idx])).flatten()
+                    array[:, nan_idx])).ravel()
 
                 if len(valid_indices) > 0:
                     # pick one of them at random and overwrite all NaN values
@@ -274,7 +274,7 @@ class TPE(AbstractOptimizer):
                     else:
                         datum[nan_idx] = self.rng.randint(t)
 
-                nan_indices = np.argwhere(np.isnan(datum)).flatten()
+                nan_indices = np.argwhere(np.isnan(datum)).ravel()
             return_array[i, :] = datum
         return return_array
 
