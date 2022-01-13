@@ -1,7 +1,7 @@
 import numpy as np
 
 # from xbbo.configspace.feature_space import Uniform2Gaussian
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from . import alg_register

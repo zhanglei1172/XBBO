@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
+
+from xbbo.configspace.space import DenseConfigurationSpace
 # from xbbo.configspace.space import Configurations
 
 class AbstractOptimizer(ABC):
@@ -10,7 +12,7 @@ class AbstractOptimizer(ABC):
     # Every implementation package needs to specify this static variable, e.g., "primary_import=opentuner"
     primary_import = None
 
-    def __init__(self, config_spaces, seed=42, **kwargs):
+    def __init__(self, space: DenseConfigurationSpace, seed=42, **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -18,26 +20,9 @@ class AbstractOptimizer(ABC):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        self.space = config_spaces
+        assert isinstance(space, DenseConfigurationSpace)
+        self.space = space
         self.rng = np.random.RandomState(seed)
-
-
-    @classmethod
-    def get_version(cls):
-        """Get the version for this optimizer.
-
-        Returns
-        -------
-        version_str : str
-            Version number of the optimizer. Usually, this is equivalent to ``package.__version__``.
-        """
-        assert (cls.primary_import is None) or isinstance(cls.primary_import, str)
-        # Should use x.x.x as version if sub-class did not specify its primary import
-        # version_str = "x.x.x" if cls.primary_import is None else version(cls.primary_import)
-        version_str = "1.0.0"
-        return version_str
-
-
 
     @abstractmethod
     def suggest(self, n_suggestions): # output [meta param]

@@ -23,7 +23,7 @@ from pySOT.surrogate import CubicKernel, LinearTail, RBFInterpolant
 
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_uniform
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 '''
 全【0，1】
 '''

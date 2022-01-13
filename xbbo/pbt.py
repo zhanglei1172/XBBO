@@ -3,8 +3,8 @@ from time import time
 import tqdm
 from matplotlib import pyplot as plt
 
-from xbbo.search_space import build_test_problem
-from xbbo.search_algorithm import get_opt_class
+from xbbo.search_space import problem_register
+from xbbo.search_algorithm import alg_register
 from xbbo.configspace import build_space
 
 
@@ -15,12 +15,12 @@ class PBT:
         self.cfg = cfg
         self.pop_size = cfg.OPTM.pop_size
 
-        self.population_model = [build_test_problem(cfg.TEST_PROBLEM.name, cfg) for _ in range(self.pop_size)]
+        self.population_model = [problem_register[cfg.TEST_PROBLEM.name](cfg) for _ in range(self.pop_size)]
         self.api_config = self.population_model[0].get_api_config()  # 优化的hp
         self.config_spaces = build_space(self.api_config)
 
         # Setup optimizer
-        opt_class = get_opt_class(cfg.OPTM.name)
+        opt_class = alg_register[cfg.OPTM.name]
 
         self.optimizer_instance = opt_class(self.config_spaces, self.pop_size, **dict(cfg.OPTM.kwargs))
         self.n_suggestions = cfg.OPTM.n_suggestions

@@ -4,7 +4,7 @@ import statsmodels.api as sm
 import scipy.stats as sps
 import ConfigSpace
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
 from xbbo.utils.constants import MAXINT

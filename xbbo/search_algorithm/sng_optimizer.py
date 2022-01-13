@@ -1,7 +1,7 @@
 import numpy as np
 
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_discrete_all_oneHot
 

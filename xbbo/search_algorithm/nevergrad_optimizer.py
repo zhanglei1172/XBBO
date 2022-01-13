@@ -15,7 +15,7 @@ import nevergrad.optimization as optimization
 # from nevergrad import instrumentation as inst
 import numpy as np
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.configspace.feature_space import FeatureSpace_gaussian

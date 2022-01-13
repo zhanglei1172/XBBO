@@ -1,7 +1,7 @@
 # from collections import OrderedDict
 import numpy as np
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 # from xbbo.core.stochastic import Category, Uniform
 from xbbo.core.trials import Trial, Trials

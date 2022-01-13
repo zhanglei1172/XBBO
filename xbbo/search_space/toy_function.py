@@ -1,40 +1,40 @@
 import numpy as np
 
-from xbbo.core import TestFunction
+from . import problem_register
+from xbbo.core.abstract_model import TestFunction
 
-
+@problem_register.register('toy-problems')
 class Model(TestFunction):
     _SUPPORT_FUNCTIONS = ('rosenbrock', 'rastrigin', 'indexsum', 'toyrebar',
                           'branin', 'ZDT1')
 
-    def __init__(self, cfg, seed, **kwargs):
+    def __init__(self, seed, **kwargs):
         # np.random.seed(cfg.GENERAL.random_seed)
-        self.cfg = cfg
         # self.dim = 30
         # assert self.dim % 2 == 0
         super().__init__(seed=seed)
 
-        assert cfg.TEST_PROBLEM.kwargs.func_name in self._SUPPORT_FUNCTIONS
+        assert kwargs["func_name"] in self._SUPPORT_FUNCTIONS
         # func_name = cfg.TEST_PROBLEM.kwargs.func_name
         func_name = kwargs.get('func_name')
         if func_name == 'rosenbrock':
             self.func = Rosenbrock(
-                self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+                kwargs.get("dim"))
         elif func_name == 'rastrigin':
             self.func = Rastrigin(
-                self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+                kwargs.get("dim"))
         elif func_name == 'indexsum':
-            self.func = IndexSum(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim)
+            self.func = IndexSum(kwargs.get("dim"))
         elif func_name == 'toyrebar':
-            self.func = ToyREBAR(self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim,
-                                 self.cfg.TEST_PROBLEM.SEARCH_SPACE.hp.t)
+            self.func = ToyREBAR(kwargs.get("dim"),
+                                 kwargs.get("t"))
         elif func_name == 'branin':
             self.func = Branin()
         elif func_name == 'ZDT1':
             self.func = ZDT1()
         else:
             assert False
-        self.noise_std = kwargs.get('noise_std')
+        self.noise_std = kwargs.get('noise_std', 0)
         self.api_config = self._load_api_config()
 
     def evaluate(self, params: dict):
@@ -47,15 +47,16 @@ class Model(TestFunction):
             random_noise = self.rng.randn(len(f)) * self.noise_std + 1.
         else:
             random_noise = self.rng.randn() * self.noise_std + 1.
-        res_out = {
-            # 'raw': f,
-            'noise': f * random_noise,
-        }
+        # res_out = {
+        #     # 'raw': f,
+        #     'noise': f * random_noise,
+        # }
         # res_loss = {
         #     'test': f,
         #     'val': f * random_noise,
         # }
-        return (res_out['noise'])
+        # return (res_out['noise'])
+        return f * random_noise
 
     def _load_api_config(self):
         return self.func._load_api_config()

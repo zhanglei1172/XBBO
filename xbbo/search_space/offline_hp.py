@@ -3,8 +3,8 @@ from typing import Tuple, List, Callable
 import numpy as np
 import pandas as pd
 from pathlib import Path
-
-from xbbo.core import TestFunction
+from . import problem_register
+from xbbo.core.abstract_model import TestFunction
 
 deepar = 'DeepAR'
 fcnet = 'FCNET'
@@ -226,17 +226,16 @@ def evaluations_np(
     CACHE_DATA[test_task] = Xys_train, Xy_test, hp_names
     return CACHE_DATA[test_task]
 
-
+@problem_register.register('transfer-problems')
 class Model(TestFunction):
 
-    def __init__(self, cfg, seed, **kwargs):
-        self.cfg = cfg
+    def __init__(self, seed, **kwargs):
         # self.dim = 30
         # assert self.dim % 2 == 0
         super().__init__(seed=seed)
         name = kwargs.get('func_name', None)
         if name is None:
-            test_task = cfg.TEST_PROBLEM.kwargs.test_task if cfg else kwargs['test_task']
+            test_task = kwargs['test_task']
             # assert test_task in tasks
             # self.data_path = kwargs.get('data_path')+ kwargs.get('func_name')
             for bb, tasks in blackbox_tasks.items():
