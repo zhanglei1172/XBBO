@@ -16,9 +16,9 @@ def rosenbrock_2d(x):
     all x's is the interval [-5, 10].
     """
 
-    x1 = x["x0"]
-    x2 = x["x1"]
-    # x2 = x.get('x1', x1)
+    x1 = x["x1"]
+    x2 = x["x2"]
+    # x2 = x.get('x2', x1)
 
     val = 100. * (x2 - x1 ** 2.) ** 2. + (1 - x1) ** 2.
     return val
@@ -38,17 +38,17 @@ def rosenbrock_2d_hard(x):
     all x's is the interval [-5, 10].
     """
 
-    x1 = x["x0"]
+    x1 = x["x1"]
     # x2 = x["x1"]
-    x2 = x.get('x1', x1)
-    x3 = x['x2']
+    x2 = x.get('x2', x1)
+    x3 = x['x3']
     val = 100. * (x2 - x1 ** 2.) ** 2. + (1 - x1) ** 2.
     return val - (x3 == 2)
 
 def build_space(rng):
     cs = DenseConfigurationSpace(seed=rng.randint(10000))
-    x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
-    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
+    x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
+    x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
     # con = LessThanCondition(x1, x0, 1.)
     # cs.add_condition(con)
@@ -64,9 +64,9 @@ def build_branin_space(rng):
 
 def build_space_hard(rng):
     cs = DenseConfigurationSpace(seed=rng.randint(10000))
-    x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
-    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
-    x2 = CategoricalHyperparameter("x2", choices=[0,1,2,3])
+    x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
+    x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
+    x2 = CategoricalHyperparameter("x3", choices=[0,1,2,3])
     cs.add_hyperparameters([x0, x1, x2])
     con = LessThanCondition(x1, x0, 1.)
     cs.add_condition(con)
