@@ -19,7 +19,7 @@ export PYTHONPATH=$PYTHONPATH:/Path/to/XBBO
 
 ### Bayesian Optimization test
 
-`python ./example/rosenbrock_bo.py`
+`python ./examples/rosenbrock_bo.py`
 
 `note:`XBBO default **minimize** black box function.
 
@@ -100,5 +100,5 @@ Here you can **comparision** with commonly used and well-known Hyperparameter Op
 
 ## TODO
 
--[ ] parallel
--[ ] multi-fidelity
+- [ ] parallel
+- [ ] multi-fidelity
