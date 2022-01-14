@@ -1,23 +1,25 @@
 # XBBO
 
-**XBBO** is a library that integrates common black box optimization algorithms, which can easily and quickly benchmark different black box optimization algorithms.
+**XBBO** is an an effective, modular and flexible black-box optimization (BBO) codebase, which aims to provide a common framework and benchmark for the BBO community.
 
 ## Installation
 
-### Requirements
-
-`Python >= 3.8`
+`Python >= 3.8` is required.
 
 ```bash
+git clone REPO_URL
+cd XBBO
+# install requirements
 pip install -r ./requirements.txt
+# set root path
+export PYTHONPATH=$PYTHONPATH:/Path/to/XBBO
 ```
-
 
 ## Quick Start
 
 ### Bayesian Optimization test
 
-`cd $PROJECT_ROOT && PYTHONPATH='./' python ./example/rosenbrock_bo.py`
+`python ./example/rosenbrock_bo.py`
 
 `note:`XBBO default **minimize** black box function.
 
@@ -52,8 +54,9 @@ for i in range(MAX_CALL):
     print(value)  
 ```
 
-## Feature
+All examples can be found in `examples/` folder.
 
+## Supported Algorithms
 
 - [X] Transfer
   - [X] TST-R
@@ -72,6 +75,8 @@ for i in range(MAX_CALL):
   - [X] TuRBO
 
 ## Compare other bbo library
+
+Here you can **comparision** with commonly used and well-known Hyperparameter Optimization (HPO) packages:
 
 [SMAC3](tests/smac3/SMAC3.md)
 [hyperopt](tests/hyperopt/hyperopt.md)
@@ -92,3 +97,8 @@ for i in range(MAX_CALL):
 - [TAF](docs/BBO_paper_reading/Transfer_Bayesian_Optimization.pdf)
 
 [review](docs/BBO_paper_reading/Hyper-Parameter_Optimization_A_Review_of_Algorithms_and_Applications.pdf)
+
+## TODO
+
+-[ ] parallel
+-[ ] multi-fidelity
