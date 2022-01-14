@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 from smac3_svm_cv import run_one_exp as smac3_svm_opt
 from xbbo_svm_cv import run_one_exp as xbbo_svm_opt
-# from smac3_synthetic import run_one_exp as smac3_synthetic_opt
-# from xbbo_synthetic import run_one_exp as xbbo_synthetic_opt
+from smac3_synthetic import run_one_exp as smac3_synthetic_opt
+from xbbo_synthetic import run_one_exp as xbbo_synthetic_opt
 
 if __name__ == "__main__":
     rng = np.random.RandomState(42)

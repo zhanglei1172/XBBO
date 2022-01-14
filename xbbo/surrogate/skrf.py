@@ -57,7 +57,7 @@ class RandomForestSurrogate(BaseRF):
         self.normalize_y = normalize_y
         self.is_trained = False
 
-    def _train(self, X: np.ndarray, y: np.ndarray, do_optimize: bool = True):
+    def _train(self, X: np.ndarray, y: np.ndarray, **kwargs):
         """
         Train a Random Forest Regression model on X and y
 
@@ -85,7 +85,7 @@ class RandomForestSurrogate(BaseRF):
         self.is_trained = True
         return self
 
-    def _predict(self, X_test: np.ndarray):
+    def _predict(self, X_test: np.ndarray, **kwargs):
         r"""
         Returns the predictive mean and variance of the objective function
 
