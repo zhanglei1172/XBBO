@@ -347,7 +347,7 @@ class GPR_sklearn(BaseGP):
         else:
             return -lml, -grad
 
-    def _train(self, X: np.ndarray, y: np.ndarray, do_optimize: bool = True):
+    def _train(self, X: np.ndarray, y: np.ndarray, **kwargs):
         X = np.atleast_2d(X)
         X = self._impute_inactive(X)
         if self.normalize_y:
@@ -372,7 +372,7 @@ class GPR_sklearn(BaseGP):
                 theta = np.exp(self.kernel.theta)
                 theta[-1] += 1
                 self.kernel.theta = np.log(theta)
-        if do_optimize:
+        if self.do_optimize:
             self._all_priors = self._get_all_priors(add_bound_priors=False)
             self.hypers = self._optimize()
             self.gp.kernel.theta = self.hypers

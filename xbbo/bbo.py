@@ -1,5 +1,4 @@
 import numpy as np
-import json
 from time import time
 import tqdm
 
@@ -39,7 +38,7 @@ class BBO:
         # self.function_evals = np.zeros((n_calls, n_suggestions, self.n_obj))
         # self.suggest_log = [None] * n_calls
         self.n_calls = cfg.OPTM.max_call
-        self.record = Record(self.cfg)
+        self.record = Record(self.cfg.GENERAL.exp_dir)
 
 
     def evaluate(self, param):
@@ -106,10 +105,11 @@ class BBO:
                          'observe_time_per_suggest': observe_time,
                          'eval_time_per_suggest': sum(trial.time for trial in trial_list)
             }
-            self.record.append([trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
-            print(self.optimizer_instance.trials.best_observe_value)
+            self.record.append([trial.dense_array if trial.sparse_array is None else trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
+            # print(self.optimizer_instance.trials.best_observe_value)
+            print(function_evals)
 
-
+        print(self.optimizer_instance.trials.best_observe_value)
 
 
 class BBO_REBAR(BBO):

@@ -143,9 +143,9 @@ class SurrogateModel(object):
                     dtype=np.uint,
                 )
 
-        return self._train(X, Y, self.do_optimize)
+        return self._train(X, Y)
 
-    def _train(self, X: np.ndarray, Y: np.ndarray) -> 'SurrogateModel':
+    def _train(self, X: np.ndarray, Y: np.ndarray, **kwargs) -> 'SurrogateModel':
         """Trains the random forest on X and y.
 
         Parameters
@@ -208,7 +208,7 @@ class SurrogateModel(object):
                     'Rows in X should have %d entries but have %d!' %
                     (len(self.types), X.shape[1]))
 
-            mean, var = self._predict(X, cov_return_type)
+            mean, var = self._predict(X, cov_return_type=cov_return_type)
             if cov_return_type is None:
                 return mean, var
             if len(mean.shape) == 1:

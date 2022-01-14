@@ -74,6 +74,7 @@ for i in range(MAX_CALL):
 ## Compare other bbo library
 
 [SMAC3](tests/smac3/SMAC3.md)
+[hyperopt](tests/hyperopt/hyperopt.md)
 
 ## Algorithms notes
 

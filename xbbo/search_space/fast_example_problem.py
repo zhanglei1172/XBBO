@@ -1,7 +1,11 @@
 import numpy as np
+from sklearn import svm, datasets
+from sklearn.model_selection import cross_val_score
+
 from xbbo.configspace.space import DenseConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter, CategoricalHyperparameter
-from ConfigSpace.conditions import LessThanCondition
+from ConfigSpace.conditions import InCondition, LessThanCondition
+from ConfigSpace.hyperparameters import \
+    CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
 
 def rosenbrock_2d(x):
     """ The 2 dimensional Rosenbrock function as a toy model
@@ -83,4 +87,88 @@ def build_zdt1_space(rng):
     x0 = UniformFloatHyperparameter("x1", 0, 1)
     x1 = UniformFloatHyperparameter("x2", 0, 1)
     cs.add_hyperparameters([x0, x1])
+    return cs
+
+def svm_from_cfg(cfg):
+    """ Creates a SVM based on a configuration and evaluates it on the
+    iris-dataset using cross-validation. Note here random seed is fixed
+
+    Parameters:
+    -----------
+    cfg: Configuration (ConfigSpace.ConfigurationSpace.Configuration)
+        Configuration containing the parameters.
+        Configurations are indexable!
+
+    Returns:
+    --------
+    A crossvalidated mean score for the svm on the loaded data-set.
+    """
+    # For deactivated parameters, the configuration stores None-values.
+    # This is not accepted by the SVM, so we remove them.
+    cfg = {k: cfg[k] for k in cfg if cfg[k]}
+    # And for gamma, we set it to a fixed value or to "auto" (if used)
+    if "gamma" in cfg:
+        cfg["gamma"] = cfg["gamma_value"] if cfg["gamma"] == "value" else "auto"
+        cfg.pop("gamma_value", None)  # Remove "gamma_value"
+
+    clf = svm.SVC(**cfg, random_state=42)
+
+    scores = cross_val_score(clf, iris.data, iris.target, cv=5)
+    return 1 - np.mean(scores)  # Minimize!
+
+def build_svm_space(rng):
+    global iris
+    iris = datasets.load_iris()
+        # Build Configuration Space which defines all parameters and their ranges
+    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+
+    # We define a few possible types of SVM-kernels and add them as "kernel" to our cs
+    kernel = CategoricalHyperparameter("kernel",
+                                       ["linear", "rbf", "poly", "sigmoid"],
+                                       default_value="poly")
+    cs.add_hyperparameter(kernel)
+
+    # There are some hyperparameters shared by all kernels
+    C = UniformFloatHyperparameter("C",
+                                   0.001,
+                                   1000.0,
+                                   default_value=1.0,
+                                   log=True)
+    shrinking = CategoricalHyperparameter("shrinking", [True, False],
+                                          default_value=True)
+    cs.add_hyperparameters([C, shrinking])
+
+    # Others are kernel-specific, so we can add conditions to limit the searchspace
+    degree = UniformIntegerHyperparameter(
+        "degree", 1, 5, default_value=3)  # Only used by kernel poly
+    coef0 = UniformFloatHyperparameter("coef0", 0.0, 10.0,
+                                       default_value=0.0)  # poly, sigmoid
+    cs.add_hyperparameters([degree, coef0])
+
+    use_degree = InCondition(child=degree, parent=kernel, values=["poly"])
+    use_coef0 = InCondition(child=coef0,
+                            parent=kernel,
+                            values=["poly", "sigmoid"])
+    cs.add_conditions([use_degree, use_coef0])
+
+    # This also works for parameters that are a mix of categorical and values
+    # from a range of numbers
+    # For example, gamma can be either "auto" or a fixed float
+    gamma = CategoricalHyperparameter(
+        "gamma", ["auto", "value"],
+        default_value="auto")  # only rbf, poly, sigmoid
+    gamma_value = UniformFloatHyperparameter("gamma_value",
+                                             0.0001,
+                                             8,
+                                             default_value=1,
+                                             log=True)
+    cs.add_hyperparameters([gamma, gamma_value])
+    # We only activate gamma_value if gamma is set to "value"
+    cs.add_condition(
+        InCondition(child=gamma_value, parent=gamma, values=["value"]))
+    # And again we can restrict the use of gamma in general to the choice of the kernel
+    cs.add_condition(
+        InCondition(child=gamma,
+                    parent=kernel,
+                    values=["rbf", "poly", "sigmoid"]))
     return cs

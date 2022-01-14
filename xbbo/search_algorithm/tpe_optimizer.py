@@ -141,16 +141,16 @@ class TPE(AbstractOptimizer):
                         val = minimize_me(vector)
 
                         if not np.isfinite(val):
-                            self.logger.warning(
+                            logger.warning(
                                 'sampled vector: %s has EI value %s' %
                                 (vector, val))
-                            self.logger.warning("data in the KDEs:\n%s\n%s" %
+                            logger.warning("data in the KDEs:\n%s\n%s" %
                                                 (kde_good.data, kde_bad.data))
-                            self.logger.warning(
+                            logger.warning(
                                 "bandwidth of the KDEs:\n%s\n%s" %
                                 (kde_good.bw, kde_bad.bw))
-                            self.logger.warning("l(x) = %s" % (l(vector)))
-                            self.logger.warning("g(x) = %s" % (g(vector)))
+                            logger.warning("l(x) = %s" % (l(vector)))
+                            logger.warning("g(x) = %s" % (g(vector)))
 
                             # right now, this happens because a KDE does not contain all values for a categorical parameter
                             # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
