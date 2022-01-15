@@ -1,4 +1,5 @@
 import copy
+import math
 from typing import Optional, List, Tuple, cast
 
 import numpy as np
@@ -22,6 +23,7 @@ class PBT():
         self.rng = np.random.RandomState(seed)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.pop_size = pop_size if pop_size else 4 + math.floor(3 * math.log(self.dense_dimension))
         self.pop_size = pop_size
         self.init_budget = pop_size
 

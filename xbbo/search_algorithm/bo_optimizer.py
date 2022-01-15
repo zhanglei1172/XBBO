@@ -13,7 +13,7 @@ from . import alg_register
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
-from xbbo.acquisition_function.ei import EI_AcqFunc
+from xbbo.acquisition_function.acq_func import EI_AcqFunc
 from xbbo.surrogate.prf import RandomForestWithInstances
 from xbbo.surrogate.sk_prf import skRandomForestWithInstances
 from xbbo.surrogate.skrf import RandomForestSurrogate

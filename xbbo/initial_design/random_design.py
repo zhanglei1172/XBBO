@@ -9,7 +9,7 @@ from xbbo.configspace.space import DenseConfiguration
 class RandomDesign(InitialDesign):
     """Initial design that evaluates random configurations."""
 
-    def _select_configurations(self) -> List[DenseConfiguration]:
+    def _select_configurations(self, num=None) -> List[DenseConfiguration]:
         """Select a random configuration.
 
         Returns
@@ -17,9 +17,9 @@ class RandomDesign(InitialDesign):
         config: Configuration()
             Initial incumbent configuration
         """
-
-        configs = self.cs.sample_configuration(size=self.init_budget)
-        if self.init_budget == 1:
+        design_num = num if num else self.init_budget
+        configs = self.cs.sample_configuration(size=design_num)
+        if design_num == 1:
             configs = [configs]
         for config in configs:
             config.origin = 'Random initial design.'

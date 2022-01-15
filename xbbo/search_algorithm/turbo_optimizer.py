@@ -1,20 +1,27 @@
+from collections import defaultdict
 import logging
 import math
 from copy import deepcopy
+import warnings
+from scipy.stats.qmc import Sobol
 
-import gpytorch
 import numpy as np
-import torch
-from torch.quasirandom import SobolEngine
+# from xbbo.acquisition_function.acq_optimizer import DesignBoundSearch
+# import torch
+# from torch.quasirandom import SobolEngine
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
+from xbbo.surrogate.gaussian_process import GPR_sklearn
+
+# from xbbo.surrogate.prf import RandomForestWithInstances
+# from xbbo.surrogate.sk_prf import skRandomForestWithInstances
+# from xbbo.surrogate.skrf import RandomForestSurrogate
 # from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
 #     GaussianProcessRegressorARD_torch
 from xbbo.utils.constants import MAXINT
-from xbbo.surrogate.gp import train_gp
 from . import alg_register
 
 logger = logging.getLogger(__name__)
@@ -32,6 +39,157 @@ def latin_hypercube(n_pts, dim):
     X += pert
     return X
 
+
+class TuRBO_state():
+    def __init__(self,
+                 surrogate_model,
+                 marker,
+                 bounds,
+                 rng,
+                 dim,
+                 n_min_sample,
+                 succ_tol=3,
+                 length_max=1.6,
+                 length_min=0.5**7,
+                 length_init=0.8,
+                 **kwargs) -> None:
+        self.surrogate_model = surrogate_model
+        # self.hyper = self.surrogate_models.hypers
+        self.dim = dim
+        self.marker = marker
+        self.rng = rng
+        self.bounds = bounds
+        self.succ_tol = succ_tol
+        self.length_min = length_min
+        self.length_max = length_max
+        self.length_init = length_init
+        self.n_min_sample = n_min_sample
+        self.sobol_gen = Sobol(d=self.dim,
+                          scramble=True,
+                          seed=self.rng.randint(MAXINT))
+        self._restart()
+
+    def _restart(self):
+        # self.do_optimize = True
+        self.length = self.length_init
+        self.succ_count = 0
+        self.fail_count = 0
+        self.center = None
+        self.center_value = np.inf
+
+    def _train(self, X, Y):
+        # self.surrogate_model.do_optimize = self.do_optimize
+        self.surrogate_model.train(X, Y)
+        # self.do_optimize = False
+
+    def sample_y(self, X, size=1):
+        mean, var = self.surrogate_model.predict_marginalized_over_instances(
+            X, 'full_cov')
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sample = self.rng.multivariate_normal(mean.ravel(), var,
+                                            size=size).T  # (sample, N)
+        return sample
+
+    def update(self, trial: Trial, trials: Trials, obs_num: int):
+        markers = np.array(trials.markers)
+        idx = markers == self.marker
+        if idx.sum() < self.n_min_sample:
+            return
+        # self.do_optimize = True
+        if (not np.isfinite(self.center_value)
+            ) or trial.observe_value < self.center_value - 1e-3 * math.fabs(
+                self.center_value):
+            self.center = self.to_unit_cube(trial.sparse_array)
+            self.center_value = trial.observe_value
+            logger.info(
+                f"{trials.trials_num}) New best @ TR-{self.marker}: {self.center_value:.4}"
+            )
+            self.succ_count += 1
+            self.fail_count = 0
+        else:
+            self.succ_count = 0
+            self.fail_count += obs_num  # NOTE: Add size of the batch for this TR
+        if self.succ_count == self.succ_tol:  # Expand trust region
+            self.length = min([2.0 * self.length, self.length_max])
+            self.succ_count = 0
+        elif self.fail_count >= self.fail_tol:  # Shrink trust region (we may have exceeded the fail_tol)
+            self.length /= 2.0
+            self.fail_count = 0
+
+        # Check if any TR needs to be restarted
+
+        if self.length < self.length_min:  # Restart trust region if converged
+            # indicator = [
+            #     trial.region == i for trial in self.trials.traj_history
+            # ]
+
+            logger.info(
+                f"{trials.trials_num}) TR-{self.marker} converged to: : {self.center_value:.4}"
+            )
+
+            # Reset length and counters, remove old data from trust region
+            self._restart()
+            # Remove points from trust region
+            markers[idx] = -1
+            trials.markers = list(markers)
+
+        X = self.to_unit_cube((trials.get_array())[idx])
+        Y = np.array(trials._his_observe_value)[idx]
+        self._train(X, Y)
+    
+    def _get_length_scale(self):
+        ks = self.surrogate_model.kernel
+        ele_end = 0
+        ele_num = None
+        for hp in ks.hyperparameters:
+            ele_end += hp.n_elements
+            if 'length_scale' in hp.name:
+                ele_num = hp.n_elements
+                break
+        assert ele_num is not None
+        return np.exp(ks.theta[ele_end-ele_num:ele_end]) # Be careful log theta
+
+    def create_candidates(self, n_candidates):
+        length = self.length
+        weights = (self._get_length_scale())
+        # Create the trust region boundaries
+        x_center = self.center  #X[fX.argmin().item(), :][None, :]
+        weights = weights / weights.mean(
+        )  # This will make the next line more stable
+        weights = weights / np.prod(np.power(
+            weights, 1.0 / len(weights)))  # We now have weights.prod() = 1
+        lb = np.clip(x_center - weights * length / 2.0, 0.0, 1.0)
+        ub = np.clip(x_center + weights * length / 2.0, 0.0, 1.0)
+
+        # Draw a Sobolev sequence in [lb, ub]
+        
+        pert = self.sobol_gen.random(n_candidates)
+        pert = lb + (ub - lb) * pert
+
+        # Create a perturbation mask
+        prob_perturb = min(20.0 / self.dim, 1.0)
+        mask = self.rng.rand(n_candidates, self.dim) <= prob_perturb
+        ind = np.where(np.sum(mask, axis=1) == 0)[0]
+        mask[ind, self.rng.randint(0, self.dim - 1, size=len(ind))] = 1
+
+        # Create candidate points
+        X_cand = x_center.copy() * np.ones((n_candidates, self.dim))
+        X_cand[mask] = pert[mask]
+        return X_cand
+
+    def to_unit_cube(self, x):
+        """Project to [0, 1]^d from hypercube with bounds lb and ub"""
+
+        xx = (x - self.bounds.lb) / (self.bounds.ub - self.bounds.lb)
+        return xx
+
+    def from_unit_cube(self, x):
+        """Project from [0, 1]^d to hypercube with bounds lb and ub"""
+        xx = x * (self.bounds.ub - self.bounds.lb) + self.bounds.lb
+        return xx
+
+
 @alg_register.register('turbo')
 class TuRBO(AbstractOptimizer):
     '''
@@ -41,6 +199,9 @@ class TuRBO(AbstractOptimizer):
             self,
             space: DenseConfigurationSpace,
             seed: int = 42,
+            surrogate: str = 'gp',
+            # acq_func: str = 'mc',
+            # acq_opt: str = 'design',
             initial_design: str = 'sobol',
             num_tr=1,
             #  total_limit: int = 10,
@@ -48,261 +209,115 @@ class TuRBO(AbstractOptimizer):
         AbstractOptimizer.__init__(self, space, seed, **kwargs)
         self.sparse_dimension = self.space.get_dimensions(sparse=True)
         self.dense_dimension = self.space.get_dimensions(sparse=False)
-
+        self.bounds = self.space.get_bounds(sparse=True)
         self.n_min_sample = kwargs.get('n_min_sample', 5)
         self.init_budget = self.n_min_sample  # self.initial_design.init_budget
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, init_budget=self.init_budget)
-        self.initial_design_configs = [
-            self.initial_design.select_configurations() for _ in range(num_tr)
-        ]
+
+        self.initial_design_configs = [[] for _ in range(num_tr)]
         self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+                             dense_dim=self.dense_dimension,
+                             use_dense=False)
         self.n_training_steps = kwargs.get("n_training_steps", 50)
         self.max_cholesky_size = kwargs.get("max_cholesky_size", 2000)
-        self.n_candidates = min(100 * self.dense_dimension, 5000)
+        self.dim = self.sparse_dimension
+        self.n_candidates = 2**int(np.log2(min(100 * self.dim, 5000)))
         self.use_ard = kwargs.get("use_ard", True)
         self.num_tr = num_tr
-        self.succtol = 3
-        self.n_evals = 0
         self.candidates = []
-        # Save the full history
-        self.X = np.zeros((0, self.dense_dimension))
-        self.fX = np.zeros((0, 1))
-        # Trust region sizes
-        self.length_min = 0.5**7
-        self.length_max = 1.6
-        self.length_init = 0.8
-        self.hypers = [{} for _ in range(self.num_tr)]
 
-        self._restart()
-
-    def _restart(self):
-        self._idx = np.zeros(
-            (0, 1), dtype=int
-        )  # Track what trust region proposed what using an index vector
-        self.failcount = np.zeros(self.num_tr, dtype=int)
-        self.succcount = np.zeros(self.num_tr, dtype=int)
-        self.length = self.length_init * np.ones(self.num_tr)
-
-    def _create_candidates(self, X, fX, length, n_training_steps, hypers,
-                           batch_size):
-        """Generate candidates assuming X has been scaled to [0,1]^d."""
-        # Pick the center as the point with the smallest function values
-        # NOTE: This may not be robust to noise, in which case the posterior mean of the GP can be used instead
-        assert X.min() >= 0.0 and X.max() <= 1.0
-
-        # Standardize function values.
-        mu, sigma = np.median(fX), fX.std()
-        sigma = 1.0 if sigma < 1e-6 else sigma
-        fX = (deepcopy(fX) - mu) / sigma
-
-        # Figure out what device we are running on
-        # if len(X) < self.min_cuda:
-        #     device, dtype = torch.device("cpu"), torch.float64
-        # else:
-        #     device, dtype = self.device, self.dtype
-
-        # We use CG + Lanczos for training if we have enough data
-        with gpytorch.settings.max_cholesky_size(self.max_cholesky_size):
-            X_torch = torch.tensor(X)  # .to(device=device, dtype=dtype)
-            y_torch = torch.tensor(
-                fX.ravel())  # .to(device=device, dtype=dtype)
-            gp = train_gp(train_x=X_torch,
-                          train_y=y_torch,
-                          use_ard=self.use_ard,
-                          num_steps=n_training_steps,
-                          hypers=hypers)
-
-            # Save state dict
-            hypers = gp.state_dict()
-
-        # Create the trust region boundaries
-        x_center = X[fX.argmin().item(), :][None, :]
-        weights = gp.covar_module.base_kernel.lengthscale.cpu().detach().numpy(
-        ).ravel()
-        weights = weights / weights.mean(
-        )  # This will make the next line more stable
-        weights = weights / np.prod(np.power(
-            weights, 1.0 / len(weights)))  # We now have weights.prod() = 1
-        lb = np.clip(x_center - weights * length / 2.0, 0.0, 1.0)
-        ub = np.clip(x_center + weights * length / 2.0, 0.0, 1.0)
-
-        # Draw a Sobolev sequence in [lb, ub]
-        seed = self.rng.randint(MAXINT)
-        sobol = SobolEngine(self.dense_dimension, scramble=True, seed=seed)
-        pert = sobol.draw(self.n_candidates).cpu().detach().numpy()
-        pert = lb + (ub - lb) * pert
-
-        # Create a perturbation mask
-        prob_perturb = min(20.0 / self.dense_dimension, 1.0)
-        mask = self.rng.rand(self.n_candidates,
-                             self.dense_dimension) <= prob_perturb
-        ind = np.where(np.sum(mask, axis=1) == 0)[0]
-        mask[ind,
-             self.rng.randint(0, self.dense_dimension - 1, size=len(ind))] = 1
-
-        # Create candidate points
-        X_cand = x_center.copy() * np.ones(
-            (self.n_candidates, self.dense_dimension))
-        X_cand[mask] = pert[mask]
-
-        # # Figure out what device we are running on
-        # if len(X_cand) < self.min_cuda:
-        #     device, dtype = torch.device("cpu"), torch.float64
-        # else:
-        #     device, dtype = self.device, self.dtype
-
-        # We may have to move the GP to a new device
-        # gp = gp.to(dtype=dtype, device=device)
-
-        # We use Lanczos for sampling if we have enough data
-        with torch.no_grad(), gpytorch.settings.max_cholesky_size(
-                self.max_cholesky_size):
-            X_cand_torch = torch.tensor(
-                X_cand)  # .to(device=device, dtype=dtype)
-            y_cand = gp.likelihood(gp(X_cand_torch)).sample(
-                torch.Size([batch_size])).t().cpu().detach().numpy()
-
-        # Remove the torch variables
-        del X_torch, y_torch, X_cand_torch, gp
-
-        # De-standardize the sampled values
-        y_cand = mu + sigma * y_cand
-
-        return X_cand, y_cand, hypers
+        if surrogate == 'gp':
+            self.turbo_states = [
+                TuRBO_state(GPR_sklearn(self.space, rng=self.rng),
+                            i,
+                            self.bounds,
+                            self.rng,
+                            self.dim,
+                            n_min_sample=self.n_min_sample,
+                            **kwargs) for i in range(num_tr)
+            ]
+            # self.surrogate_models = [
+            #     GPR_sklearn(self.space, rng=self.rng) for _ in range(num_tr)
+            # ]
+        else:
+            raise ValueError('surrogate {} not in {}'.format(
+                surrogate, ['gp']))
 
     def suggest(self, n_suggestions=1):
-        if not hasattr(self, 'failtol'):
-            self.failtol = np.ceil(
-                np.max([
-                    4.0 / n_suggestions, self.dense_dimension / n_suggestions
-                ]))
+        markers = np.array(self.trials.markers)
 
         for m in range(self.num_tr):
-            if (self._idx == m).sum() < self.n_min_sample:
-                # raise NotImplemented
-                self._idx = np.vstack(
-                    (self._idx, np.full((n_suggestions, 1), m, dtype=int)))
-                return self._random_suggest(n_suggestions, m)
+            if not hasattr(self.turbo_states[m], 'fail_tol'):
+                self.turbo_states[m].fail_tol = np.ceil(
+                    np.max([4.0 / n_suggestions, self.dim / n_suggestions]))
+            if (markers == m).sum() < self.n_min_sample:
+                return self._init_suggest(n_suggestions, m)
 
-        X_cand = np.zeros(
-            (self.num_tr, self.n_candidates, self.dense_dimension))
-        y_cand = np.inf * np.ones(
-            (self.num_tr, self.n_candidates, n_suggestions))
+        X_cand = np.empty((self.num_tr, self.n_candidates, self.dim))
+        y_cand = np.full(
+            (self.num_tr, self.n_candidates, n_suggestions), np.inf)
         for m in range(self.num_tr):
-            indicator = np.where(self._idx == m)[0]
-            X = np.asarray(self.trials.get_dense_array())[indicator]
-            Y = np.asarray(self.trials._his_observe_value)[indicator]
-            X_cand[m, :, :], y_cand[
-                m, :, :], self.hypers[m] = self._create_candidates(
-                    X, Y, self.length[m], self.n_training_steps,
-                    self.hypers[m], n_suggestions)
-        X_next = np.zeros((n_suggestions, self.dense_dimension))
-        idx_next = np.zeros((n_suggestions, 1), dtype=int)
+            cand = self.turbo_states[m].create_candidates(self.n_candidates)
+            cand_y = self.turbo_states[m].sample_y(cand, size=n_suggestions)
+
+            X_cand[m, :, :], y_cand[m, :, :] = cand, cand_y
+
+        X_next = np.empty((n_suggestions, self.dim))
         trial_list = []
         for b in range(n_suggestions):
-            i, j = np.unravel_index(np.argmin(y_cand[:, :, b]),
-                                    (self.num_tr, self.n_candidates))
-            idx_next[b, 0] = i
-            X_next[b, :] = deepcopy(X_cand[i, j, :])
+            marker, j = np.unravel_index(np.argmin(y_cand[:, :, b]),
+                                         (self.num_tr, self.n_candidates))
+            X_next[b, :] = (X_cand[marker, j, :])
+            # X_next[b, :] = deepcopy(X_cand[marker, j, :])
             assert np.isfinite(
-                y_cand[i, j,
+                y_cand[marker, j,
                        b])  # Just to make sure we never select nan or inf
             # Make sure we never pick this point again
-            y_cand[i, j, :] = np.inf
-            config = DenseConfiguration.from_dense_array(
-                self.space, X_next[b, :])
+            y_cand[marker, j, :] = np.inf
+            array = self.turbo_states[0].from_unit_cube(X_next[b, :])
+            config = DenseConfiguration.from_sparse_array(self.space, array)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      dense_array=X_next[b, :],
-                      origin='TuRBO-region-{}'.format(i),
-                      region=i))
-        self._idx = np.vstack((self._idx, idx_next))
+                      sparse_array=array,
+                      origin='TuRBO-region-{}'.format(marker),
+                    #   region=marker,
+                      marker=marker))
         return trial_list
 
     def observe(self, trial_list):
+        update_markers = defaultdict(list)
         for trial in trial_list:
             self.trials.add_a_trial(trial)
-        # Update trust regions
-        f_min = min([np.inf] +
-                    self.trials._his_observe_value[:-len(trial_list)])
-        for i in range(self.num_tr):
-            # indicator = [
-            #     trial.region == i for trial in self.trials.traj_history
-            # ]
-            if (self._idx == i).sum() <= self.n_min_sample:
-                continue  # don't update
-            new_trial_idxs = np.where(self._idx[-len(trial_list):] == i)[0]
-            if len(new_trial_idxs) > 0:
-                self.hypers[i] = {}  # Remove model hypers
-                next_fX_i = []
-                for new_trial_idx in new_trial_idxs:
-                    next_fX_i.append(trial_list[new_trial_idx].observe_value)
+            update_markers[trial.marker].append((trial.observe_value, trial))
+        for marker in update_markers:
+            best_trial = sorted(update_markers[marker],
+                                key=lambda x: x[0])[0][1]
+            self.turbo_states[marker].update(best_trial, self.trials,
+                                             len(trial_list))
 
-                if (min(next_fX_i) < f_min - 1e-3 * math.fabs(f_min)):
-                    n_evals, fbest = self.trials.trials_num, f_min
-                    logger.info(f"{n_evals}) New best @ TR-{i}: {fbest:.4}")
-                self._adjust_length(
-                    next_fX_i, i,
-                    min([
-                        trial.observe_value for trial in
-                        self.trials.traj_history[:-len(trial_list)]
-                        if trial.region == i
-                    ]))
+        # markers = self.trials.markers
+        # for m in update_markers:
+        # if (markers == m).sum() <= self.n_min_sample:
+        #     continue  # don't train
 
-        # Check if any TR needs to be restarted
-        f = np.asarray(self.trials._his_observe_value)
-        for i in range(self.num_tr):
-            if self.length[
-                    i] < self.length_min:  # Restart trust region if converged
-                # indicator = [
-                #     trial.region == i for trial in self.trials.traj_history
-                # ]
-                idx_i = self._idx[:, 0] == i
-
-                n_evals, fbest = self.trials.trials_num, f[idx_i].min()
-                logger.info(f"{n_evals}) TR-{i} converged to: : {fbest:.4}")
-
-                # Reset length and counters, remove old data from trust region
-                self.length[i] = self.length_init
-                self.succcount[i] = 0
-                self.failcount[i] = 0
-                self._idx[idx_i, 0] = -1  # Remove points from trust region
-                self.hypers[i] = {}  # Remove model hypers
-
-    def _adjust_length(self, fX_next, i, f_min):
-        assert i >= 0 and i <= self.num_tr - 1
-
-        # fX_min = self.fX[self._idx[:len(self.fX),
-        #    0] == i].min()  # Target value
-        if min(fX_next) < f_min - 1e-3 * math.fabs(f_min):
-            self.succcount[i] += 1
-            self.failcount[i] = 0
-        else:
-            self.succcount[i] = 0
-            self.failcount[i] += len(
-                fX_next)  # NOTE: Add size of the batch for this TR
-
-        if self.succcount[i] == self.succtol:  # Expand trust region
-            self.length[i] = min([2.0 * self.length[i], self.length_max])
-            self.succcount[i] = 0
-        elif self.failcount[
-                i] >= self.failtol:  # Shrink trust region (we may have exceeded the failtol)
-            self.length[i] /= 2.0
-            self.failcount[i] = 0
-
-    def _random_suggest(self, n_suggestions=1, region=0):
+    def _init_suggest(self, n_suggestions=1, region=0):
         trial_list = []
         for n in range(n_suggestions):
+            if not self.initial_design_configs[region]:
+                self.initial_design_configs[
+                    region] = self.initial_design.select_configurations()
             config = self.initial_design_configs[region].pop(0)
             trial_list.append(
-                Trial(configuration=config,
-                      config_dict=config.get_dictionary(),
-                      dense_array=config.get_dense_array(),
-                      origion='turbo-design',
-                      region=region), )
+                Trial(
+                    configuration=config,
+                    config_dict=config.get_dictionary(),
+                    sparse_array=config.get_sparse_array(),
+                    #   dense_array=config.get_dense_array(),
+                    origion='turbo-design',
+                    # region=region,
+                    marker=region))
         return trial_list
 
 

@@ -11,7 +11,7 @@ class DefaultConfiguration(InitialDesign):
 
     """Initial design that evaluates default configuration"""
 
-    def _select_configurations(self) -> List[DenseConfiguration]:
+    def _select_configurations(self, num=None) -> List[DenseConfiguration]:
         """Selects the default configuration.
 
         Returns
@@ -22,4 +22,5 @@ class DefaultConfiguration(InitialDesign):
 
         config = self.cs.get_default_configuration()
         config.origin = 'Default'
+        self.init_budget = 1
         return [config]

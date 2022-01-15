@@ -90,15 +90,15 @@ if __name__ == "__main__":
     # tb.field_names = []
     for i, results in enumerate(results_all):
         dict_result = {
-            "mean": results.mean(axis=0),
-            "std": results.std(axis=0),
-            "best": results.min(axis=0)
+            "mean": np.round(results.mean(axis=0), 3),
+            "std": np.round(results.std(axis=0), 3),
+            "best": np.round(results.min(axis=0), 3)
         }
         tb.add_row([
-            optimizers[i][0], '{:.3f}+/-{:.3f}'.format(dict_result["mean"][0],
+            'skopt({})'.format(optimizers[i][0]), '{:.3f}+/-{:.3f}'.format(dict_result["mean"][0],
                                                    dict_result['std'][0]),
             dict_result["best"][0], dict_result["mean"][1],
-            dict_result["std"][1], dict_result["best"][1]
+            dict_result["std"][1], int(dict_result["best"][1])
         ])
 
     print(tb)

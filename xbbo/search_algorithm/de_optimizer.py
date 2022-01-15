@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 # from xbbo.configspace.feature_space import Uniform2Gaussian
@@ -12,7 +13,7 @@ class DE(AbstractOptimizer):
     def __init__(self,
                  space:DenseConfigurationSpace,
                  seed:int = 42,
-                 llambda=10, **kwargs):
+                 llambda=None, **kwargs):
         AbstractOptimizer.__init__(self, space, seed, **kwargs)
 
         # Uniform2Gaussian.__init__(self,)
@@ -21,7 +22,7 @@ class DE(AbstractOptimizer):
         self.bounds = self.space.get_bounds()
 
         # self.dense_dimension = len(configs)
-        self.llambda = llambda
+        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension))
         self.population = [None] * self.llambda
         self.population_fitness = [None] * self.llambda
         # self.candidates = [None] * self.llambda

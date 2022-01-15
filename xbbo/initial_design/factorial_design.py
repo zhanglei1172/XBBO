@@ -22,7 +22,7 @@ class FactorialInitialDesign(InitialDesign):
         Don't pass configs to the constructor;
         otherwise factorial design is overwritten
     """
-    def _select_configurations(self) -> DenseConfiguration:
+    def _select_configurations(self, num=None) -> DenseConfiguration:
         """Selects a single configuration to run
 
         Returns
@@ -30,7 +30,6 @@ class FactorialInitialDesign(InitialDesign):
         config: Configuration
             initial incumbent configuration
         """
-
         params = self.cs.get_hyperparameters()
 
         values = []
@@ -67,7 +66,7 @@ class FactorialInitialDesign(InitialDesign):
             conf.origin = "Factorial Design"
             configs.append(conf)
             self.logger.debug(conf)
-
-        self.logger.debug("Size of factorial design: %d" % (len(configs)))
-
+        size = len(configs)
+        self.logger.debug("Size of factorial design: %d" % (size))
+        self.init_budget = size
         return configs
