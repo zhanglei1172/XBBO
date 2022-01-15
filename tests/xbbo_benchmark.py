@@ -11,26 +11,47 @@ from xbbo.search_algorithm import alg_register
 
 
 def run_one_exp(opt_name, max_call, seed):
+    option_kwargs = {
+        'turbo-1': {
+            'name': 'turbo',
+            'kwargs': {
+                'num_tr': 1
+            }
+        },
+        'turbo-2': {
+            'name': 'turbo',
+            'kwargs': {
+                'num_tr': 2
+            }
+        }
+    }
     # Build Configuration Space which defines all parameters and their ranges
-    cs = DenseConfigurationSpace(seed)
+    cs = DenseConfigurationSpace(seed=seed)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
     x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
     cs.add_hyperparameters([x1, x2])
-
-    hpopt = alg_register[opt_name](
-        space=cs,
-        seed=seed,
-        total_limit=max_call,
-    )
+    if opt_name in option_kwargs:
+        dic = option_kwargs[opt_name]
+        hpopt = alg_register[dic['name']](space=cs,
+                                          seed=seed,
+                                          total_limit=max_call,
+                                          **dic['kwargs'])
+    else:
+        hpopt = alg_register[opt_name](
+            space=cs,
+            seed=seed,
+            total_limit=max_call,
+        )
 
     # ---- Begin BO-loop ----
     for i in range(max_call):
         # suggest
         trial_list = hpopt.suggest()
         # evaluate
-        value = branin(trial_list[0].config_dict)
-        # observe
-        trial_list[0].add_observe_value(observe_value=value)
+        for trial in trial_list:
+            value = branin(trial.config_dict)
+            # observe
+            trial.add_observe_value(observe_value=value)
         hpopt.observe(trial_list=trial_list)
 
         print(value)
@@ -39,7 +60,12 @@ def run_one_exp(opt_name, max_call, seed):
     return losses  # np.minimum.accumulate(hpopt.trials.get_history()[0])
 
 
-def benchmark(test_algs, func_to_call, max_call=200, repeat_num=10, father_seed=42, desc=''):
+def benchmark(test_algs,
+              func_to_call,
+              max_call=200,
+              repeat_num=10,
+              father_seed=42,
+              desc=''):
     import prettytable as pt
 
     results_all = []
@@ -49,7 +75,7 @@ def benchmark(test_algs, func_to_call, max_call=200, repeat_num=10, father_seed=
         for _ in range(repeat_num):
             seed = rng.randint(1e5)
             losses = func_to_call(test_alg, max_call, seed)
-            res = [losses.min(), losses.argmin()+1]
+            res = [losses.min(), losses.argmin() + 1]
 
             results_.append(res)
         results_all.append(results_)
@@ -69,7 +95,7 @@ def benchmark(test_algs, func_to_call, max_call=200, repeat_num=10, father_seed=
             "best": np.round(results.min(axis=0), 3)
         }
         tb.add_row([
-            '{}({})'.format(desc,test_algs[i]),
+            '{}({})'.format(desc, test_algs[i]),
             '{:.3f}+/-{:.3f}'.format(dict_result["mean"][0],
                                      dict_result['std'][0]),
             dict_result["best"][0], dict_result["mean"][1],
@@ -82,7 +108,11 @@ def benchmark(test_algs, func_to_call, max_call=200, repeat_num=10, father_seed=
 
 
 if __name__ == "__main__":
-    test_algs = [ 'de', 'rs',
-        'rea', 'turbo'
+    # bore currently has some bugs
+    test_algs = [
+        # 'anneal', 'basic-bo', 'bore', 'cem', 'cma-es', 'de', 'rs', 'rea',
+        # 'turbo-1',
+        # 'turbo-2'
+        'rs'
     ]  # 'nsga2','bo-transfer','pbt'
     benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')

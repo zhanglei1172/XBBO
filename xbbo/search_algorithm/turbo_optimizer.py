@@ -2,6 +2,7 @@ from collections import defaultdict
 import logging
 import math
 from copy import deepcopy
+import warnings
 from scipy.stats.qmc import Sobol
 
 import numpy as np
@@ -63,6 +64,9 @@ class TuRBO_state():
         self.length_max = length_max
         self.length_init = length_init
         self.n_min_sample = n_min_sample
+        self.sobol_gen = Sobol(d=self.dim,
+                          scramble=True,
+                          seed=self.rng.randint(MAXINT))
         self._restart()
 
     def _restart(self):
@@ -81,8 +85,11 @@ class TuRBO_state():
     def sample_y(self, X, size=1):
         mean, var = self.surrogate_model.predict_marginalized_over_instances(
             X, 'full_cov')
-        return self.rng.multivariate_normal(mean.ravel(), var,
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sample = self.rng.multivariate_normal(mean.ravel(), var,
                                             size=size).T  # (sample, N)
+        return sample
 
     def update(self, trial: Trial, trials: Trials, obs_num: int):
         markers = np.array(trials.markers)
@@ -124,7 +131,8 @@ class TuRBO_state():
             # Reset length and counters, remove old data from trust region
             self._restart()
             # Remove points from trust region
-            trials.markers[idx] = -1
+            markers[idx] = -1
+            trials.markers = list(markers)
 
         X = self.to_unit_cube((trials.get_array())[idx])
         Y = np.array(trials._his_observe_value)[idx]
@@ -155,10 +163,8 @@ class TuRBO_state():
         ub = np.clip(x_center + weights * length / 2.0, 0.0, 1.0)
 
         # Draw a Sobolev sequence in [lb, ub]
-        sobol_gen = Sobol(d=self.dim,
-                          scramble=True,
-                          seed=self.rng.randint(MAXINT))
-        pert = sobol_gen.random(n_candidates)
+        
+        pert = self.sobol_gen.random(n_candidates)
         pert = lb + (ub - lb) * pert
 
         # Create a perturbation mask
@@ -216,7 +222,7 @@ class TuRBO(AbstractOptimizer):
         self.n_training_steps = kwargs.get("n_training_steps", 50)
         self.max_cholesky_size = kwargs.get("max_cholesky_size", 2000)
         self.dim = self.sparse_dimension
-        self.n_candidates = min(100 * self.dim, 5000)
+        self.n_candidates = 2**int(np.log2(min(100 * self.dim, 5000)))
         self.use_ard = kwargs.get("use_ard", True)
         self.num_tr = num_tr
         self.candidates = []

@@ -1,6 +1,6 @@
 import logging
 
-from tests.xbbo_synthetic import benchmark
+from tests.xbbo_benchmark import benchmark
 
 logging.basicConfig(level=logging.INFO)
 
@@ -14,7 +14,7 @@ from xbbo.search_algorithm import alg_register
 
 def run_one_exp(opt_name, max_call, seed):
     # Build Configuration Space which defines all parameters and their ranges
-    cs = DenseConfigurationSpace(seed)
+    cs = DenseConfigurationSpace(seed=seed)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
     x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
     cs.add_hyperparameters([x1, x2])

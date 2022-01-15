@@ -58,10 +58,10 @@ class Trials:
         self._his_configs_dict.append(trial.config_dict)
         self._his_observe_value.append(trial.observe_value)
         self.markers.append(trial.marker)
-        if self.use_dense:
-            assert trial.dense_array is not None
-        else:
-            assert trial.sparse_array is not None
+        # if self.use_dense:
+        #     assert trial.dense_array is not None
+        # else:
+        #     assert trial.sparse_array is not None
         if trial.dense_array is not None:
             self._his_dense_array = np.vstack(
                 [self._his_dense_array, trial.dense_array])
