@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 
 class Record:
 
-    def __init__(self, cfg):
-        self.cfg = cfg
+    def __init__(self, exp_dir):
+        self.exp_dir = exp_dir
         # self.n_calls = cfg.OPTM.max_call
         self.features = [] # n_call * n_suggest * dim # 单独存储
         self.func_evals = [] # n_call * n_suggest * dim
@@ -59,11 +59,11 @@ class Record:
                    for x_prev in self.features)
 
     def save_to_file(self, r):
-        if not os.path.exists(self.cfg.GENERAL.exp_dir):
+        if not os.path.exists(self.exp_dir):
             assert False
             # os.mkdir(cfg.GENARAL.exp_dir)
-        if not os.path.exists(self.cfg.GENERAL.exp_dir + '/res'):
-            os.mkdir(self.cfg.GENERAL.exp_dir + '/res/')
+        if not os.path.exists(self.exp_dir + '/res'):
+            os.mkdir(self.exp_dir + '/res/')
         self.func_evals = np.asarray(self.func_evals)
         # self.losses = np.asarray(self.losses)
         self.suggest_dict = np.asarray(self.suggest_dict)
@@ -100,12 +100,12 @@ class Record:
 
         # self.cum_min_df = pd.DataFrame(self.cum_min)
         # self.cum_min_df.index.set_names(['call'], inplace=True)
-        self.df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/res_{r}.csv')
-        self.time_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/time_{r}.csv')
-        # self.cum_min_df.to_csv(self.cfg.GENERAL.exp_dir + f'/res/cum_min_{r}.csv')
+        self.df.to_csv(self.exp_dir + f'/res/res_{r}.csv')
+        self.time_df.to_csv(self.exp_dir + f'/res/time_{r}.csv')
+        # self.cum_min_df.to_csv(self.exp_dir + f'/res/cum_min_{r}.csv')
 
         self.features = np.asarray(self.features)
-        np.savez(self.cfg.GENERAL.exp_dir + f'/res/array_{r}.npz', features=self.features)
+        np.savez(self.exp_dir + f'/res/array_{r}.npz', features=self.features)
 
         # if cfg.TEST_PROBLEM.metrics:
         #     reform = {

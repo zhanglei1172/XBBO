@@ -1,10 +1,9 @@
 import numpy as np
-import json
 from time import time
 import tqdm
 
-from xbbo.search_space import build_test_problem
-from xbbo.search_algorithm import get_opt_class
+from xbbo.search_space import problem_register
+from xbbo.search_algorithm import alg_register
 from xbbo.configspace import build_space
 from xbbo.utils.constants import MAXINT
 from xbbo.utils.record import Record
@@ -16,13 +15,13 @@ class BBO:
         # setup TestProblem
         self.cfg = cfg
         self.rng = np.random.RandomState(seed)
-        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg, seed=self.rng.randint(MAXINT))
+        self.function_instance = problem_register[cfg.TEST_PROBLEM.name](seed=self.rng.randint(MAXINT), **cfg.TEST_PROBLEM.kwargs)
 
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
         self.config_spaces = build_space(self.api_config,seed=self.rng.randint(MAXINT))
 
         # Setup optimizer
-        opt_class = get_opt_class(cfg.OPTM.name)
+        opt_class = alg_register[cfg.OPTM.name]
         self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
 
 
@@ -39,7 +38,7 @@ class BBO:
         # self.function_evals = np.zeros((n_calls, n_suggestions, self.n_obj))
         # self.suggest_log = [None] * n_calls
         self.n_calls = cfg.OPTM.max_call
-        self.record = Record(self.cfg)
+        self.record = Record(self.cfg.GENERAL.exp_dir)
 
 
     def evaluate(self, param):
@@ -106,10 +105,11 @@ class BBO:
                          'observe_time_per_suggest': observe_time,
                          'eval_time_per_suggest': sum(trial.time for trial in trial_list)
             }
-            self.record.append([trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
-            print(self.optimizer_instance.trials.best_observe_value)
+            self.record.append([trial.dense_array if trial.sparse_array is None else trial.sparse_array for trial in trial_list], function_evals, timing=timing, suggest_point=[trial.config_dict for trial in trial_list])
+            # print(self.optimizer_instance.trials.best_observe_value)
+            print(function_evals)
 
-
+        print(self.optimizer_instance.trials.best_observe_value)
 
 
 class BBO_REBAR(BBO):

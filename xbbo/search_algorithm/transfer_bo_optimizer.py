@@ -3,7 +3,7 @@ import numpy as np
 from xbbo.acquisition_function.transfer.mogp import MoGP_AcqFunc
 from xbbo.acquisition_function.transfer.taf import TAF_AcqFunc
 from xbbo.acquisition_function.ei import EI_AcqFunc
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from . import alg_register

@@ -116,7 +116,7 @@ class RandomForestWithInstances(BaseRF):
         self.logger = logging.getLogger(self.__module__ + "." +
                                         self.__class__.__name__)
 
-    def _train(self, X: np.ndarray, y: np.ndarray):
+    def _train(self, X: np.ndarray, y: np.ndarray, **kwargs):
         """Trains the random forest on X and y.
 
         Parameters
@@ -173,7 +173,7 @@ class RandomForestWithInstances(BaseRF):
             data.add_data_point(row_X, row_y)
         return data
 
-    def _predict(self, X: np.ndarray) -> typing.Tuple[np.ndarray, np.ndarray]:
+    def _predict(self, X: np.ndarray,**kwargs) -> typing.Tuple[np.ndarray, np.ndarray]:
         """Predict means and variances for given X.
 
         Parameters

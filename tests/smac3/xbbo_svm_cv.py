@@ -134,7 +134,7 @@ def run_one_exp(seed):
         trial_list[0].add_observe_value(observe_value=value)
         hpopt.observe(trial_list=trial_list)
 
-        print(value)
+        # print(value)
 
     return np.minimum.accumulate(hpopt.trials.get_history()[0])
 

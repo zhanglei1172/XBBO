@@ -8,17 +8,22 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: transfer_baseline_optimizer_
+  name: anneal
   n_suggestions: 1
-  max_call: 50
+  max_call: 100
+  # kwargs:
+  #   surrogate: gp
+  #   acq_func: ei
+  #   acq_opt: rs_ls
+  #   initial_design: sobol
+  #   predict_x_best: true
 
 
 TEST_PROBLEM:
-  SEARCH_SPACE:
-    hp:
-      dim: 2
+  name: toy-problems
   kwargs:
-    func_name: branin
+    func_name: rosenbrock
+    dim: 2
     noise_std: 0.0
 #  name: 'offline_hp' # filename
 #  func_evals:

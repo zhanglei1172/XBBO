@@ -24,4 +24,4 @@
 - 采集函数优化方式：random search + local search
 - 初始设计：Sobol design
 
-![rosenbrock smac3](../../out/comp_with_smac3_2.png)
+![SVM smac3](../../out/comp_with_smac3_2.png)

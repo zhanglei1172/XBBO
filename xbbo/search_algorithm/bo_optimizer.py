@@ -4,7 +4,7 @@ import numpy as np
 
 from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
 # from xbbo.core import trials
@@ -21,7 +21,7 @@ from xbbo.utils.util import get_types
 
 logger = logging.getLogger(__name__)
 
-@alg_register.register('baisc-bo')
+@alg_register.register('basic-bo')
 class BO(AbstractOptimizer):
     def __init__(
             self,

@@ -20,7 +20,7 @@ TEST_PROBLEM:
   name: 'pbt_mnist'
   SEARCH_SPACE:
     hp:
-      cat_dim: 2
+      dim: 2
   kwargs:
     data_path: '/home/datasets/mnist/'
     device: 0

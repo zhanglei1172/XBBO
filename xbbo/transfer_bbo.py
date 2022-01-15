@@ -3,8 +3,8 @@ import json
 from time import time
 import tqdm
 
-from xbbo.search_space import build_test_problem
-from xbbo.search_algorithm import get_opt_class
+from xbbo.search_space import problem_register
+from xbbo.search_algorithm import alg_register
 from xbbo.configspace import build_space
 from xbbo.utils.record import Record
 
@@ -14,14 +14,14 @@ class Transfer_BBO:
     def __init__(self, cfg):
         # setup TestProblem
         self.cfg = cfg
-        self.function_instance = build_test_problem(cfg.TEST_PROBLEM.name, cfg)
+        self.function_instance = problem_register[cfg.TEST_PROBLEM.name](cfg)
 
         self.api_config = self.function_instance.get_api_config()  # 优化的hp
         self.config_spaces = build_space(self.api_config)
 
 
         # Setup optimizer
-        opt_class = get_opt_class(cfg.OPTM.name)
+        opt_class = alg_register[cfg.OPTM.name]
         self.optimizer_instance = opt_class(self.config_spaces, **dict(cfg.OPTM.kwargs))
 
         old_D_x_params, old_D_y, new_D_x_param = self.function_instance.array_to_config(ret_param=True)

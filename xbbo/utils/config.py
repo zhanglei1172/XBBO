@@ -21,8 +21,8 @@ _C.BBO.DATASETS.path = ''
 _C.BBO.DATASETS.batch_size = 128
 
 _C.OPTM = CfgNode()
-_C.OPTM.name = 'random_optimizer' # filename
-_C.OPTM.n_suggestions = 2
+_C.OPTM.name = 'rs' 
+_C.OPTM.n_suggestions = 1
 _C.OPTM.n_obj = 1 
 _C.OPTM.max_call = 30
 _C.OPTM.pop_size = 0 # for PBT
@@ -35,17 +35,17 @@ _C.OPTM.kwargs = CfgNode(new_allowed=True)
 _C.NAS = CfgNode() # TODO
 
 _C.TEST_PROBLEM = CfgNode()
-_C.TEST_PROBLEM.name = 'toy_function' # filename
+_C.TEST_PROBLEM.name = 'toy-problems' # filename
 _C.TEST_PROBLEM.kwargs = CfgNode(new_allowed=True)
-_C.TEST_PROBLEM.func_evals = ('raw', 'noise') # 放非优化器优化目标的结果、metrics
-_C.TEST_PROBLEM.losses = ('val', 'test') # 必须前n_obj个为opt的优化目标
+# _C.TEST_PROBLEM.func_evals = ('raw', 'noise') # 放非优化器优化目标的结果、metrics
+# _C.TEST_PROBLEM.losses = ('val', 'test') # 必须前n_obj个为opt的优化目标
 # _C.TEST_PROBLEM.metrics = ()
 # _C.TEST_PROBLEM.kwargs.func_name = 'rosenbrock'
 
-_C.TEST_PROBLEM.SEARCH_SPACE = CfgNode()
-_C.TEST_PROBLEM.SEARCH_SPACE.name = '' # if empty, TestProblem must provide `_load_api_config` method
-_C.TEST_PROBLEM.SEARCH_SPACE.hp = CfgNode(new_allowed=True)
-_C.TEST_PROBLEM.SEARCH_SPACE.hp.cat_dim = 30
+# _C.TEST_PROBLEM.kwargs = CfgNode()
+_C.TEST_PROBLEM.kwargs.func_name = 'rosenbrock' # if empty, TestProblem must provide `_load_api_config` method
+# _C.TEST_PROBLEM.kwargs.hp = CfgNode(new_allowed=True)
+_C.TEST_PROBLEM.kwargs.dim = 30
 
 # _C.SPACE = CfgNode()
 # _C.SPACE.NAME = 'darts'

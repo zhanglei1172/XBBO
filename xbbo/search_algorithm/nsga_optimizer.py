@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple, cast
 
 import numpy as np
 
-from xbbo.core import AbstractOptimizer
+from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
 from . import alg_register
