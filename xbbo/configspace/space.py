@@ -135,12 +135,12 @@ class DenseConfiguration(CS.Configuration):
         return array_sparse  #[cs.rerangeIDX]
 
     @classmethod
-    def from_sparse_array(cls, configuration_space, array_sparse):
+    def from_sparse_array(cls, configuration_space, array_sparse,**kwargs):
         return cls(configuration_space=configuration_space,
                    vector=array_sparse)
 
     def get_sparse_array(self, ):
-        return self.get_array()
+        return super().get_array()
 
     def __init__(self, configuration_space: DenseConfigurationSpace, *args,
                  **kwargs):
@@ -163,7 +163,7 @@ class DenseConfiguration(CS.Configuration):
     def from_dense_array(cls,
                          configuration_space,
                          array_dense,
-                         dtype="float64"):
+                         dtype="float64",**kwargs):
         '''
         扩展的opt给出一个suggest vector（dense array）
         需要转换成sparse array(*) => dict => unwarp dict
@@ -218,6 +218,29 @@ class DenseConfiguration(CS.Configuration):
             array_dense[cs.cat_trg + cat_trg_offset] = 1 if choice else choice
 
         return array_dense
+    
+    @classmethod
+    def from_array(cls,
+                         configuration_space,
+                         array,use_dense=True,**kwargs):
+        if use_dense:
+            return cls.from_dense_array(configuration_space, array,**kwargs)
+        else:
+            return cls.from_sparse_array(configuration_space, array, **kwargs)
+    
+    @staticmethod
+    def array_to_dict(cs, array, use_dense=True):
+        if use_dense:
+            return DenseConfiguration.dense_array_to_dict(cs, array)
+        else:
+            return DenseConfiguration.spaese_array_to_dict(cs, array)
+
+    @staticmethod
+    def dict_to_array(cs, dict, use_dense=True):
+        if use_dense:
+            return DenseConfiguration.dict_to_dense_array(cs, dict)
+        else:
+            return DenseConfiguration.dict_to_sparse_array(cs, dict)
 
 
 def convert_denseConfigurations_to_array(

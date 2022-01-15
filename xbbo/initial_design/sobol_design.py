@@ -20,7 +20,7 @@ class SobolDesign(InitialDesign):
         Don't pass configs to the constructor;
         otherwise factorial design is overwritten
     """
-    def _select_configurations(self) -> typing.List[DenseConfiguration]:
+    def _select_configurations(self, num=None) -> typing.List[DenseConfiguration]:
         """Selects a single configuration to run
 
         Returns
@@ -28,11 +28,11 @@ class SobolDesign(InitialDesign):
         config: Configuration
             initial incumbent configuration
         """
-
+        design_num = num if num else self.init_budget
         sobol_gen = Sobol(d=self.dim,
                           scramble=True,
                           seed=self.rng.randint(low=0, high=10000000))
-        sobol = sobol_gen.random(self.init_budget)
+        sobol = sobol_gen.random(design_num)
         return self._transform_continuous_designs(design=sobol,
                                                   origin='Sobol',
                                                   cs=self.cs)

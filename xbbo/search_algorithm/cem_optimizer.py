@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 from xbbo.search_algorithm.base import AbstractOptimizer
@@ -12,7 +13,7 @@ class CEM(AbstractOptimizer):
     def __init__(self,
                  space: DenseConfigurationSpace,
                  seed: int = 42,
-                 llambda=10,
+                 llambda=None,
                  elite_ratio=0.3,
                  sample_method: str = 'Gaussian',
                  **kwargs):
@@ -32,7 +33,7 @@ class CEM(AbstractOptimizer):
 
         self.buffer_x = []
         self.buffer_y = []
-        self.llambda = llambda
+        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension))
         self.elite_ratio = elite_ratio
         self.trials = Trials(sparse_dim=self.sparse_dimension,
                              dense_dim=self.dense_dimension)
@@ -61,7 +62,7 @@ class CEM(AbstractOptimizer):
 
     def observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
             self.buffer_x.append(trial.dense_array)
             self.buffer_y.append(trial.observe_value)
         if len(self.buffer_x) < self.llambda:

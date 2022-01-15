@@ -71,8 +71,11 @@ class BORE(AbstractOptimizer):
                 self.initial_design_configs[dataset_size:dataset_size +
                                             n_suggestions]
             ]
-
-        config_random = self.space.sample_configuration(n_suggestions)
+        config_random = []
+        while len(config_random) < n_suggestions:
+            config = self.space.sample_configuration(1)[0]
+            if not self.trials.is_contain(config):
+                config_random.append(config)
 
         # epsilon-greedy exploration
         if self.random_rate is not None and \
@@ -124,6 +127,8 @@ class BORE(AbstractOptimizer):
                           origin='Random') for config in config_random
                 ]
             config = DenseConfiguration.from_dense_array(self.space, opt.x)
+            if self.trials.is_contain(config):
+                config = config_random[n_]
             loc.append(
                 Trial(configuration=config,
                       config_dict=config.get_dictionary(),

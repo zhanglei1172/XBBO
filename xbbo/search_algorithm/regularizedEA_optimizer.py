@@ -1,3 +1,4 @@
+import math
 from typing import Optional, List, Tuple, cast
 
 import numpy as np
@@ -17,7 +18,7 @@ class RegularizedEA(AbstractOptimizer):
     def __init__(self,
                  space: DenseConfigurationSpace,
                  seed: int = 42,
-                 llambda=10,
+                 llambda=None,
                  **kwargs):
         AbstractOptimizer.__init__(self, space, seed, **kwargs)
         # FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
@@ -28,7 +29,7 @@ class RegularizedEA(AbstractOptimizer):
         self.bounds = self.space.get_bounds()
 
         self.num_of_tour_particips = kwargs.get('n_part',2)
-        self.llambda = llambda # 4 + math.floor(3 * math.log(n_dim)) # (eq. 48)
+        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension)) # (eq. 48)
         self.population = self.create_initial_population()
         self.population_y = None
 

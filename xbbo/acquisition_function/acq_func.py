@@ -53,31 +53,6 @@ class EI_AcqFunc(AbstractAcquisitionFunction):
         self.par = 0.0
         self.rng = rng
         super().__init__(surrogate_model)
-    
-    # def update(self, surrogate, y_best):
-    #     self.surrogate = surrogate
-    #     self.y_best = y_best
-
-    # def __call__(self, candidates): # minimize
-    #     mu, var = self.surrogate_model.predict(candidates)
-    #     sigma = np.sqrt(var)
-    #     z = (self.y_best - mu - self.eta) / sigma
-    #     ei = (self.y_best - mu -
-    #           self.eta) * stats.norm.cdf(z) + sigma * stats.norm.pdf(z)
-    #     return ei
-
-    # def argmax(self, y_best, surrogate, candidates):
-    #     best_ei = -1
-    #     best_candidate = []
-    #     for candidate in candidates:
-    #         y_hat = surrogate.predict(candidate)
-    #         ei = self._getEI(y_hat[0], y_hat[1], y_best)
-    #         if ei > best_ei:
-    #             best_ei = ei
-    #             best_candidate = [candidate]
-    #         elif ei == best_ei:
-    #             best_candidate.append(candidate)
-    #     return np.random.choice(best_candidate)
 
     def argmax(self, candidates):
         print('depreciate!')
@@ -105,7 +80,7 @@ class EI_AcqFunc(AbstractAcquisitionFunction):
             Expected Improvement of X
         """
         if len(X.shape) == 1:
-            X = X[:, np.newaetas]
+            X = X[:, np.newaxis]
 
         m, v = self.surrogate_model.predict_marginalized_over_instances(X)
         s = np.sqrt(v)
@@ -136,3 +111,31 @@ class EI_AcqFunc(AbstractAcquisitionFunction):
                 "sample.")
 
         return f
+
+# class MC_AcqFunc(AbstractAcquisitionFunction):
+#     def __init__(self, surrogate_model, rng):
+#         self.sample_num = 10
+#         self.rng = rng
+#         super().__init__(surrogate_model)
+
+#     def _compute(self, X: np.ndarray) -> np.ndarray:
+#         """Computes the EI value and its derivatives.
+
+#         Parameters
+#         ----------
+#         X: np.ndarray(N, D), The input points where the acquisition function
+#             should be evaluated. The dimensionality of X is (N, D), with N as
+#             the number of points to evaluate at and D is the number of
+#             dimensions of one X.
+
+#         Returns
+#         -------
+#         np.ndarray(N,1)
+#             Expected Improvement of X
+#         """
+#         if len(X.shape) == 1:
+#             X = X[:, np.newaxis]
+#         m, v = self.surrogate_model.predict_marginalized_over_instances(X, 'full_cov')
+#         f = self.rng.multivariate_normal(m, v, size=self.sample_num)
+
+#         return f # shape: (sample_num, N)
