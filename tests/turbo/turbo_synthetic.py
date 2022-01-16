@@ -62,7 +62,7 @@ def run_one_exp(opt_name, max_call, seed):
 
 if __name__ == "__main__":
     from tests.xbbo_benchmark import benchmark
-    benchmark(alg_map.keys(),
+    benchmark(list(alg_map.keys()),
               run_one_exp,
               200,
               10,
