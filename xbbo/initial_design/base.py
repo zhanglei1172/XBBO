@@ -37,7 +37,7 @@ class InitialDesign:
         self.configs = list(OrderedDict.fromkeys(self.configs))
         return self.configs
 
-    def _select_configurations(self) -> typing.List[DenseConfiguration]:
+    def _select_configurations(self, num=None) -> typing.List[DenseConfiguration]:
         raise NotImplementedError
 
     def _transform_continuous_designs(

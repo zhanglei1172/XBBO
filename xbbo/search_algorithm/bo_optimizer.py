@@ -13,7 +13,7 @@ from . import alg_register
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
-from xbbo.acquisition_function.ei import EI_AcqFunc
+from xbbo.acquisition_function.acq_func import EI_AcqFunc
 from xbbo.surrogate.prf import RandomForestWithInstances
 from xbbo.surrogate.sk_prf import skRandomForestWithInstances
 from xbbo.surrogate.skrf import RandomForestSurrogate
@@ -53,7 +53,7 @@ class BO(AbstractOptimizer):
         )
 
         self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+                             dense_dim=self.dense_dimension, use_dense=False)
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         elif surrogate == 'prf':

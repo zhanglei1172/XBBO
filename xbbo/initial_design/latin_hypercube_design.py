@@ -22,7 +22,7 @@ class LHDesign(InitialDesign):
         otherwise factorial design is overwritten
     """
 
-    def _select_configurations(self) -> typing.List[DenseConfiguration]:
+    def _select_configurations(self, num=None) -> typing.List[DenseConfiguration]:
         """Selects a single configuration to run
 
         Returns
@@ -30,7 +30,7 @@ class LHDesign(InitialDesign):
         config: Configuration
             initial incumbent configuration
         """
-
+        design_num = num if num else self.init_budget
         params = self.cs.get_hyperparameters()
 
         constants = 0
@@ -38,7 +38,7 @@ class LHDesign(InitialDesign):
             if isinstance(p, Constant):
                 constants += 1
 
-        lhd = LatinHypercube(d=len(params) - constants, seed=self.rng.randint(0, 1000000)).random(n=self.init_budget)
+        lhd = LatinHypercube(d=len(params) - constants, seed=self.rng.randint(0, 1000000)).random(n=design_num)
 
         return self._transform_continuous_designs(design=lhd,
                                                   origin='LHD',

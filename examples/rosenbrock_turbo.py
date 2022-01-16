@@ -1,18 +1,18 @@
 import numpy as np
 # import matplotlib.pyplot as plt
-from xbbo.search_space.fast_example_problem import build_space, rosenbrock_2d
+from xbbo.search_space.fast_example_problem import build_branin_space, branin
 
 from xbbo.search_algorithm.turbo_optimizer import TuRBO
 
 
 if __name__ == "__main__":
-    MAX_CALL = 30
+    MAX_CALL = 20
     rng = np.random.RandomState(42)
 
     # define black box function
-    blackbox_func = rosenbrock_2d
+    blackbox_func = branin
     # define search space
-    cs = build_space(rng)
+    cs = build_branin_space(rng)
     # define black box optimizer
     hpopt = TuRBO(space=cs, seed=rng.randint(10000), initial_design='sobol', num_tr=1)
     # Example call of the black-box function
@@ -21,11 +21,12 @@ if __name__ == "__main__":
     # ---- Begin BO-loop ----
     for i in range(MAX_CALL):
         # suggest
-        trial_list = hpopt.suggest()
+        trial_list = hpopt.suggest(10)
         # evaluate 
-        value = blackbox_func(trial_list[0].config_dict)
-        # observe
-        trial_list[0].add_observe_value(observe_value=value)
+        for trial in trial_list:
+            value = blackbox_func(trial.config_dict)
+            # observe
+            trial.add_observe_value(observe_value=value)
         hpopt.observe(trial_list=trial_list)
         
         print(value)

@@ -14,6 +14,7 @@ class Trial:
                  sparse_array=None,
                  time=None,
                  origin: str = '',
+                 marker=None,
                  **kwargs) -> None:
         self.config_dict = config_dict
         self.dense_array = dense_array
@@ -22,6 +23,7 @@ class Trial:
         self.observe_value = observe_value
         self.time = time
         self.origin = origin
+        self.marker = marker
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
@@ -31,7 +33,7 @@ class Trial:
 
 
 class Trials:
-    def __init__(self, sparse_dim, dense_dim):
+    def __init__(self, sparse_dim, dense_dim, use_dense=True):
         self._his_configs_set = set()
         self._his_configs = []
         self._his_dense_array = np.empty((0, dense_dim))
@@ -41,9 +43,11 @@ class Trials:
         self.best_observe_value = np.inf
         self.best_id = None
         self.trials_num = 0
+        self.markers = []
         # self.run_id = 0
         # self.run_history = {}
         self.traj_history = []
+        self.use_dense = use_dense
 
     def add_a_trial(self, trial: Trial, permit_duplicagte=False):
         if not permit_duplicagte:
@@ -53,6 +57,11 @@ class Trials:
         self.traj_history.append(trial)
         self._his_configs_dict.append(trial.config_dict)
         self._his_observe_value.append(trial.observe_value)
+        self.markers.append(trial.marker)
+        # if self.use_dense:
+        #     assert trial.dense_array is not None
+        # else:
+        #     assert trial.sparse_array is not None
         if trial.dense_array is not None:
             self._his_dense_array = np.vstack(
                 [self._his_dense_array, trial.dense_array])
@@ -99,6 +108,12 @@ class Trials:
 
     def get_history(self):
         return self._his_observe_value, self._his_configs_dict
+    
+    def get_array(self):
+        if self.use_dense:
+            return self.get_dense_array()
+        else:
+            return self.get_sparse_array()
 
     # def visualize(self, ax=None):
     #     if ax is None:

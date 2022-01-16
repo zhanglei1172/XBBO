@@ -2,7 +2,7 @@ import logging, typing
 import numpy as np
 from xbbo.acquisition_function.transfer.mogp import MoGP_AcqFunc
 from xbbo.acquisition_function.transfer.taf import TAF_AcqFunc
-from xbbo.acquisition_function.ei import EI_AcqFunc
+from xbbo.acquisition_function.acq_func import EI_AcqFunc
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.surrogate.gaussian_process import GPR_sklearn
@@ -41,7 +41,7 @@ class SMBO(AbstractOptimizer):
         self.initial_design_configs = self.initial_design.select_configurations(
         )
         self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+                             dense_dim=self.dense_dimension, use_dense=False)
 
         # self.rho = kwargs.get("rho", 1)
         self.bandwidth = kwargs.get("bandwdth", 0.1)

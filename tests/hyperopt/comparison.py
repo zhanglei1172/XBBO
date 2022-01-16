@@ -20,7 +20,7 @@ if __name__ == "__main__":
         result_opts['XBBO-anneal'].append(xbbo_synthetic_opt('anneal',max_call,seed))
     plt.figure()
     for key in result_opts:
-        plt.plot(range(1,max_call+1), np.mean(np.asarray(result_opts[key]),axis=0)[:], label=key)
+        plt.plot(range(1,max_call+1), np.mean(np.minimum.accumulate(np.asarray(result_opts[key]), axis=1),axis=0)[:], label=key)
     plt.ylim([-0.1,1000])
     plt.xlabel('# of Evaluate')
     plt.ylabel('OBJ')
