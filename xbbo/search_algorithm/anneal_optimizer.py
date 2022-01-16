@@ -46,7 +46,7 @@ class Anneal(AbstractOptimizer):
         ]
 
         self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+                             dense_dim=self.dense_dimension, use_dense=False)
 
     def suggest(self, n_suggestions=1):
         trial_list = []

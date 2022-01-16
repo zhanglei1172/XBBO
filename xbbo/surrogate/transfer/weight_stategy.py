@@ -141,7 +141,7 @@ class RankingWeight(ABCWeightStategy):
         return best_model_idxs
 
     def get_weight(self, trials: Trials):
-        t_x = trials.get_sparse_array()
+        t_x = trials.get_array()
         t_y = np.asarray(trials._his_observe_value)
         self.try_num = len(t_y)
         ranking_losses = []
