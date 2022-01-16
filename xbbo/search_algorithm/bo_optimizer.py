@@ -53,7 +53,7 @@ class BO(AbstractOptimizer):
         )
 
         self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+                             dense_dim=self.dense_dimension, use_dense=False)
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         elif surrogate == 'prf':
