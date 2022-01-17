@@ -25,3 +25,12 @@
 - 初始设计：Sobol design
 
 ![SVM smac3](../../out/comp_with_smac3_2.png)
+
+- 测试函数：Branin (2d)
+- Budget: 200
+- Repeat num: 10
+
+| Method      | Minimum         | Best minimum | Mean f_calls to min | Std f_calls to min | Fastest f_calls to min |
+| ----------- | --------------- | ------------ | ------------------- | ------------------ | ---------------------- |
+| SMAC3(gp)   | 0.398+/-0.000   | 0.398        | 147.5               | 25.816             | 117                    |
+| XBBO(bo-gp) | 0.398+/-0.000 | 0.398        | 42.0                | 5.0398             | 30                     |

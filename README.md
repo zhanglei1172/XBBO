@@ -102,6 +102,8 @@ Here you can **comparison** with commonly used and well-known Hyperparameter Opt
 
 [TuRBO](tests/turbo/turbo.md)
 
+[Bayesian Optimization](tests/BayesianOptimization/bayes_opt.md)
+
 ## Algorithms notes
 
 - [BORE](docs/BBO_paper_reading/BORE_BayesianOptimization_by_Density-Ratio_Estimation.pdf)

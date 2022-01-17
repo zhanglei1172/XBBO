@@ -47,7 +47,7 @@ def rosenbrock_2d(x):
 
 def run_one_exp(seed):
      # Build Configuration Space which defines all parameters and their ranges
-    cs = ConfigurationSpace(seed)
+    cs = ConfigurationSpace(seed=seed)
     x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
