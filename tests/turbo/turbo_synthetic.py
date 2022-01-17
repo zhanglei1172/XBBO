@@ -1,5 +1,3 @@
-import sys
-sys.path.append('/home/leizhang/project/TuRBO/')
 from turbo import TurboM, Turbo1
 
 import numpy as np
