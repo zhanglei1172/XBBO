@@ -119,6 +119,7 @@ Here you can **comparison** with commonly used and well-known Hyperparameter Opt
 - [RGPE、RMoGP、TAF](docs/BBO_paper_reading/Practical_Transfer_Learning_for_Bayesian_Optimization.pdf)
 - [TAF](docs/BBO_paper_reading/Transfer_Bayesian_Optimization.pdf)
 - [HyperBand](docs/BBO_paper_reading/Hyperband.pdf)
+- [BOHB](docs/BBO_paper_reading/BOHB_Robust_and_Efficient_Hyperparameter_Optimization_at_Scale.pdf)
 
 [review](docs/BBO_paper_reading/Hyper-Parameter_Optimization_A_Review_of_Algorithms_and_Applications.pdf)
 
