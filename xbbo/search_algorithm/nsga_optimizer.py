@@ -9,7 +9,7 @@ from xbbo.core.trials import Trial, Trials
 from . import alg_register
 
 
-@alg_register.register('nags2')
+@alg_register.register('nsga2')
 class NSGAII(AbstractOptimizer):
     '''
     reference: https://zhuanlan.zhihu.com/p/144807879

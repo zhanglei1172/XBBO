@@ -23,7 +23,14 @@ def run_one_exp(opt_name, max_call, seed):
             'kwargs': {
                 'num_tr': 2
             }
-        }
+        },
+        # 'rea':{
+        #     'name':'rea',
+        #     'kwargs':{
+        #         'llambda': 100,
+        #         # 'sample_size': 30
+        #     }
+        # }
     }
     # Build Configuration Space which defines all parameters and their ranges
     cs = DenseConfigurationSpace(seed=seed)
