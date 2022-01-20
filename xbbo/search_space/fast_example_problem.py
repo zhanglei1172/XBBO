@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn import svm, datasets
 from sklearn.model_selection import cross_val_score
+from ConfigSpace import ConfigurationSpace
 
-from xbbo.configspace.space import DenseConfigurationSpace
 from ConfigSpace.conditions import InCondition, LessThanCondition
 from ConfigSpace.hyperparameters import \
     CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
@@ -46,7 +46,7 @@ def rosenbrock_2d_hard(x):
     return val - (x3 == 2)
 
 def build_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
@@ -55,7 +55,7 @@ def build_space(rng):
     return cs
 
 def build_branin_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
     x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
     cs.add_hyperparameters([x1, x2])
@@ -63,7 +63,7 @@ def build_branin_space(rng):
 
 
 def build_space_hard(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
     x2 = CategoricalHyperparameter("x3", choices=[0,1,2,3])
@@ -83,7 +83,7 @@ def zdt1(config):
 
 
 def build_zdt1_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x0 = UniformFloatHyperparameter("x1", 0, 1)
     x1 = UniformFloatHyperparameter("x2", 0, 1)
     cs.add_hyperparameters([x0, x1])
@@ -120,7 +120,7 @@ def build_svm_space(rng):
     global iris
     iris = datasets.load_iris()
         # Build Configuration Space which defines all parameters and their ranges
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
 
     # We define a few possible types of SVM-kernels and add them as "kernel" to our cs
     kernel = CategoricalHyperparameter("kernel",

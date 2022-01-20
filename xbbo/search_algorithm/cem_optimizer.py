@@ -17,26 +17,29 @@ class CEM(AbstractOptimizer):
                  elite_ratio=0.3,
                  sample_method: str = 'Gaussian',
                  **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
         # Uniform2Gaussian.__init__(self, )
 
         # configs = self.space.get_hyperparameters()
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
         if sample_method == 'Gaussian':
-            self.sampler = Gaussian_sampler(self.dense_dimension, self.bounds,
+            self.sampler = Gaussian_sampler(self.dimension, self.bounds,
                                             self.rng)
         elif sample_method == 'Uniform':
-            self.sampler = Uniform_sampler(self.dense_dimension, self.bounds,
+            self.sampler = Uniform_sampler(self.dimension, self.bounds,
                                            self.rng)
 
         self.buffer_x = []
         self.buffer_y = []
-        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension))
+        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dimension))
         self.elite_ratio = elite_ratio
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+        self.trials = Trials(dim=self.dimension)
 
     def suggest(self, n_suggestions=1):
         trial_list = []
@@ -44,12 +47,12 @@ class CEM(AbstractOptimizer):
             # new_individual = self.feature_to_array(new_individual, )
             new_individual = self.sampler.sample()
 
-            config = DenseConfiguration.from_dense_array(
+            config = DenseConfiguration.from_array(
                 self.space, new_individual)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      dense_array=new_individual,
+                      array=new_individual,
                       origin='CEM'))
 
         return trial_list
@@ -63,7 +66,7 @@ class CEM(AbstractOptimizer):
     def observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
-            self.buffer_x.append(trial.dense_array)
+            self.buffer_x.append(trial.array)
             self.buffer_y.append(trial.observe_value)
         if len(self.buffer_x) < self.llambda:
             return

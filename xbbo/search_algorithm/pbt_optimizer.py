@@ -19,11 +19,11 @@ class PBT():
                  fraction: float = 0.2,
                  **kwargs):
         # FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
+        
         self.space = space
         self.rng = np.random.RandomState(seed)
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
-        self.pop_size = pop_size if pop_size else 4 + math.floor(3 * math.log(self.dense_dimension))
+        self.dimension = self.space.get_dimensions()
+        self.pop_size = pop_size if pop_size else 4 + math.floor(3 * math.log(self.dimension))
         self.pop_size = pop_size
         self.init_budget = pop_size
 
@@ -35,8 +35,7 @@ class PBT():
         )
         self.population_configs = self.initial_design_configs
         self.population_hp_array = convert_denseConfigurations_to_array(self.population_configs)
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+        self.trials = Trials(dim=self.dimension)
 
         # self.data_shuffle_seed = kwargs.get('seed', 0)
         self.fraction = fraction
@@ -66,7 +65,7 @@ class PBT():
             # explore
             self.population_hp_array[bot_id] = np.clip(
                 self.population_hp_array[bot_id] +
-                np.random.normal(0, 0.2, size=self.dense_dimension), 0, 1)
+                np.random.normal(0, 0.2, size=self.dimension), 0, 1)
 
             x_array = self.feature_to_array(self.population_hp_array[bot_id],
                                             self.sparse_dimension)
@@ -94,10 +93,10 @@ class PBT():
             # explore
             self.population_hp_array[bot_id] = np.clip(  # TODO Toy
                 self.population_hp_array[top_id] +
-                self.rng.normal(0, 0.1, size=self.dense_dimension), 0, 1)
+                self.rng.normal(0, 0.1, size=self.dimension), 0, 1)
 
             
-            new_config = DenseConfiguration.from_dense_array(self.space, self.population_hp_array[bot_id])
+            new_config = DenseConfiguration.from_array(self.space, self.population_hp_array[bot_id])
             self.population_configs[bot_id] = new_config
             # self.population_hp[bot_id] = x_unwarped
             # population_model[bot_id].history_hp = copy.copy(

@@ -13,16 +13,19 @@ class RandomOptimizer(AbstractOptimizer):
             #  min_sample=1,
             total_limit: int = 10,
             **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit,**kwargs)
         self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
         )
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension, use_dense=False)
+        self.dimension = self.space.get_dimensions()
+        self.trials = Trials(dim=self.dimension)
 
 
     def suggest(self, n_suggestions=1):
@@ -34,7 +37,7 @@ class RandomOptimizer(AbstractOptimizer):
                     Trial(
                         configuration=config,
                           config_dict=config.get_dictionary(),
-                        #   sparse_array=config.get_sparse_array())
+                        #   array=config.get_array())
                     ))
                 continue
             iter_ = 0
@@ -44,7 +47,7 @@ class RandomOptimizer(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              sparse_array=config.get_sparse_array()))
+                              array=config.get_array()))
 
                     break
                 iter_ += 1

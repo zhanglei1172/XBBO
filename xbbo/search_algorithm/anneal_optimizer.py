@@ -12,14 +12,18 @@ from xbbo.initial_design import ALL_avaliable_design
 @alg_register.register('anneal')
 class Anneal(AbstractOptimizer):
     def __init__(self,
-                 space: DenseConfigurationSpace,
+                 space,
                  seed: int = 42,
                  total_limit=10,
                  initial_design: str = 'sobol',
                  **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
+        self.dimension = self.space.get_dimensions()
 
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit, **kwargs)
@@ -30,23 +34,25 @@ class Anneal(AbstractOptimizer):
 
         self.avg_best_idx = kwargs.get("avg_best_idx", 2.0)
         self.shrink_coef = kwargs.get("shrink_coef", 0.1)
-        self.cat_nodes = [
-            {
-                "idx": self.space.cat_src[i],
-                # "activate_num": 0,
-                "n_choice": self.space.cat_sizes[i]
-            } for i in range(len(self.space.cat_src))
-        ]
-        # self.cat_node_n = self.space.cat_size
-        self.num_nodes = [
-            {
-                "idx": idx,
-                # "activate_num": 0
-            } for idx in self.space.num_src
-        ]
+        self.cat_nodes = []
+        self.num_nodes = []
+        for k in self.space.map:
+            if k != 'num':
+                self.cat_nodes.extend([
+                    {
+                        "idx": self.space.map[k].src[i],
+                        # "activate_num": 0,
+                        "n_choice": self.space.map[k].sizes[i]
+                    } for i in range(len(self.space.map[k].src))
+                ])
+            else:
+                self.num_nodes.extend([
+                    {
+                        "idx": self.space.map[k].src[i],
+                    } for i in range(len(self.space.map[k].src))
+                ])
 
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension, use_dense=False)
+        self.trials = Trials(dim=self.dimension)
 
     def suggest(self, n_suggestions=1):
         trial_list = []
@@ -60,16 +66,17 @@ class Anneal(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          sparse_array=config.get_sparse_array()))
+                          array=config.get_array()))
         else:
             for n in range(n_suggestions):
-                X = self.trials.get_sparse_array()
+                X = self.trials.get_array()
                 Y = np.asarray(self.trials._his_observe_value)
 
-                sparse_array = np.empty(self.sparse_dimension)
+                array = np.empty(self.dimension)
                 for node in self.cat_nodes:
                     idx = node["idx"]
-                    x_ = X[:, idx].astype('int')  # deactivate conditional variable
+                    x_ = X[:, idx].astype(
+                        'int')  # deactivate conditional variable
                     mask = ~np.isnan(x_)
                     x = x_[mask]
                     y = Y[mask]
@@ -77,7 +84,7 @@ class Anneal(AbstractOptimizer):
                     X[:, idx]
                     p = self._handle_category(best_val, len(y),
                                               node["n_choice"])
-                    sparse_array[idx] = self.rng.choice(node["n_choice"], p=p)
+                    array[idx] = self.rng.choice(node["n_choice"], p=p)
                 for node in self.num_nodes:
                     idx = node["idx"]
                     x_ = X[:, idx]  # deactivate conditional variable
@@ -87,14 +94,14 @@ class Anneal(AbstractOptimizer):
                     best_val = self._choose_best_trail_feature(x, y)
                     # X[:, idx]
                     low, high = self._handle_uniform(best_val, len(y))
-                    sparse_array[idx] = self.rng.uniform(low, high)
-                config = DenseConfiguration.from_sparse_array(
-                    self.space, sparse_array)
-                sparse_array = config.get_sparse_array()
+                    array[idx] = self.rng.uniform(low, high)
+                config = DenseConfiguration.from_array(
+                    self.space, array)
+                array = config.get_array()
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          sparse_array=sparse_array))
+                          array=array))
                 # valid_indices = np.argwhere(~np.isnan(sparse_array)).ravel()
                 # for node in self.cat_nodes:
                 #     if node["idx"] in valid_indices:

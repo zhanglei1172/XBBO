@@ -25,7 +25,7 @@ export PYTHONPATH=$PYTHONPATH:/Path/to/XBBO
 
 ```python
 def build_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])

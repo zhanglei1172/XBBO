@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
-
+import ConfigSpace as CS
 from xbbo.configspace.space import DenseConfigurationSpace
 # from xbbo.configspace.space import Configurations
 
@@ -12,7 +12,7 @@ class AbstractOptimizer(ABC):
     # Every implementation package needs to specify this static variable, e.g., "primary_import=opentuner"
     primary_import = None
 
-    def __init__(self, space: DenseConfigurationSpace, seed=42, **kwargs):
+    def __init__(self, space: CS.ConfigurationSpace,  encoding_cat='round', encoding_ord='round', seed=42, **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
         Parameters
@@ -20,8 +20,8 @@ class AbstractOptimizer(ABC):
         api_config : dict-like of dict-like
             Configuration of the optimization variables. See API description.
         """
-        assert isinstance(space, DenseConfigurationSpace)
-        self.space = space
+        assert isinstance(space, CS.ConfigurationSpace)
+        self.space = DenseConfigurationSpace(space, encoding_cat=encoding_cat, encoding_ord=encoding_ord)
         self.rng = np.random.RandomState(seed)
 
     @abstractmethod

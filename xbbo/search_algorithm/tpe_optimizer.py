@@ -32,12 +32,16 @@ class TPE(AbstractOptimizer):
             min_points_in_model=None,
             random_fraction=1 / 3,
             **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
         self.min_bandwidth = min_bandwidth
         self.bw_factor = bandwidth_factor
 
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit,**kwargs)
         self.init_budget = self.initial_design.init_budget
@@ -45,8 +49,7 @@ class TPE(AbstractOptimizer):
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension, use_dense=False)
+        self.trials = Trials(dim=self.dimension)
         self.gamma = gamma
         self.candidates_num = candidates_num
         self.min_points_in_model = min_points_in_model
@@ -87,7 +90,7 @@ class TPE(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          sparse_array=config.get_sparse_array()))
+                          array=config.get_array()))
         else:
             self._fit_kde_models()
             if len(self.kde_models.keys()
@@ -97,7 +100,7 @@ class TPE(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              sparse_array=config.get_sparse_array()))
+                              array=config.get_array()))
             else:
                 for n in range(n_suggestions):
                     best = np.inf
@@ -182,12 +185,12 @@ class TPE(AbstractOptimizer):
                                 best_vector[i] = int(
                                     np.rint(best_vector[i]))
 
-                        config = DenseConfiguration.from_sparse_array(
+                        config = DenseConfiguration.from_array(
                             self.space, np.asarray(best_vector))
                     trial_list.append(
                         Trial(configuration=config,
                                 config_dict=config.get_dictionary(),
-                                sparse_array=best_vector))
+                                array=best_vector))
         return trial_list
 
     def _sample_nonduplicate_config(self, num_configs=1):
@@ -210,7 +213,7 @@ class TPE(AbstractOptimizer):
         return configs
 
     def _fit_kde_models(self, ):
-        train_configs = self.trials.get_sparse_array()
+        train_configs = self.trials.get_array()
         n_good = max(self.min_points_in_model,
                      int(self.gamma * self.trials.trials_num) // 100)
         # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_configs.shape[0])//100), 10)

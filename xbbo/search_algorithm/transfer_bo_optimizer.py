@@ -29,10 +29,14 @@ class SMBO(AbstractOptimizer):
                  predict_x_best: bool = False,
                  weight_srategy: str = 'kernel',
                  **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
         self.predict_x_best = predict_x_best
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
 
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit,**kwargs)
@@ -40,8 +44,7 @@ class SMBO(AbstractOptimizer):
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension, use_dense=False)
+        self.trials = Trials(dim=self.dimension)
 
         # self.rho = kwargs.get("rho", 1)
         self.bandwidth = kwargs.get("bandwdth", 0.1)
@@ -121,14 +124,14 @@ class SMBO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          sparse_array=config.get_sparse_array()))
+                          array=config.get_array()))
         else:
             # update target surrogate model
             self.surrogate_model.train(
-                np.asarray(self.trials.get_sparse_array()),
+                np.asarray(self.trials.get_array()),
                 np.asarray(self.trials.get_history()[0]))
             # calculate base incuments (only use for acq base EI)
-            observed_X = self.trials.get_sparse_array()
+            observed_X = self.trials.get_array()
             base_incuments = []
             for model in self.base_models: # TODO make sure untransform ?
                 base_incuments.append(model.predict(observed_X, None)[0].min())
@@ -155,7 +158,7 @@ class SMBO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  sparse_array=config.get_sparse_array()))
+                                  array=config.get_array()))
                         _idx += 1
 
                         break
@@ -191,7 +194,7 @@ class SMBO(AbstractOptimizer):
         Configuration
         """
         if predict:
-            X = self.trials.get_sparse_array()
+            X = self.trials.get_array()
             costs = list(
                 map(
                     lambda x: (
@@ -206,7 +209,7 @@ class SMBO(AbstractOptimizer):
             # won't need log(y) if EPM was already trained on log(y)
         else:
             best_idx = self.trials.best_id
-            x_best_array = self.trials.get_sparse_array()[best_idx]
+            x_best_array = self.trials.get_array()[best_idx]
             best_observation = self.trials.best_observe_value
 
         return x_best_array, best_observation
