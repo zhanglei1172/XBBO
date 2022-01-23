@@ -14,3 +14,4 @@ ConfigSpace>=0.4.19
 # pySOT==0.3.3
 scikit_learn>=0.24.2
 yacs>=0.1.8
+statsmodels>=0.13.1
