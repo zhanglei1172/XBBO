@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from botorch.utils import draw_sobol_samples
 
-from xbbo.core import TestFunction
+from xbbo.core.abstract_model import TestFunction
 
 NUM_BASE_TASKS = 5
 from botorch.utils.transforms import normalize, unnormalize

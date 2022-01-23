@@ -19,14 +19,18 @@ class NSGAII(AbstractOptimizer):
                  seed: int = 42,
                  llambda=None,
                  **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
+        self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
 
         self.num_of_tour_particips = kwargs.get('n_part',2)
         self.llambda = llambda if llambda else 4 + math.floor(
-            3 * math.log(self.dense_dimension))  # (eq. 48)
+            3 * math.log(self.dimension))  # (eq. 48)
         self.population = self.create_initial_population()
         self.population_y = None
         self.mu = kwargs.get('mu',20) # 交叉和变异算法的分布指数
@@ -34,8 +38,7 @@ class NSGAII(AbstractOptimizer):
         self.crossrate = kwargs.get('crossrate',0.9)
         # ---
 
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+        self.trials = Trials(dim=self.dimension)
         self.cur = 0
         self.gen = 0
         self.listy = []
@@ -47,14 +50,14 @@ class NSGAII(AbstractOptimizer):
             new_individual = self.population[self.cur]
             new_individual = np.clip(new_individual, self.bounds.lb,
                                      self.bounds.ub)
-            # dense_array = self.feature_to_array(new_individual)
-            config = DenseConfiguration.from_dense_array(
+            # array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_array(
                 self.space, new_individual)
             self.cur += 1
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      dense_array=new_individual,
+                      array=new_individual,
                       origin='NSGAII',
                       loc=self.cur))
 
@@ -63,7 +66,7 @@ class NSGAII(AbstractOptimizer):
 
     def observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial, permit_duplicagte=True)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
             self.listy.append(trial.observe_value)
         if self.cur == len(self.population):
             if self.population_y is None:
@@ -169,10 +172,10 @@ class NSGAII(AbstractOptimizer):
         return cd
 
     def create_initial_population(self):
-        # return self.rng.rand(self.llambda, self.dense_dimension)
+        # return self.rng.rand(self.llambda, self.dimension)
         return self.rng.uniform(0,
                                 1,
-                                size=(self.llambda, self.dense_dimension))
+                                size=(self.llambda, self.dimension))
 
     def create_children(self, parents_id):
         children = []

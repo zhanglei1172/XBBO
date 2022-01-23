@@ -1,6 +1,7 @@
 import numpy as np
 # import matplotlib.pyplot as plt
-from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+from ConfigSpace import ConfigurationSpace
+from xbbo.configspace.space import DenseConfiguration
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 from ConfigSpace.conditions import LessThanCondition
 
@@ -38,7 +39,7 @@ def branin(config):
     return y
 
 def build_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
@@ -47,7 +48,7 @@ def build_space(rng):
     return cs
 
 def build_branin_space(rng):
-    cs = DenseConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(10000))
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
     x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
     cs.add_hyperparameters([x1, x2])
@@ -57,9 +58,9 @@ if __name__ == "__main__":
     MAX_CALL = 30
     rng = np.random.RandomState(42)
 
-    test_model = Model(None, rng.randint(MAXINT), test_task='a6a', )
+    test_model = Model(rng.randint(MAXINT), test_task='a6a', )
 
-    cs = DenseConfigurationSpace(seed=rng.randint(MAXINT))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
     confs = test_model.get_api_config()
     for conf in confs:
         cs.add_hyperparameter(UniformFloatHyperparameter(conf, confs[conf]['range'][0], confs[conf]['range'][1]))

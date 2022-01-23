@@ -20,7 +20,7 @@ class InitialDesign:
                  max_config_fracs: float = 0.25,
                  **kwargs) -> None:
         self.cs = cs
-        self.dim = cs.get_dimensions(sparse=True)
+        self.dim = cs.get_dimensions()
         self.rng = rng
         # n_params = len(self.cs.get_hyperparameters())
         if init_budget is not None:
@@ -44,34 +44,35 @@ class InitialDesign:
             self, design: np.ndarray, origin: str,
             cs: DenseConfigurationSpace) -> typing.List[DenseConfiguration]:
 
-        params = cs.get_hyperparameters()
-        for idx, param in enumerate(params):
-            if isinstance(param, NumericalHyperparameter):
-                continue
-            elif isinstance(param, Constant):
-                # add a vector with zeros
-                design_ = np.zeros(np.array(design.shape) + np.array((0, 1)))
-                design_[:, :idx] = design[:, :idx]
-                design_[:, idx + 1:] = design[:, idx:]
-                design = design_
-            elif isinstance(param, CategoricalHyperparameter):
-                v_design = design[:, idx]
-                v_design[v_design == 1] = 1 - 10**-10
-                design[:, idx] = np.array(v_design * len(param.choices),
-                                          dtype=np.int)
-            elif isinstance(param, OrdinalHyperparameter):
-                v_design = design[:, idx]
-                v_design[v_design == 1] = 1 - 10**-10
-                design[:, idx] = np.array(v_design * len(param.sequence),
-                                          dtype=np.int)
-            else:
-                raise ValueError("Hyperparameter not supported in LHD")
+        # params = cs.get_hyperparameters()
+        # for idx, param in enumerate(params):
+        #     if isinstance(param, NumericalHyperparameter):
+        #         continue
+        #     elif isinstance(param, Constant):
+        #         # add a vector with zeros
+        #         design_ = np.zeros(np.array(design.shape) + np.array((0, 1)))
+        #         design_[:, :idx] = design[:, :idx]
+        #         design_[:, idx + 1:] = design[:, idx:]
+        #         design = design_
+        #     elif isinstance(param, CategoricalHyperparameter):
+        #         v_design = design[:, idx]
+        #         v_design[v_design == 1] = 1 - 10**-10
+        #         design[:, idx] = np.array(v_design * len(param.choices),
+        #                                   dtype=np.int)
+        #     elif isinstance(param, OrdinalHyperparameter):
+        #         v_design = design[:, idx]
+        #         v_design[v_design == 1] = 1 - 10**-10
+        #         design[:, idx] = np.array(v_design * len(param.sequence),
+        #                                   dtype=np.int)
+        #     else:
+        #         raise ValueError("Hyperparameter not supported in LHD")
 
         configs = []
         for vector in design:
-            conf = deactivate_inactive_hyperparameters(configuration=None,
-                                                       configuration_space=cs,
-                                                       vector=vector)
+            conf = DenseConfiguration.from_array(cs, vector)
+            # conf = deactivate_inactive_hyperparameters(configuration=None,
+            #                                            configuration_space=cs,
+            #                                            vector=vector)
             conf.origin = origin
             configs.append(conf)
 

@@ -23,7 +23,8 @@ class SobolDesign(InitialDesign):
     """
     def __init__(self, cs, rng: np.random.RandomState, ta_run_limit: typing.Optional[int] = None, n_configs_x_params: typing.Optional[int] = 10, init_budget: typing.Optional[int] = None, max_config_fracs: float = 0.25, **kwargs) -> None:
         super().__init__(cs, rng, ta_run_limit, n_configs_x_params, init_budget, max_config_fracs, **kwargs)
-        self.init_budget = 2**int(np.log2(self.init_budget))
+        if self.init_budget:
+            self.init_budget = 2**int(np.log2(self.init_budget))
 
     def _select_configurations(self, num=None) -> typing.List[DenseConfiguration]:
         """Selects a single configuration to run

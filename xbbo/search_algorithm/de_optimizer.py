@@ -14,20 +14,23 @@ class DE(AbstractOptimizer):
                  space:DenseConfigurationSpace,
                  seed:int = 42,
                  llambda=None, **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
 
         # Uniform2Gaussian.__init__(self,)
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
 
-        # self.dense_dimension = len(configs)
-        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension))
+        # self.dimension = len(configs)
+        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dimension))
         self.population = [None] * self.llambda
         self.population_fitness = [None] * self.llambda
         # self.candidates = [None] * self.llambda
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+        self.trials = Trials(dim=self.dimension)
         self.current_best = None
         self.current_best_fitness = np.inf
         self._num_suggestions = 0
@@ -43,16 +46,16 @@ class DE(AbstractOptimizer):
             individual = self.population[idx]
             a, b = (self.population[self.rng.randint(self.llambda)] for _ in range(2))
             if any(x is None for x in [individual, a, b]): # population not enough
-                # new_individual = self.rng.normal(0, 1, self.dense_dimension)
-                new_individual = self.rng.normal(self.bounds.lb, self.bounds.ub, self.dense_dimension)
+                # new_individual = self.rng.normal(0, 1, self.dimension)
+                new_individual = self.rng.normal(self.bounds.lb, self.bounds.ub, self.dimension)
                 # if (self.trials.trials_num) <= self.llambda:
                 # assert self.candidates[idx] is None
                 # self.candidates[idx] = tuple(new_individual)
                 self.population[idx] = new_individual
             else:
                 new_individual = individual + self.F1 * (a - b) + self.F2 * (self.current_best - individual)
-                R = self.rng.randint(self.dense_dimension)
-                for i in range(self.dense_dimension):
+                R = self.rng.randint(self.dimension)
+                for i in range(self.dimension):
                     if i != R and self.rng.uniform(0, 1) > self.CR:
                         new_individual[i] = individual[i]
                 # self.candidates[idx] = tuple(new_individual)
@@ -60,22 +63,22 @@ class DE(AbstractOptimizer):
             self._num_suggestions += 1
             new_individual = np.clip(new_individual, self.bounds.lb,
                                  self.bounds.ub)
-            # dense_array = self.feature_to_array(new_individual)
-            config = DenseConfiguration.from_dense_array(self.space,new_individual)
+            # array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_array(self.space,new_individual)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      dense_array=new_individual,
+                      array=new_individual,
                       origin='DE', loc=idx))
 
         return trial_list
 
     def observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial, permit_duplicagte=True)
-            # idx = self.candidates.index(tuple(trial.dense_array))
+            self.trials.add_a_trial(trial, permit_duplicate=True)
+            # idx = self.candidates.index(tuple(trial.array))
             idx = trial.loc
-            self.population[idx] = trial.dense_array
+            self.population[idx] = trial.array
             self.population_fitness[idx] = trial.observe_value
             # self._num_suggestions += 1
             # self.candidates[idx] = None

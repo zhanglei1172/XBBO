@@ -21,28 +21,31 @@ class RegularizedEA(AbstractOptimizer):
                  llambda=None,
                  sample_size=None,
                  **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
         # FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)
         # Uniform2Gaussian.__init__(self)
         # configs = self.space.get_hyperparameters()
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
         # self.num_of_tour_particips = kwargs.get('n_part',2)
-        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension)) # (eq. 48)
+        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dimension)) # (eq. 48)
         self.tournament_sample_size = self.llambda//2 if sample_size is None else min(max(sample_size, 1), self.llambda)
         self.population = self.create_initial_population()
         self.population_y = None
 
         # self.mu = kwargs.get('mu',20) # 交叉和变异算法的分布指数
-        # self.mum = kwargs.get('mum',20)
+        self.mum = kwargs.get('mum',20)
         # self.crossrate = kwargs.get('crossrate',0.9)
         # ---
 
 
 
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+        self.trials = Trials(dim=self.dimension)
         self.cur = 0
         self.gen = 0
         self.listy = []
@@ -53,13 +56,13 @@ class RegularizedEA(AbstractOptimizer):
         for n in range(n_suggestions):
             new_individual = self.population[self.cur]
             new_individual = np.clip(new_individual, self.bounds.lb, self.bounds.ub)
-            # dense_array = self.feature_to_array(new_individual)
-            config = DenseConfiguration.from_dense_array(self.space,new_individual)
+            # array = self.feature_to_array(new_individual)
+            config = DenseConfiguration.from_array(self.space,new_individual)
             self.cur += 1
             trial_list.append(
             Trial(config,
                     config_dict=config.get_dictionary(),
-                    dense_array=new_individual,
+                    array=new_individual,
                     origin='REA', loc=self.cur))
         
 
@@ -68,7 +71,7 @@ class RegularizedEA(AbstractOptimizer):
 
     def observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial, permit_duplicagte=True)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
             self.listy.append(trial.observe_value)
         if self.cur == len(self.population):
             if self.population_y is None:
@@ -110,8 +113,8 @@ class RegularizedEA(AbstractOptimizer):
 
 
     def create_initial_population(self):
-        # return self.rng.normal(0, 1, size=(self.llambda, self.dense_dimension))
-        return self.rng.uniform(0, 1, size=(self.llambda, self.dense_dimension))
+        # return self.rng.normal(0, 1, size=(self.llambda, self.dimension))
+        return self.rng.uniform(0, 1, size=(self.llambda, self.dimension))
 
 
     def __mutate2(self, parent):
@@ -122,14 +125,14 @@ class RegularizedEA(AbstractOptimizer):
     
     def __mutate_naive(self, parent):
         child = parent.copy()
-        child[self.rng.randint(self.dense_dimension)] = self.rng.uniform(0, 1)
+        child[self.rng.randint(self.dimension)] = self.rng.uniform(0, 1)
         return child
 
     def __mutate(self, parent, mu0=0.7):
         if self.rng.rand() <= mu0:
             return self.__mutate_naive(parent)
         else:
-            return self.rng.uniform(0, 1, size=self.dense_dimension)
+            return self.rng.uniform(0, 1, size=self.dimension)
 
 
 opt_class = RegularizedEA

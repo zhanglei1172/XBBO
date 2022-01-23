@@ -5,7 +5,7 @@ import numpy as np
 from xbbo.acquisition_function.acq_optimizer import InterleavedLocalAndRandomSearch, LocalSearch, RandomScipyOptimizer, RandomSearch, ScipyGlobalOptimizer, ScipyOptimizer
 
 from xbbo.search_algorithm.base import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+# from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
 # from xbbo.core import trials
 # from xbbo.core.stochastic import Category, Uniform
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class BO(AbstractOptimizer):
     def __init__(
             self,
-            space: DenseConfigurationSpace,
+            space,
             seed: int = 42,
             surrogate: str = 'gp',
             acq_func: str = 'ei',
@@ -38,12 +38,16 @@ class BO(AbstractOptimizer):
         predict_x_best: bool
             Choose x_best for computing the acquisition function via the model instead of via the observations.
         '''
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   **kwargs)
         # self.min_sample = min_sample
         # configs = self.space.get_hyperparameters()
         self.predict_x_best = predict_x_best
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
 
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=total_limit,**kwargs)
@@ -52,8 +56,7 @@ class BO(AbstractOptimizer):
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension, use_dense=False)
+        self.trials = Trials(self.dimension)
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         elif surrogate == 'prf':
@@ -109,10 +112,10 @@ class BO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          sparse_array=config.get_sparse_array()))
+                          array=config.get_array()))
         else:
             self.surrogate_model.train(
-                np.asarray(self.trials.get_sparse_array()),
+                np.asarray(self.trials.get_array()),
                 np.asarray(self.trials.get_history()[0]))
             configs = []
             _, best_val = self._get_x_best(self.predict_x_best)
@@ -130,7 +133,7 @@ class BO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  sparse_array=config.get_sparse_array()))
+                                  array=config.get_array()))
                         _idx += 1
 
                         break
@@ -163,7 +166,7 @@ class BO(AbstractOptimizer):
         Configuration
         """
         if predict:
-            X = self.trials.get_sparse_array()
+            X = self.trials.get_array()
             costs = list(
                 map(
                     lambda x: (
@@ -178,7 +181,7 @@ class BO(AbstractOptimizer):
             # won't need log(y) if EPM was already trained on log(y)
         else:
             best_idx = self.trials.best_id
-            x_best_array = self.trials.get_sparse_array()[best_idx]
+            x_best_array = self.trials.get_array()[best_idx]
             best_observation = self.trials.best_observe_value
 
         return x_best_array, best_observation
