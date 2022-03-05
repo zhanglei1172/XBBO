@@ -7,6 +7,7 @@ import numpy as np
 
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.initial_design.base import InitialDesign
+from xbbo.utils.constants import MAXINT
 
 
 class SobolDesign(InitialDesign):
@@ -37,7 +38,7 @@ class SobolDesign(InitialDesign):
         design_num = num if num else self.init_budget
         sobol_gen = Sobol(d=self.dim,
                           scramble=True,
-                          seed=self.rng.randint(low=0, high=10000000))
+                          seed=self.rng.randint(low=0, high=MAXINT))
         sobol = sobol_gen.random(design_num)
         return self._transform_continuous_designs(design=sobol,
                                                   origin='Sobol',

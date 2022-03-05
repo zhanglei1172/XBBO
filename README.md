@@ -25,7 +25,7 @@ export PYTHONPATH=$PYTHONPATH:/Path/to/XBBO
 
 ```python
 def build_space(rng):
-    cs = ConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
     x0 = UniformFloatHyperparameter("x0", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
@@ -37,7 +37,7 @@ blackbox_func = rosenbrock_2d
 # define search space
 cs = build_space(rng)
 # define black box optimizer
-hpopt = BO(config_spaces=cs, seed=rng.randint(10000), total_limit=MAX_CALL)
+hpopt = BO(config_spaces=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL)
 # Example call of the black-box function
 def_value = blackbox_func(cs.get_default_configuration())
 print("Default Value: %.2f" % def_value)

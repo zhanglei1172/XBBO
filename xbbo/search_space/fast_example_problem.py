@@ -7,6 +7,51 @@ from ConfigSpace.conditions import InCondition, LessThanCondition
 from ConfigSpace.hyperparameters import \
     CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
 
+from xbbo.utils.constants import MAXINT
+
+
+def mf_stochastic_count_one(config, budget, **kwargs):
+    '''
+    $$
+    f(x)=-\left(\sum_{x \in X_{c a t}} x+\sum_{x \in X_{c o n t}} b\left[\left(B_{p=x}\right)\right]\right)
+    $$
+    '''
+    random_state = kwargs.get('random_state', np.random.RandomState(0))
+    xs = []
+    rs = []
+    for k in config:
+        if k[0] == "x":
+            xs.append(config[k])
+        else:
+            rs.append(random_state.binomial(1, config[k], size=int(budget)).mean())
+    xs = -np.array(xs).sum()
+    ys = -np.array(ys).sum()
+
+    # result dict passed to DE/DEHB as function evaluation output
+    res = {
+        "fitness": xs+ys,  # must-have key that DE/DEHB minimizes
+        "cost": budget,  # must-have key that associates cost/runtime 
+        "info": dict() # optional key containing a dictionary of additional info
+    }
+    # dict representation that DEHB requires
+    # res = {
+    #     "fitness": loss,
+    #     "cost": cost,
+    #     "info": {"test_loss": test_loss, "budget": budget}
+    # }
+    return res
+
+def build_mf_SCO_space(rng):
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
+    x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
+    x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
+    x2 = CategoricalHyperparameter("x3", choices=[0,1,2,3])
+    cs.add_hyperparameters([x0, x1, x2])
+    con = LessThanCondition(x1, x0, 1.)
+    cs.add_condition(con)
+    return cs
+
+
 def rosenbrock_2d(x):
     """ The 2 dimensional Rosenbrock function as a toy model
     The Rosenbrock function is well know in the optimization community and
@@ -46,7 +91,7 @@ def rosenbrock_2d_hard(x):
     return val - (x3 == 2)
 
 def build_space(rng):
-    cs = ConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
     x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
     cs.add_hyperparameters([x0, x1])
@@ -55,7 +100,7 @@ def build_space(rng):
     return cs
 
 def build_branin_space(rng):
-    cs = ConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
     x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
     cs.add_hyperparameters([x1, x2])
@@ -63,7 +108,7 @@ def build_branin_space(rng):
 
 
 def build_space_hard(rng):
-    cs = ConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
     x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
     x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
     x2 = CategoricalHyperparameter("x3", choices=[0,1,2,3])
@@ -83,7 +128,7 @@ def zdt1(config):
 
 
 def build_zdt1_space(rng):
-    cs = ConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
     x0 = UniformFloatHyperparameter("x1", 0, 1)
     x1 = UniformFloatHyperparameter("x2", 0, 1)
     cs.add_hyperparameters([x0, x1])
@@ -120,7 +165,7 @@ def build_svm_space(rng):
     global iris
     iris = datasets.load_iris()
         # Build Configuration Space which defines all parameters and their ranges
-    cs = ConfigurationSpace(seed=rng.randint(10000))
+    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
 
     # We define a few possible types of SVM-kernels and add them as "kernel" to our cs
     kernel = CategoricalHyperparameter("kernel",
