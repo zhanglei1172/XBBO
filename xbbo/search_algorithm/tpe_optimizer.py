@@ -78,7 +78,7 @@ class TPE(AbstractOptimizer):
 
         self.vartypes = np.array(self.vartypes, dtype=int)
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         if (self.trials.trials_num) < self.init_budget:
             assert self.trials.trials_num % n_suggestions == 0
@@ -247,7 +247,7 @@ class TPE(AbstractOptimizer):
 
         self.kde_models = {'good': good_kde, 'bad': bad_kde}
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial)
 

@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from sklearn import svm, datasets
 from sklearn.model_selection import cross_val_score
 from ConfigSpace import ConfigurationSpace
@@ -10,29 +11,33 @@ from ConfigSpace.hyperparameters import \
 from xbbo.utils.constants import MAXINT
 
 
-def mf_stochastic_count_one(config, budget, **kwargs):
+def mf_stochastic_count_one(config, info={}):
     '''
     $$
     f(x)=-\left(\sum_{x \in X_{c a t}} x+\sum_{x \in X_{c o n t}} b\left[\left(B_{p=x}\right)\right]\right)
     $$
     '''
-    random_state = kwargs.get('random_state', np.random.RandomState(0))
+    budget = info.get("budget", 100)
+    random_state = info.get('random_state', np.random.RandomState(0))
     xs = []
     rs = []
+    st = time.time()
     for k in config:
         if k[0] == "x":
             xs.append(config[k])
         else:
             rs.append(random_state.binomial(1, config[k], size=int(budget)).mean())
     xs = -np.array(xs).sum()
-    ys = -np.array(ys).sum()
+    rs = -np.array(rs).sum()
 
     # result dict passed to DE/DEHB as function evaluation output
     res = {
-        "fitness": xs+ys,  # must-have key that DE/DEHB minimizes
+        "fitness": xs+rs,  # must-have key that DE/DEHB minimizes
         "cost": budget,  # must-have key that associates cost/runtime 
-        "info": dict() # optional key containing a dictionary of additional info
+        "eval_time": time.time() - st
+        # "info": dict() # optional key containing a dictionary of additional info
     }
+    res.update(info)
     # dict representation that DEHB requires
     # res = {
     #     "fitness": loss,
@@ -41,14 +46,12 @@ def mf_stochastic_count_one(config, budget, **kwargs):
     # }
     return res
 
-def build_mf_SCO_space(rng):
+def build_mf_SCO_space(rng, dim=8):
     cs = ConfigurationSpace(seed=rng.randint(MAXINT))
-    x0 = UniformFloatHyperparameter("x1", -5, 10, default_value=-3)
-    x1 = UniformFloatHyperparameter("x2", -5, 10, default_value=-4)
-    x2 = CategoricalHyperparameter("x3", choices=[0,1,2,3])
-    cs.add_hyperparameters([x0, x1, x2])
-    con = LessThanCondition(x1, x0, 1.)
-    cs.add_condition(con)
+    xs = [CategoricalHyperparameter('x{}'.format(i), choices=[0,1]) for i in range(dim)]
+    ys = [UniformFloatHyperparameter('y{}'.format(i), 0, 1, default_value=0.5) for i in range(dim)]
+    cs.add_hyperparameters(xs)
+    cs.add_hyperparameters(ys)
     return cs
 
 

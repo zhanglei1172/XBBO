@@ -9,7 +9,7 @@ class RandomOptimizer(AbstractOptimizer):
             self,
             space,
             seed: int = 42,
-            initial_design: str = 'sobol',
+            initial_design: str = 'random',
             #  min_sample=1,
             total_limit: int = 10,
             **kwargs):
@@ -28,7 +28,7 @@ class RandomOptimizer(AbstractOptimizer):
         self.trials = Trials(dim=self.dimension)
 
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         for n in range(n_suggestions):
             if self.initial_design_configs:
@@ -56,7 +56,7 @@ class RandomOptimizer(AbstractOptimizer):
 
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial)
 

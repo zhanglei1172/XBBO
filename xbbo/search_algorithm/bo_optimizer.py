@@ -99,7 +99,7 @@ class BO(AbstractOptimizer):
                 ['ls', 'rs', 'rs_ls', 'scipy', 'scipy_global', 'r_scipy']))
         logger.info("Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]".format(surrogate, acq_func, acq_opt))
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         # currently only suggest one
         if (self.trials.trials_num) < self.init_budget:
@@ -143,7 +143,7 @@ class BO(AbstractOptimizer):
 
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial)
 

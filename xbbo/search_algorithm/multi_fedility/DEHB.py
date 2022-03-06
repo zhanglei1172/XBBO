@@ -2,15 +2,18 @@ import numpy as np
 
 # from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.search_algorithm.base import AbstractOptimizer
+from xbbo.search_algorithm.de_optimizer import DE
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
-from . import alg_register
+from .. import alg_register
 
 
-@alg_register.register('de')
-class DE(AbstractOptimizer):
+@alg_register.register('dehb')
+class DEHB(DE):
     def __init__(self,
                  space: DenseConfigurationSpace,
+                 budget_bound = [9, 729],
+                 eta: int = 3,
                  seed: int = 42,
                  llambda=10,
                  boundary_fix_type='random',
@@ -18,12 +21,15 @@ class DE(AbstractOptimizer):
                  crossover_prob=0.5,
                  strategy='rand1_bin',
                  **kwargs):
-        AbstractOptimizer.__init__(self,
-                                   space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
-                                   seed=seed,
-                                   **kwargs)
+        DE.__init__(self,
+                    space=space,
+                    llambda=llambda,
+                    boundary_fix_type=boundary_fix_type,
+                    mutation_factor=mutation_factor,
+                    crossover_prob=crossover_prob,
+                    strategy=strategy,
+                    seed=seed,
+                    **kwargs)
 
         # Uniform2Gaussian.__init__(self,)
         self.dimension = self.space.get_dimensions()
@@ -32,7 +38,7 @@ class DE(AbstractOptimizer):
         self.crossover_prob = crossover_prob
         self.fix_type = boundary_fix_type
         # self.dimension = len(configs)
-        self.strategy = strategy        
+        self.strategy = strategy
         if self.strategy is not None:
             self.mutation_strategy = self.strategy.split('_')[0]
             self.crossover_strategy = self.strategy.split('_')[1]
@@ -64,15 +70,6 @@ class DE(AbstractOptimizer):
 
         return self._min_pop_size
 
-    def fix_boundary(self, individual):
-        if self.fix_type == 'random':
-            return np.where(
-                (individual > self.bounds.lb) & (individual < self.bounds.ub),
-                individual,
-                self.rng.uniform(self.bounds.lb, self.bounds.ub,
-                                 self.dimension))  # FIXME
-        elif self.fix_type == 'clip':
-            return np.clip(individual, self.bounds.lb, self.bounds.ub)
 
     def _suggest(self, n_suggestions=1):
         trial_list = []
@@ -84,15 +81,13 @@ class DE(AbstractOptimizer):
                 donor = self.mutation(current=target, best=None)
                 if donor is None:
                     candidate = self.rng.uniform(self.bounds.lb,
-                                                    self.bounds.ub,
-                                                    self.dimension)
+                                                 self.bounds.ub,
+                                                 self.dimension)
                 else:
                     candidate = self.crossover(target, donor)
             else:
-                candidate = self.rng.uniform(self.bounds.lb,
-                                                    self.bounds.ub,
-                                                    self.dimension)
-
+                candidate = self.rng.uniform(self.bounds.lb, self.bounds.ub,
+                                             self.dimension)
 
             self._num_suggestions += 1
             candidate = self.fix_boundary(candidate)
@@ -116,16 +111,16 @@ class DE(AbstractOptimizer):
             if trial.observe_value <= self.population_fitness[idx]:
                 self.population[idx] = trial.array
                 self.population_fitness[idx] = trial.observe_value
-            # self._num_suggestions += 1
-            # self.candidates[idx] = None
+                # self._num_suggestions += 1
+                # self.candidates[idx] = None
                 if trial.observe_value < self.current_best_fitness:
                     self.current_best = self.population[idx]
                     self.current_best_fitness = trial.observe_value
-                
+
     def mutation_rand1(self, r1, r2, r3):
         '''Performs the 'rand1' type of DE mutation
         '''
-        
+
         diff = r2 - r3
         mutant = r1 + self.mutation_factor * diff
         return mutant
@@ -158,7 +153,8 @@ class DE(AbstractOptimizer):
             mutant = self.mutation_rand1(r1, r2, r3)
 
         elif self.mutation_strategy == 'rand2':
-            r1, r2, r3, r4, r5 = self.sample_population(size=5, alt_pop=alt_pop)
+            r1, r2, r3, r4, r5 = self.sample_population(size=5,
+                                                        alt_pop=alt_pop)
             mutant = self.mutation_rand2(r1, r2, r3, r4, r5)
 
         elif self.mutation_strategy == 'rand2dir':
@@ -193,7 +189,7 @@ class DE(AbstractOptimizer):
 
         return mutant
 
-    def sample_population(self, size: int = 3, alt_pop= None):
+    def sample_population(self, size: int = 3, alt_pop=None):
         '''Samples 'size' individuals
 
         If alt_pop is None or a list/array of None, sample from own population
@@ -202,16 +198,22 @@ class DE(AbstractOptimizer):
         if isinstance(alt_pop, list) or isinstance(alt_pop, np.ndarray):
             idx = [indv is None for indv in alt_pop]
             if any(idx):
-                selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
+                selection = self.rng.choice(np.arange(len(self.population)),
+                                            size,
+                                            replace=False)
                 return np.array(self.population)[selection]
             else:
                 if len(alt_pop) < 3:
                     alt_pop = np.vstack((alt_pop, self.population))
-                selection = self.rng.choice(np.arange(len(alt_pop)), size, replace=False)
+                selection = self.rng.choice(np.arange(len(alt_pop)),
+                                            size,
+                                            replace=False)
                 alt_pop = np.stack(alt_pop)
                 return np.array(alt_pop)[selection]
         else:
-            selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
+            selection = self.rng.choice(np.arange(len(self.population)),
+                                        size,
+                                        replace=False)
             return np.array(self.population)[selection]
 
     def crossover_bin(self, target, mutant):
@@ -229,7 +231,7 @@ class DE(AbstractOptimizer):
         n = self.rng.randint(0, self.dimension)
         L = 0
         while ((self.rng.rand() < self.crossover_prob) and L < self.dimension):
-            idx = (n+L) % self.dimension
+            idx = (n + L) % self.dimension
             target[idx] = mutant[idx]
             L = L + 1
         return target
@@ -244,4 +246,4 @@ class DE(AbstractOptimizer):
         return offspring
 
 
-opt_class = DE
+opt_class = DEHB
