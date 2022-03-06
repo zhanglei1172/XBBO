@@ -74,6 +74,11 @@ All examples can be found in `examples/` folder.
   - [X] PBT
   - [X] TuRBO
 
+- [ ] multi-fidelity
+  - [x] HyperBand
+  - [ ] BOHB
+  - [ ] DEHB
+
 ## Benchmark
 
 Run `tests/xbbo_benchmark.py` to benchmark general BBO optimizer.
@@ -128,4 +133,4 @@ Here you can **comparison** with commonly used and well-known Hyperparameter Opt
 ## TODO
 
 - [ ] parallel
-- [ ] multi-fidelity
+- [x] multi-fidelity

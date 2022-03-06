@@ -19,8 +19,7 @@ if __name__ == "__main__":
                   seed=rng.randint(MAXINT),
                   round_limit=1)
     # Example call of the black-box function
-    def_res = mf_blackbox_func(cs.get_default_configuration(),
-                               info={"random_state": rng})
+    def_res = mf_blackbox_func(cs.get_default_configuration())
     print("Default res: {}".format(def_res))
     # ---- Begin BO-loop ----
     while not mf_hpopt.check_stop():
