@@ -43,7 +43,7 @@ class NSGAII(AbstractOptimizer):
         self.gen = 0
         self.listy = []
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         assert self.llambda % n_suggestions == 0
         trial_list = []
         for n in range(n_suggestions):
@@ -64,7 +64,7 @@ class NSGAII(AbstractOptimizer):
         # self._num_suggestions += n_suggestions
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
             self.listy.append(trial.observe_value)

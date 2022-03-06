@@ -7,6 +7,7 @@ from typing import List, Optional, Tuple, Union
 
 from xbbo.surrogate.base import BaseRF
 from xbbo.configspace.space import DenseConfigurationSpace
+from xbbo.utils.constants import MAXINT
 from xbbo.utils.util import get_types
 
 
@@ -43,7 +44,7 @@ class RandomForestSurrogate(BaseRF):
         self.models = list()
         self.configspace = configspace
         self.rng = rng
-        self.random_seeds = self.rng.randint(low=1, high=10000, size=self.ensemble_size)
+        self.random_seeds = self.rng.randint(low=1, high=MAXINT, size=self.ensemble_size)
         types, bounds = get_types(configspace)
         super().__init__(
             configspace=configspace,

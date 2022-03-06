@@ -246,7 +246,7 @@ class TuRBO(AbstractOptimizer):
             raise ValueError('surrogate {} not in {}'.format(
                 surrogate, ['gp']))
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         markers = np.array(self.trials.markers)
 
         for m in range(self.num_tr):
@@ -288,7 +288,7 @@ class TuRBO(AbstractOptimizer):
                       marker=marker))
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         update_markers = defaultdict(list)
         for trial in trial_list:
             self.trials.add_a_trial(trial)

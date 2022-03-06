@@ -10,6 +10,7 @@ from ConfigSpace.hyperparameters import Constant
 
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.initial_design.base import InitialDesign
+from xbbo.utils.constants import MAXINT
 
 class LHDesign(InitialDesign):
     """Latin Hypercube design
@@ -38,7 +39,7 @@ class LHDesign(InitialDesign):
             if isinstance(p, Constant):
                 constants += 1
 
-        lhd = LatinHypercube(d=len(params) - constants, seed=self.rng.randint(0, 1000000)).random(n=design_num)
+        lhd = LatinHypercube(d=len(params) - constants, seed=self.rng.randint(0, MAXINT)).random(n=design_num)
 
         return self._transform_continuous_designs(design=lhd,
                                                   origin='LHD',

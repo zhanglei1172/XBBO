@@ -58,7 +58,7 @@ class BORE(AbstractOptimizer):
         self.options = kwargs.get('options', dict(maxiter=1000, ftol=1e-9))
         self.quantile = kwargs.get("quantile", 0.25)
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         dataset_size = self.trials.trials_num
 
         # Insufficient training data
@@ -149,7 +149,7 @@ class BORE(AbstractOptimizer):
 
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         # for xx, yy in zip(features, y):
         for trial in trial_list:
             self.trials.add_a_trial(trial)

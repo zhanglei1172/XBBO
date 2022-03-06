@@ -15,6 +15,7 @@ class Trial:
                  time=None,
                  origin: str = '',
                  marker=None,
+                 info: dict={},
                  **kwargs) -> None:
         self.config_dict = config_dict
         self.array = array
@@ -24,11 +25,12 @@ class Trial:
         self.time = time
         self.origin = origin
         self.marker = marker
+        self.info = info
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
-    def add_observe_value(self, observe_value, time=None):
-        self.time = time
+    def add_observe_value(self, observe_value=None, obs_info={}):
+        self.info.update(obs_info)
         self.observe_value = observe_value
 
 
@@ -43,6 +45,7 @@ class Trials:
         self.best_id = None
         self.trials_num = 0
         self.markers = []
+        self.infos = []
         # self.run_id = 0
         # self.run_history = {}
         self.traj_history = []
@@ -51,6 +54,7 @@ class Trials:
     def add_a_trial(self, trial: Trial, permit_duplicate=False):
         if not permit_duplicate:
             assert trial.configuration not in self._his_configs_set
+        self.infos.append(trial.info)
         self._his_configs_set.add(trial.configuration)
         self._his_configs.append(trial.configuration)
         self.traj_history.append(trial)

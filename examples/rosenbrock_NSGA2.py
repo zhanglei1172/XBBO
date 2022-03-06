@@ -4,6 +4,7 @@ from xbbo.search_space.fast_example_problem import build_space_hard, rosenbrock_
 
 
 from xbbo.search_algorithm.nsga_optimizer import NSGAII
+from xbbo.utils.constants import MAXINT
 
 
 
@@ -16,7 +17,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_space_hard(rng)
     # define black box optimizer
-    hpopt = NSGAII(space=cs, seed=rng.randint(10000),llambda=30)
+    hpopt = NSGAII(space=cs, seed=rng.randint(MAXINT),llambda=30)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)

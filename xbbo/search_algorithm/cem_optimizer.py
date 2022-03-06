@@ -41,7 +41,7 @@ class CEM(AbstractOptimizer):
         self.elite_num = max(int(round(self.llambda * self.elite_ratio)), 2)
         self.trials = Trials(dim=self.dimension)
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         for n in range(n_suggestions):
             # new_individual = self.feature_to_array(new_individual, )
@@ -63,7 +63,7 @@ class CEM(AbstractOptimizer):
         idx = np.argsort(self.buffer_y)[:self.elite_num]
         return self.buffer_x[idx, :], self.buffer_y[idx]
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
             self.buffer_x.append(trial.array)

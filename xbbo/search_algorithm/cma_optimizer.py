@@ -35,7 +35,7 @@ class CMAES(AbstractOptimizer):
         self.listx = []
         self.listy = []
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         for n in range(n_suggestions):
             new_individual = self.es.ask(1)[0]
@@ -50,7 +50,7 @@ class CMAES(AbstractOptimizer):
 
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial)
             # self.listx.append(self.array_to_feature(trial.array))

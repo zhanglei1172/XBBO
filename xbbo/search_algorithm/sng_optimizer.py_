@@ -44,7 +44,7 @@ class SNG(AbstractOptimizer, FeatureSpace_discrete_all_oneHot):
         self.buffer_y = []
 
 
-    def observe(self, features, y):
+    def _observe(self, features, y):
         self.buffer_x.extend(features)
         self.buffer_y.extend(y)
         if len(self.buffer_y) < self.lam:
@@ -54,7 +54,7 @@ class SNG(AbstractOptimizer, FeatureSpace_discrete_all_oneHot):
         self.buffer_x = []
         self.buffer_y = []
 
-    def suggest(self, n_suggestions):
+    def _suggest(self, n_suggestions):
         assert n_suggestions == 1, "noly for one-shot nas"
         features = [self.sampling() for _ in range(n_suggestions)]
         x_guess = [None] * n_suggestions

@@ -111,7 +111,7 @@ class SMBO(AbstractOptimizer):
             "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
             .format(surrogate, acq_func, acq_opt))
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         # currently only suggest one
         if (self.trials.trials_num) < self.init_budget:
@@ -170,7 +170,7 @@ class SMBO(AbstractOptimizer):
 
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         # print(y)
         for trial in trial_list:
             self.trials.add_a_trial(trial)

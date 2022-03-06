@@ -44,7 +44,7 @@ class Round():
         array_dense[self.trg] = array_sparse[self.src]
         return array_dense
     def get_bounds(self,):
-        return np.zeros(len(self.trg)), np.array(len(self.sizes))-1
+        return np.zeros(len(self.trg)), np.array((self.sizes))-1
 
 class OneHot():
     def __init__(self, src, trg, sizes) -> None:
@@ -84,6 +84,7 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         super().__init__(*args, **kwargs)
         # deep-copy only the hyperparameters. conditions, clauses, seed,
         # and other metadata ignored
+        self.random = other.random
         hps = other.get_hyperparameters()
         self.add_hyperparameters(hps)
         # self._dim = len(hps)

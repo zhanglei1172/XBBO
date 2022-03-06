@@ -3,6 +3,7 @@ import numpy as np
 from xbbo.search_space.fast_example_problem import build_branin_space, branin
 
 from xbbo.search_algorithm.turbo_optimizer import TuRBO
+from xbbo.utils.constants import MAXINT
 
 
 if __name__ == "__main__":
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_branin_space(rng)
     # define black box optimizer
-    hpopt = TuRBO(space=cs, seed=rng.randint(10000), initial_design='sobol', num_tr=1)
+    hpopt = TuRBO(space=cs, seed=rng.randint(MAXINT), initial_design='sobol', num_tr=1)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
