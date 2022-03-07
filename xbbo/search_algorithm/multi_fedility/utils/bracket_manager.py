@@ -182,6 +182,8 @@ class ConfigGenerator():
         self.population_fitness = np.array([np.inf] * pop_size)
         # adding attributes to DEHB objects to allow communication across subpopulations
         self.parent_idx = 0
+        self.promotion_pop = None
+        self.promotion_fitness = None
 
         # self.history = []
 
@@ -206,3 +208,168 @@ class ConfigGenerator():
             population = [population]
         # the population is maintained in a list-of-vector form where each ConfigSpace
         return np.array(population)
+
+class DEHB_ConfigGenerator(ConfigGenerator):
+    def __init__(self, cs, budget, max_pop_size, rng, mutation_factor=0.5,crossover_prob=0.5,strategy='rand1_bin',**kwargs) -> None:
+        super().__init__(cs, budget, max_pop_size, rng, **kwargs)
+        self.mutation_factor = mutation_factor
+        self.crossover_prob = crossover_prob
+        self.dimension = self.cs.get_dimensions()
+        self.strategy = strategy
+        if self.strategy is not None:
+            self.mutation_strategy = self.strategy.split('_')[0]
+            self.crossover_strategy = self.strategy.split('_')[1]
+        else:
+            self.mutation_strategy = self.crossover_strategy = None
+        self.reset(max_pop_size)
+        # self.population = [None] * self.llambda
+        # self.population_fitness = [np.inf] * self.llambda
+        # self.current_best = None
+        # self.current_best_fitness = np.inf
+        self._set_min_pop_size()
+
+    def _set_min_pop_size(self):
+        if self.mutation_strategy in ['rand1', 'rand2dir', 'randtobest1']:
+            self._min_pop_size = 3
+        elif self.mutation_strategy in ['currenttobest1', 'best1']:
+            self._min_pop_size = 2
+        elif self.mutation_strategy in ['best2']:
+            self._min_pop_size = 4
+        elif self.mutation_strategy in ['rand2']:
+            self._min_pop_size = 5
+        else:
+            self._min_pop_size = 1
+
+        return self._min_pop_size
+
+
+                
+    def _mutation_rand1(self, r1, r2, r3):
+        '''Performs the 'rand1' type of DE mutation
+        '''
+        
+        diff = r2 - r3
+        mutant = r1 + self.mutation_factor * diff
+        return mutant
+
+    def _mutation_rand2(self, r1, r2, r3, r4, r5):
+        '''Performs the 'rand2' type of DE mutation
+        '''
+        diff1 = r2 - r3
+        diff2 = r4 - r5
+        mutant = r1 + self.mutation_factor * diff1 + self.mutation_factor * diff2
+        return mutant
+
+    def _mutation_currenttobest1(self, current, best, r1, r2):
+        diff1 = best - current
+        diff2 = r1 - r2
+        mutant = current + self.mutation_factor * diff1 + self.mutation_factor * diff2
+        return mutant
+
+    def _mutation_rand2dir(self, r1, r2, r3):
+        diff = r1 - r2 - r3
+        mutant = r1 + self.mutation_factor * diff / 2
+        return mutant
+
+    def mutation(self, current=None, best=None, alt_pop=None):
+        '''Performs DE mutation
+        '''
+        if self.mutation_strategy == 'rand1':
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+
+            mutant = self._mutation_rand1(r1, r2, r3)
+
+        elif self.mutation_strategy == 'rand2':
+            r1, r2, r3, r4, r5 = self._sample_population(size=5, alt_pop=alt_pop)
+            mutant = self._mutation_rand2(r1, r2, r3, r4, r5)
+
+        elif self.mutation_strategy == 'rand2dir':
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+
+            mutant = self._mutation_rand2dir(r1, r2, r3)
+
+        elif self.mutation_strategy == 'best1':
+            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
+
+            if best is None:
+                best = self.population[np.argmin(self.population_fitness)]
+            mutant = self._mutation_rand1(best, r1, r2)
+
+        elif self.mutation_strategy == 'best2':
+            r1, r2, r3, r4 = self._sample_population(size=4, alt_pop=alt_pop)
+            if best is None:
+                best = self.population[np.argmin(self.population_fitness)]
+            mutant = self._mutation_rand2(best, r1, r2, r3, r4)
+
+        elif self.mutation_strategy == 'currenttobest1':
+            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
+            if best is None:
+                best = self.population[np.argmin(self.population_fitness)]
+            mutant = self._mutation_currenttobest1(current, best, r1, r2)
+
+        elif self.mutation_strategy == 'randtobest1':
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+            if best is None:
+                best = self.population[np.argmin(self.population_fitness)]
+            mutant = self._mutation_currenttobest1(r1, best, r2, r3)
+
+        return mutant
+
+    def _sample_population(self, size: int = 3, alt_pop= None):
+        '''Samples 'size' individuals
+
+        If alt_pop is None or a list/array of None, sample from own population
+        Else sample from the specified alternate population (alt_pop)
+        '''
+        if isinstance(alt_pop, list) or isinstance(alt_pop, np.ndarray):
+            idx = [indv is None for indv in alt_pop]
+            if any(idx):
+                selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
+                return np.array(self.population)[selection]
+            else:
+                if len(alt_pop) < 3:
+                    alt_pop = np.vstack((alt_pop, self.population))
+                selection = self.rng.choice(np.arange(len(alt_pop)), size, replace=False)
+                alt_pop = np.stack(alt_pop)
+                return np.array(alt_pop)[selection]
+        else:
+            selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
+            return np.array(self.population)[selection]
+
+    def _crossover_bin(self, target, mutant):
+        '''Performs the binomial crossover of DE
+        '''
+        cross_points = self.rng.rand(self.dimension) < self.crossover_prob
+        if not np.any(cross_points):
+            cross_points[self.rng.randint(0, self.dimension)] = True
+        offspring = np.where(cross_points, mutant, target)
+        return offspring
+
+    def _crossover_exp(self, target, mutant):
+        '''Performs the exponential crossover of DE
+        '''
+        n = self.rng.randint(0, self.dimension)
+        L = 0
+        while ((self.rng.rand() < self.crossover_prob) and L < self.dimension):
+            idx = (n+L) % self.dimension
+            target[idx] = mutant[idx]
+            L = L + 1
+        return target
+
+    def crossover(self, target, mutant):
+        '''Performs DE crossover
+        '''
+        if self.crossover_strategy == 'bin':
+            offspring = self._crossover_bin(target, mutant)
+        elif self.crossover_strategy == 'exp':
+            offspring = self._crossover_exp(target, mutant)
+        return offspring
+
+
+    def _init_mutant_population(self, pop_size, population, target=None, best=None):
+        '''Generates pop_size mutants from the passed population
+        '''
+        mutants = np.zeros((pop_size, self.dimension))
+        for i in range(pop_size):
+            mutants[i] = self.mutation(current=target, best=best, alt_pop=population)
+        return mutants

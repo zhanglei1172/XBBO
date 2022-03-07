@@ -1,6 +1,6 @@
 # XBBO
 
-**XBBO** is an an effective, modular and flexible black-box optimization (BBO) codebase, which aims to provide a common framework and benchmark for the BBO community.
+**XBBO** is an an effective, modular, reproducible and flexible black-box optimization (BBO) codebase, which aims to provide a common framework and benchmark for the BBO community.
 
 ## Installation
 
