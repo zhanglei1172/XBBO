@@ -33,7 +33,7 @@ def mf_stochastic_count_one(config, info={}):
     # result dict passed to DE/DEHB as function evaluation output
     res = {
         "fitness": xs+rs,  # must-have key that DE/DEHB minimizes
-        "cost": budget,  # must-have key that associates cost/runtime 
+        # "cost": budget,  # must-have key that associates cost/runtime 
         "eval_time": time.time() - st
         # "info": dict() # optional key containing a dictionary of additional info
     }

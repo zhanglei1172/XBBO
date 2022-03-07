@@ -63,7 +63,7 @@ class HB(AbstractOptimizer):
         self.learner_time_recoder = 0
         self.total_time_recoder = 0
         self.kwargs = kwargs
-        self._get_pop_sizes()
+        self._get_max_pop_sizes()
         self._init_subpop(**kwargs)
 
     def check_stop(self, ):
@@ -76,16 +76,16 @@ class HB(AbstractOptimizer):
         """ Starts a new bracket based on Hyperband
         """
         # start new bracket
+        # self.round_recoder = self.bracket_counter // self.max_SH_iter
         self.bracket_counter += 1  # iteration counter gives the bracket count or bracket ID
-        n_configs, budgets = self.get_next_bracket_space(self.bracket_counter)
+        n_configs, budgets = self._get_next_bracket_space(self.bracket_counter)
         bracket = SHBracketManager(n_configs=n_configs,
                                    budgets=budgets,
                                    bracket_id=self.bracket_counter)
         self.active_brackets.append(bracket)
-        self.round_recoder = self.bracket_counter // self.max_SH_iter
         return bracket
 
-    def get_next_bracket_space(self, iteration):
+    def _get_next_bracket_space(self, iteration):
         '''Computes the Successive Halving spacing
 
         Given the iteration index, computes the budget spacing to be used and
@@ -171,7 +171,7 @@ class HB(AbstractOptimizer):
             self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
-            learner_train_time = job_info.get('time', 0)
+            learner_train_time = job_info.get('eval_time', 0)
             budget = job_info['budget']
             parent_id = job_info['parent_id']
             individual = trial.array  # TODO
@@ -183,6 +183,7 @@ class HB(AbstractOptimizer):
                     bracket.complete_job(
                         budget)  # IMPORTANT to perform synchronous SH
             # carry out DE selection
+            assert np.isposinf(self.de[budget].population_fitness[parent_id])
             if fitness <= self.de[budget].population_fitness[parent_id]:  # TODO
                 self.de[budget].population[parent_id] = individual
                 self.de[budget].population_fitness[parent_id] = fitness
@@ -192,11 +193,14 @@ class HB(AbstractOptimizer):
                     self.current_best_fitness = trial.observe_value
                     self.current_best_trial = trial
 
-        self.clean_inactive_brackets()
+
+        self._clean_inactive_brackets()
+        if len(self.active_brackets) == 0: # complete current bracket
+            self.round_recoder = self.bracket_counter // self.max_SH_iter
         self.total_time_recoder += time.time() - st + learner_train_time
         self.learner_time_recoder += learner_train_time
 
-    def clean_inactive_brackets(self):
+    def _clean_inactive_brackets(self):
         """ Removes brackets from the active list if it is done as communicated by Bracket Manager
         """
         if len(self.active_brackets) == 0:
@@ -207,12 +211,12 @@ class HB(AbstractOptimizer):
         ]
         return
 
-    def _get_pop_sizes(self):
+    def _get_max_pop_sizes(self):
         """Determines maximum pop size(config num) for each budget
         """
         self._max_pop_size = {}
         for i in range(self.max_SH_iter):
-            n, r = self.get_next_bracket_space(i)
+            n, r = self._get_next_bracket_space(i)
             for j, r_j in enumerate(r):
                 self._max_pop_size[r_j] = max(
                     n[j], self._max_pop_size[r_j]
@@ -287,7 +291,7 @@ class HB(AbstractOptimizer):
         # self.de[budget].parent_idx = self.de[
         #     budget].parent_idx % self._max_pop_size[budget]
         self.de[budget].parent_idx = self.de[
-            budget].parent_idx % bracket.n_configs[bracket.current_rung]
+            budget].parent_idx % bracket.current_n_config
         return parent_id
 
 

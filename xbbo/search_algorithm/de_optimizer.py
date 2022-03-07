@@ -122,7 +122,7 @@ class DE(AbstractOptimizer):
                     self.current_best = self.population[idx]
                     self.current_best_fitness = trial.observe_value
                 
-    def mutation_rand1(self, r1, r2, r3):
+    def _mutation_rand1(self, r1, r2, r3):
         '''Performs the 'rand1' type of DE mutation
         '''
         
@@ -130,7 +130,7 @@ class DE(AbstractOptimizer):
         mutant = r1 + self.mutation_factor * diff
         return mutant
 
-    def mutation_rand2(self, r1, r2, r3, r4, r5):
+    def _mutation_rand2(self, r1, r2, r3, r4, r5):
         '''Performs the 'rand2' type of DE mutation
         '''
         diff1 = r2 - r3
@@ -138,13 +138,13 @@ class DE(AbstractOptimizer):
         mutant = r1 + self.mutation_factor * diff1 + self.mutation_factor * diff2
         return mutant
 
-    def mutation_currenttobest1(self, current, best, r1, r2):
+    def _mutation_currenttobest1(self, current, best, r1, r2):
         diff1 = best - current
         diff2 = r1 - r2
         mutant = current + self.mutation_factor * diff1 + self.mutation_factor * diff2
         return mutant
 
-    def mutation_rand2dir(self, r1, r2, r3):
+    def _mutation_rand2dir(self, r1, r2, r3):
         diff = r1 - r2 - r3
         mutant = r1 + self.mutation_factor * diff / 2
         return mutant
@@ -153,47 +153,47 @@ class DE(AbstractOptimizer):
         '''Performs DE mutation
         '''
         if self.mutation_strategy == 'rand1':
-            r1, r2, r3 = self.sample_population(size=3, alt_pop=alt_pop)
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
 
-            mutant = self.mutation_rand1(r1, r2, r3)
+            mutant = self._mutation_rand1(r1, r2, r3)
 
         elif self.mutation_strategy == 'rand2':
-            r1, r2, r3, r4, r5 = self.sample_population(size=5, alt_pop=alt_pop)
-            mutant = self.mutation_rand2(r1, r2, r3, r4, r5)
+            r1, r2, r3, r4, r5 = self._sample_population(size=5, alt_pop=alt_pop)
+            mutant = self._mutation_rand2(r1, r2, r3, r4, r5)
 
         elif self.mutation_strategy == 'rand2dir':
-            r1, r2, r3 = self.sample_population(size=3, alt_pop=alt_pop)
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
 
-            mutant = self.mutation_rand2dir(r1, r2, r3)
+            mutant = self._mutation_rand2dir(r1, r2, r3)
 
         elif self.mutation_strategy == 'best1':
-            r1, r2 = self.sample_population(size=2, alt_pop=alt_pop)
+            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
 
             if best is None:
                 best = self.population[np.argmin(self.population_fitness)]
-            mutant = self.mutation_rand1(best, r1, r2)
+            mutant = self._mutation_rand1(best, r1, r2)
 
         elif self.mutation_strategy == 'best2':
-            r1, r2, r3, r4 = self.sample_population(size=4, alt_pop=alt_pop)
+            r1, r2, r3, r4 = self._sample_population(size=4, alt_pop=alt_pop)
             if best is None:
                 best = self.population[np.argmin(self.population_fitness)]
-            mutant = self.mutation_rand2(best, r1, r2, r3, r4)
+            mutant = self._mutation_rand2(best, r1, r2, r3, r4)
 
         elif self.mutation_strategy == 'currenttobest1':
-            r1, r2 = self.sample_population(size=2, alt_pop=alt_pop)
+            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
             if best is None:
                 best = self.population[np.argmin(self.population_fitness)]
-            mutant = self.mutation_currenttobest1(current, best, r1, r2)
+            mutant = self._mutation_currenttobest1(current, best, r1, r2)
 
         elif self.mutation_strategy == 'randtobest1':
-            r1, r2, r3 = self.sample_population(size=3, alt_pop=alt_pop)
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
             if best is None:
                 best = self.population[np.argmin(self.population_fitness)]
-            mutant = self.mutation_currenttobest1(r1, best, r2, r3)
+            mutant = self._mutation_currenttobest1(r1, best, r2, r3)
 
         return mutant
 
-    def sample_population(self, size: int = 3, alt_pop= None):
+    def _sample_population(self, size: int = 3, alt_pop= None):
         '''Samples 'size' individuals
 
         If alt_pop is None or a list/array of None, sample from own population
@@ -214,7 +214,7 @@ class DE(AbstractOptimizer):
             selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
             return np.array(self.population)[selection]
 
-    def crossover_bin(self, target, mutant):
+    def _crossover_bin(self, target, mutant):
         '''Performs the binomial crossover of DE
         '''
         cross_points = self.rng.rand(self.dimension) < self.crossover_prob
@@ -223,7 +223,7 @@ class DE(AbstractOptimizer):
         offspring = np.where(cross_points, mutant, target)
         return offspring
 
-    def crossover_exp(self, target, mutant):
+    def _crossover_exp(self, target, mutant):
         '''Performs the exponential crossover of DE
         '''
         n = self.rng.randint(0, self.dimension)
@@ -238,9 +238,9 @@ class DE(AbstractOptimizer):
         '''Performs DE crossover
         '''
         if self.crossover_strategy == 'bin':
-            offspring = self.crossover_bin(target, mutant)
+            offspring = self._crossover_bin(target, mutant)
         elif self.crossover_strategy == 'exp':
-            offspring = self.crossover_exp(target, mutant)
+            offspring = self._crossover_exp(target, mutant)
         return offspring
 
 
