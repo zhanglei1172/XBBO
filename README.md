@@ -77,7 +77,7 @@ All examples can be found in `examples/` folder.
 - [ ] multi-fidelity
   - [x] HyperBand
   - [ ] BOHB
-  - [ ] DEHB
+  - [x] DEHB
 
 ## Benchmark
 
@@ -133,4 +133,4 @@ Here you can **comparison** with commonly used and well-known Hyperparameter Opt
 ## TODO
 
 - [ ] parallel
-- [x] multi-fidelity
+- [ ] multi-fidelity

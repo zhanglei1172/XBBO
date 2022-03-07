@@ -22,6 +22,7 @@ if __name__ == "__main__":
     def_res = mf_blackbox_func(cs.get_default_configuration())
     print("Default res: {}".format(def_res))
     # ---- Begin BO-loop ----
+    cnt = 0
     while not mf_hpopt.check_stop():
         # suggest
         trial_list = mf_hpopt.suggest()
@@ -31,8 +32,10 @@ if __name__ == "__main__":
         trial_list[0].add_observe_value(observe_value=res['fitness'],
                                         obs_info=res)
         mf_hpopt.observe(trial_list=trial_list)
-
+        
         print(res['fitness'])
+        cnt += 1
+    print(cnt)
 
     # plt.plot(hpopt.trials.get_history()[0])
     # plt.savefig('./out/rosenbrock_bo_gp.png')

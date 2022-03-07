@@ -8,7 +8,7 @@ from xbbo.search_algorithm.multi_fedility.hyperband import HB
 from xbbo.search_algorithm.multi_fedility.DEHB import DEHB
 from xbbo.utils.constants import MAXINT
 
-def mf_blackbox_func(config, info={}):
+def mf_iter(config, info={}):
     budget = info.get("budget", 100)
     
     res = {
@@ -23,11 +23,12 @@ if __name__ == "__main__":
     rng = np.random.RandomState(42)
 
     # define black box function
-    # mf_blackbox_func = mf_stochastic_count_one
+    mf_blackbox_func = mf_stochastic_count_one
+    # mf_blackbox_func = mf_iter
     # # define search space
-    # cs = build_mf_SCO_space(rng, dim=8)
-    cs = ConfigurationSpace(seed=rng.randint(MAXINT))
-    cs.add_hyperparameter(UniformFloatHyperparameter('x',0,1))
+    cs = build_mf_SCO_space(rng, dim=8)
+    # cs = ConfigurationSpace(seed=rng.randint(MAXINT))
+    # cs.add_hyperparameter(UniformFloatHyperparameter('x',0,1))
     # define black box optimizer
     mf_hpopt = DEHB(space=cs,
                   budget_bound=[1, 81],
