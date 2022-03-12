@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import time
 
 import numpy as np
 import ConfigSpace as CS
@@ -19,8 +20,10 @@ class AbstractOptimizer(ABC):
                  encoding_cat='round',
                  encoding_ord='round',
                  seed=42,
+                 suggest_limit: float = np.inf,
                  total_time_limit: float = np.inf,
                  learner_time_limit: float = np.inf,
+                 budget_limit: float= np.inf,
                  **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
@@ -34,10 +37,15 @@ class AbstractOptimizer(ABC):
                                              encoding_cat=encoding_cat,
                                              encoding_ord=encoding_ord)
         self.rng = np.random.RandomState(seed)
+        self.suggest_limit = suggest_limit
+        self.budget_limit = budget_limit
         self.total_time_limit = total_time_limit
         self.learner_time_limit = learner_time_limit
         self.learner_time_recoder = 0
         self.time_limit_recoder = 0
+        self.total_time_recoder = 0
+        self.suggest_counter = 0
+        self.budget_recoder = 0
 
     def fix_boundary(self, individual):
         if self.fix_type == 'random':
@@ -50,7 +58,11 @@ class AbstractOptimizer(ABC):
             return np.clip(individual, self.bounds.lb, self.bounds.ub)
 
     def suggest(self, n_suggestions=1):
-        return self._suggest(n_suggestions)
+        st = time.time()
+        ret = self._suggest(n_suggestions)
+        self.total_time_recoder += time.time() - st
+        self.suggest_counter += 1
+        return ret
 
     @abstractmethod
     def _suggest(self, n_suggestions):  # output [meta param]
@@ -87,4 +99,20 @@ class AbstractOptimizer(ABC):
         pass
 
     def observe(self, trial_list: Trials):
-        return self._observe(trial_list)
+        learner_train_time = 0
+        for trial in trial_list:
+            job_info = trial.info
+            learner_train_time += job_info.get('eval_time', 0)
+            self.budget_recoder += job_info.get('budget', 0)
+
+        st = time.time()
+        ret = self._observe(trial_list)
+        self.total_time_recoder += time.time() - st + learner_train_time
+        self.learner_time_recoder += learner_train_time
+        return ret
+
+    def check_stop(self, ):
+        if self.learner_time_recoder >= self.learner_time_limit or self.total_time_recoder >= self.total_time_limit or self.suggest_counter >= self.suggest_limit or self.budget_recoder >= self.budget_limit:
+            return True
+        else:
+            return False

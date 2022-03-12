@@ -7,15 +7,15 @@ from typing import List
 import numpy as np
 
 # from xbbo.configspace.feature_space import Uniform2Gaussian
-from xbbo.search_algorithm.multi_fedility.hyperband import HB
+from xbbo.search_algorithm.multi_fidelity.hyperband import HB
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
-from xbbo.search_algorithm.multi_fedility.utils.bracket_manager import DEHB_ConfigGenerator, SHBracketManager
+from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import DEHB_ConfigGenerator, SHBracketManager
 from .. import alg_register
 
 
-@alg_register.register('dehb')
-class DEHB(HB):
+@alg_register.register('bohb')
+class BOHB(HB):
     def __init__(self,
                  space: DenseConfigurationSpace,
                  budget_bound=[9, 729],
@@ -267,4 +267,4 @@ class DEHB(HB):
 
 
 
-opt_class = DEHB
+opt_class = BOHB

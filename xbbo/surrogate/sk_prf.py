@@ -12,7 +12,7 @@ from xbbo.utils.util import get_types
 try:
     from sklearn.ensemble.base import _partition_estimators
     old_sk_version = True
-except ModuleNotFoundError:
+except:
     from sklearn.ensemble._base import _partition_estimators
     old_sk_version = False
 

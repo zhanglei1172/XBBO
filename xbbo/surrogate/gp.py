@@ -38,12 +38,13 @@ class GP(ExactGP):
         return MultivariateNormal(mean_x, covar_x)
 
 
-def train_gp(train_x, train_y, use_ard, num_steps, hypers={}):
+def train_gp(train_x, train_y, use_ard, num_steps, hypers=None):
     """Fit a GP model where train_x is in [0, 1]^d and train_y is standardized."""
     assert train_x.ndim == 2
     assert train_y.ndim == 1
     assert train_x.shape[0] == train_y.shape[0]
-
+    if hypers is None:
+        hypers = {}
     # Create hyper parameter bounds
     noise_constraint = Interval(5e-4, 0.2)
     if use_ard:

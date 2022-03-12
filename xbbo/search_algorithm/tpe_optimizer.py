@@ -13,6 +13,7 @@ from xbbo.initial_design import ALL_avaliable_design
 
 logger = logging.getLogger(__name__)
 
+
 @alg_register.register('tpe')
 class TPE(AbstractOptimizer):
     '''
@@ -25,7 +26,7 @@ class TPE(AbstractOptimizer):
             #  bandwidth=1,
             gamma=0.15,
             initial_design: str = 'sobol',
-            total_limit: int = 10,
+            suggest_limit: int = 10,
             candidates_num=64,
             min_bandwidth=1e-3,
             bandwidth_factor=3,
@@ -37,13 +38,14 @@ class TPE(AbstractOptimizer):
                                    encoding_cat='round',
                                    encoding_ord='round',
                                    seed=seed,
+                                   suggest_limit=suggest_limit,
                                    **kwargs)
         self.min_bandwidth = min_bandwidth
         self.bw_factor = bandwidth_factor
 
         self.dimension = self.space.get_dimensions()
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
@@ -148,10 +150,9 @@ class TPE(AbstractOptimizer):
                                 'sampled vector: %s has EI value %s' %
                                 (vector, val))
                             logger.warning("data in the KDEs:\n%s\n%s" %
-                                                (kde_good.data, kde_bad.data))
-                            logger.warning(
-                                "bandwidth of the KDEs:\n%s\n%s" %
-                                (kde_good.bw, kde_bad.bw))
+                                           (kde_good.data, kde_bad.data))
+                            logger.warning("bandwidth of the KDEs:\n%s\n%s" %
+                                           (kde_good.bw, kde_bad.bw))
                             logger.warning("l(x) = %s" % (l(vector)))
                             logger.warning("g(x) = %s" % (g(vector)))
 
@@ -173,24 +174,21 @@ class TPE(AbstractOptimizer):
                         config = self._sample_nonduplicate_config()[0]
                     else:
                         logger.debug('best_vector: {}, {}, {}, {}'.format(
-                            best_vector, best, l(best_vector),
-                            g(best_vector)))
+                            best_vector, best, l(best_vector), g(best_vector)))
                         for i, hp_value in enumerate(best_vector):
                             if isinstance(
                                     self.space.get_hyperparameter(
-                                        self.space.
-                                        get_hyperparameter_by_idx(i)),
-                                    ConfigSpace.hyperparameters.
+                                        self.space.get_hyperparameter_by_idx(
+                                            i)), ConfigSpace.hyperparameters.
                                     CategoricalHyperparameter):
-                                best_vector[i] = int(
-                                    np.rint(best_vector[i]))
+                                best_vector[i] = int(np.rint(best_vector[i]))
 
                         config = DenseConfiguration.from_array(
                             self.space, np.asarray(best_vector))
                     trial_list.append(
                         Trial(configuration=config,
-                                config_dict=config.get_dictionary(),
-                                array=best_vector))
+                              config_dict=config.get_dictionary(),
+                              array=best_vector))
         return trial_list
 
     def _sample_nonduplicate_config(self, num_configs=1):

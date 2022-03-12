@@ -1,12 +1,11 @@
 from typing import List
 import typing
-from scipy import optimize
+from scipy import optimize, stats
 import sklearn
 # from sklearn.gaussian_process import kernels
 from sklearn.gaussian_process.kernels import Kernel, KernelOperator
 # import torch
 # from scipy.linalg import solve_triangular, cholesky
-# from scipy import optimize, stats
 import numpy as np
 # import GPy
 from sklearn import gaussian_process

@@ -22,7 +22,7 @@ def run_one_exp(opt_name, max_call, seed):
     hpopt = alg_register[opt_name](
         space=cs,
         seed=seed,
-        total_limit=max_call,
+        suggest_limit=max_call,
         initial_design='sobol',
     )
 

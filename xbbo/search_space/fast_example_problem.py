@@ -11,12 +11,14 @@ from ConfigSpace.hyperparameters import \
 from xbbo.utils.constants import MAXINT
 
 
-def mf_stochastic_count_one(config, info={}):
+def mf_stochastic_count_one(config, info=None):
     '''
     $$
     f(x)=-\left(\sum_{x \in X_{c a t}} x+\sum_{x \in X_{c o n t}} b\left[\left(B_{p=x}\right)\right]\right)
     $$
     '''
+    if info is None:
+        info = {}
     budget = info.get("budget", 100)
     random_state = info.get('random_state', np.random.RandomState(0))
     xs = []

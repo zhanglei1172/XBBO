@@ -8,17 +8,18 @@ from xbbo.search_algorithm.multi_fidelity.hyperband import HB
 from xbbo.search_algorithm.multi_fidelity.DEHB import DEHB
 from xbbo.utils.constants import MAXINT
 
-# def mf_iter(config, inf=None):
-#     if 
-#     budget = info.get("budget", 100)
+def mf_iter(config, info=None):
+    if info is None:
+        info = {}
+    budget = info.get("budget", 100)
     
-#     res = {
-#     "fitness": config['x']/budget,  # must-have key that DE/DEHB minimizes
-#     # "cost": budget,  # must-have key that associates cost/runtime 
-#     # "eval_time": time.time() - st
-#     # "info": dict() # optional key containing a dictionary of additional info
-#     }
-#     return res
+    res = {
+    "fitness": config['x']/budget,  # must-have key that DE/DEHB minimizes
+    # "cost": budget,  # must-have key that associates cost/runtime 
+    # "eval_time": time.time() - st
+    # "info": dict() # optional key containing a dictionary of additional info
+    }
+    return res
 
 if __name__ == "__main__":
     rng = np.random.RandomState(42)

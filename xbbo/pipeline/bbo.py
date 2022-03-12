@@ -22,7 +22,7 @@ class BBO:
 
         # Setup optimizer
         opt_class = alg_register[cfg.OPTM.name]
-        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
+        self.optimizer_instance = opt_class(self.config_spaces,suggest_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
 
 
         self.n_suggestions = cfg.OPTM.n_suggestions

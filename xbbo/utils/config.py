@@ -76,6 +76,8 @@ def load_cfg_fom_args(cfg_, description = "Config file options.", argv=None):
                         help=help_s, required=True, type=str)
     parser.add_argument('-r, '"--repeat", dest="repeat_num",
                         help=help_s, required=True, type=int)
+    parser.add_argument("--mark", dest="mark_label", default='',
+                        help=help_s, required=False, type=str)
     help_s = "See pycls/core/config.py for all options"
     parser.add_argument("opts", help=help_s, default=None,
                         nargs=argparse.REMAINDER)
@@ -86,11 +88,14 @@ def load_cfg_fom_args(cfg_, description = "Config file options.", argv=None):
     cfg_.merge_from_file(args.cfg_file)
     cfg_.merge_from_list(args.opts)
     cfg_.repeat_num = args.repeat_num
+    cfg_.mark_label = args.mark_label
     if not os.path.exists(cfg_.GENERAL.exp_dir_root):
         os.mkdir(cfg_.GENERAL.exp_dir_root)
     m = hashlib.md5(cfg_.__repr__().encode('utf-8'))
     exp_dir = time.strftime('/%Y-%m-%d__%H_%M_%S__',time.localtime(time.time()))+m.hexdigest()
     # _C.runtime = time.time()
+    if cfg_.mark_label is '':
+        cfg_.mark_label = '{}-{}'.format(cfg_.OPTM.name, m.hexdigest())
     cfg_.GENERAL.exp_dir = cfg_.GENERAL.exp_dir_root + exp_dir # TODO
     if os.path.exists(cfg_.GENERAL.exp_dir):
         assert False

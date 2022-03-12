@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # define search space
     cs = build_space_hard(rng)
     # define black box optimizer
-    hpopt = TPE(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol',)
+    hpopt = TPE(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol',)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
