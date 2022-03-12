@@ -1,6 +1,7 @@
 import numpy as np
 
-from xbbo.pipeline.bbo_benchmark import BBObenchmark, Analyze
+from xbbo.pipeline.bbo_benchmark import BBObenchmark
+from xbbo.utils.analysis import Analyse, Analyse_multi_benchmark
 from xbbo.utils.config import cfg, load_cfg_fom_args
 from xbbo.utils.constants import MAXINT
 
@@ -28,16 +29,17 @@ def do_experiment(cfg_clone):  # pragma: main
 
 
 if __name__ == '__main__':
-    # cfg_clone = cfg.clone()
-    # cfg.freeze()
-    # load_cfg_fom_args(cfg_clone, argv=[                "-c",
-    #             "./cfgs/dehb.yaml",
-    #             "-r",
-    #             "10",
-    #             "--mark",
-    #             "DEHB-origin"])  # repeat 3 times with diffent seeds
-    # do_experiment(cfg_clone)
-    # cfg.defrost()
+    cfg_clone = cfg.clone()
+    cfg.freeze()
+    load_cfg_fom_args(cfg_clone, argv=[                "-c",
+                "./cfgs/dehb.yaml",
+                "-r",
+                "10",
+                "--mark",
+                "DEHB"])  # repeat 3 times with diffent seeds
+    do_experiment(cfg_clone)
+    cfg.defrost()
+
     cfg_clone = cfg.clone()
     cfg.freeze()
     load_cfg_fom_args(cfg_clone, argv=[                "-c",
@@ -48,4 +50,5 @@ if __name__ == '__main__':
                 "RS"])  # repeat 3 times with diffent seeds
     do_experiment(cfg_clone)
     cfg.defrost()
-    Analyze(cfg_clone.GENERAL.exp_dir_root, benchmark='countingones', methods=['dehb', 'rs'])
+    Analyse(cfg_clone.GENERAL.exp_dir_root, benchmark='countingones', methods=['dehb', 'rs'])
+    Analyse_multi_benchmark()

@@ -120,7 +120,6 @@ class HB(AbstractOptimizer):
         return ns, budgets
 
     def _suggest(self, n_suggestions=1):
-        st = time.time()
         trial_list = []
         for n in range(n_suggestions):
             if len(self.active_brackets) == 0 or \
@@ -164,16 +163,14 @@ class HB(AbstractOptimizer):
                           "bracket_id": bracket.bracket_id
                       },
                       origin='HB'))
-        self.total_time_recoder += time.time() - st
         return trial_list
 
     def _observe(self, trial_list):
-        st = time.time()
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
-            learner_train_time = job_info.get('eval_time', 0)
+            # learner_train_time = job_info.get('eval_time', 0)
             budget = job_info['budget']
             parent_id = job_info['parent_id']
             individual = trial.array  # TODO
