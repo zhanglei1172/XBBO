@@ -16,5 +16,5 @@ OPTM:
     suggest_limit: 100
 
 TEST_PROBLEM:
-  name: countingones
+  name: nas_201 # countingones
 

@@ -19,7 +19,7 @@ def mf_stochastic_count_one(config, info=None):
     '''
     if info is None:
         info = {}
-    budget = info.get("budget", 100)
+    budget = info.get(Key.BUDGET, 100)
     random_state = info.get('random_state', np.random.RandomState(0))
     xs = []
     rs = []
@@ -36,7 +36,7 @@ def mf_stochastic_count_one(config, info=None):
     res = {
         "fitness": xs+rs,  # must-have key that DE/DEHB minimizes
         # "cost": budget,  # must-have key that associates cost/runtime 
-        "eval_time": time.time() - st
+        Key.EVAL_TIME: time.time() - st
         # "info": dict() # optional key containing a dictionary of additional info
     }
     res.update(info)
@@ -44,7 +44,7 @@ def mf_stochastic_count_one(config, info=None):
     # res = {
     #     "fitness": loss,
     #     "cost": cost,
-    #     "info": {"test_loss": test_loss, "budget": budget}
+    #     "info": {"test_loss": test_loss, Key.BUDGET: budget}
     # }
     return res
 

@@ -146,7 +146,7 @@ class HB(AbstractOptimizer):
             # notifies the Bracket Manager that a single config is to run for the budget chosen
             # job_info = {
             #     "config": config,
-            #     "budget": budget,
+            #     Key.BUDGET: budget,
             #     "parent_id": parent_id,
             #     "bracket_id": bracket.bracket_id
             # }
@@ -158,7 +158,7 @@ class HB(AbstractOptimizer):
                       config_dict=config.get_dictionary(),
                       array=candidate,
                       info={
-                          "budget": budget,
+                          Key.BUDGET: budget,
                           "parent_id": parent_id,
                           "bracket_id": bracket.bracket_id
                       },
@@ -170,8 +170,8 @@ class HB(AbstractOptimizer):
             self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
-            # learner_train_time = job_info.get('eval_time', 0)
-            budget = job_info['budget']
+            # learner_train_time = job_info.get(Key.EVAL_TIME, 0)
+            budget = job_info[Key.BUDGET]
             parent_id = job_info['parent_id']
             individual = trial.array  # TODO
             for bracket in self.active_brackets:

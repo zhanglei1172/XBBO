@@ -103,7 +103,7 @@ class DEHB(HB):
                       config_dict=config.get_dictionary(),
                       array=candidate,
                       info={
-                          "budget": budget,
+                          Key.BUDGET: budget,
                           "parent_id": parent_id,
                           "bracket_id": bracket.bracket_id
                       },
@@ -115,7 +115,7 @@ class DEHB(HB):
             self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
-            budget = job_info['budget']
+            budget = job_info[Key.BUDGET]
             parent_id = job_info['parent_id']
             individual = trial.array  # TODO
             for bracket in self.active_brackets:

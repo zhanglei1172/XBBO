@@ -5,6 +5,7 @@ import numpy as np
 import ConfigSpace as CS
 from xbbo.configspace.space import DenseConfigurationSpace
 from xbbo.core.trials import Trials
+from xbbo.utils.constants import Key
 # from xbbo.configspace.space import Configurations
 
 
@@ -22,8 +23,10 @@ class AbstractOptimizer(ABC):
                  seed=42,
                  suggest_limit: float = np.inf,
                  total_time_limit: float = np.inf,
+                 cost_limit: float = np.inf,
                  learner_time_limit: float = np.inf,
                  budget_limit: float= np.inf,
+                 objective_function=None,
                  **kwargs):
         """Build wrapper class to use an optimizer in benchmark.
 
@@ -39,6 +42,7 @@ class AbstractOptimizer(ABC):
         self.rng = np.random.RandomState(seed)
         self.suggest_limit = suggest_limit
         self.budget_limit = budget_limit
+        self.cost_limit = cost_limit
         self.total_time_limit = total_time_limit
         self.learner_time_limit = learner_time_limit
         self.learner_time_recoder = 0
@@ -46,6 +50,8 @@ class AbstractOptimizer(ABC):
         self.total_time_recoder = 0
         self.suggest_counter = 0
         self.budget_recoder = 0
+        self.cost_recoder = 0
+        self.objective_function = objective_function
 
     def fix_boundary(self, individual):
         if self.fix_type == 'random':
@@ -102,8 +108,9 @@ class AbstractOptimizer(ABC):
         learner_train_time = 0
         for trial in trial_list:
             job_info = trial.info
-            learner_train_time += job_info.get('eval_time', 0)
-            self.budget_recoder += job_info.get('budget', 0)
+            learner_train_time += job_info.get(Key.EVAL_TIME, 0)
+            self.cost_recoder += job_info.get(Key.COST, 0)
+            self.budget_recoder += job_info.get(Key.BUDGET, 0)
 
         st = time.time()
         ret = self._observe(trial_list)
@@ -116,3 +123,15 @@ class AbstractOptimizer(ABC):
             return True
         else:
             return False
+
+    def optimize(self):
+        assert self.objective_function is not None
+        while not self.check_stop():
+            trial_list = self.suggest()
+            for trial in (trial_list):
+                info = trial.info.copy()
+                res = self.objective_function(trial, **info)
+                info.update(res)
+                trial.add_observe_value(observe_value=info['function_value'],
+                                        obs_info=info)
+            self.observe(trial_list)

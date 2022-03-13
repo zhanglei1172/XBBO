@@ -20,9 +20,9 @@ class Analyse():
                  limit=1e7,
                  **kwargs) -> None:
         self.exp_dir_root = exp_dir_root
-        self.exp_dir = os.path.join(exp_dir_root, benchmark)
-        if not os.path.exists(self.exp_dir):
-            os.mkdir(self.exp_dir)
+        self.out_dir = os.path.join(exp_dir_root, benchmark)
+        if not os.path.exists(self.out_dir):
+            os.mkdir(self.out_dir)
         self.methods = methods
         self.benchmark = benchmark
         self._set_plot()
@@ -30,8 +30,8 @@ class Analyse():
         hashset = set()
         min_cost = np.inf
         max_cost = 0
-        self.min_regret = 1
-        self.max_regret = 0
+        self.min_regret = np.inf
+        self.max_regret = -np.inf
         self.regret_key = Key.REGRET_TEST
         # new first
         cfg_paths = sorted(glob(exp_dir_root + '/*/*.yaml'), reverse=True)
@@ -63,6 +63,8 @@ class Analyse():
                                                 4) + cfg["TEST_PROBLEM"].get(
                                                     "n_categorical", 4)
                     curr_regret = (curr_regret + d) / d  # 0-1
+                    max_budget = 93312 / d
+                    curr_cost /= max_budget
                 _, idx = np.unique(curr_regret, return_index=True)
                 idx.sort()
 
@@ -117,14 +119,14 @@ class Analyse():
             self.max_regret = max(self.max_regret, np.mean(te, axis=1)[idx][0])
 
             # For final score table
-            mean_df[method_name] = pd.Series(data=np.mean(te, axis=1)[idx],
+            mean_df[mark_label] = pd.Series(data=np.mean(te, axis=1)[idx],
                                              index=cost[idx])
-            std_df[method_name] = pd.Series(data=np.std(te, axis=1)[idx],
+            std_df[mark_label] = pd.Series(data=np.std(te, axis=1)[idx],
                                             index=cost[idx])
         mean_df = pd.DataFrame(mean_df)
         all_mean_df = mean_df.copy()
         all_mean_df.ffill().to_pickle(
-            os.path.join(self.exp_dir, 'all_mean_df.pkl'))
+            os.path.join(self.out_dir, 'all_mean_df.pkl'))
         std_df = pd.DataFrame(std_df)
         # minimum of the maximum time limit recorded for each algorithm
         cutoff_idx = min(
@@ -137,15 +139,15 @@ class Analyse():
             rank_df = mean_df.apply(stats.rankdata,
                                     axis=1,
                                     result_type='broadcast')
-            rank_df.to_pickle(os.path.join(self.exp_dir, 'rank_df.pkl'))
-        mean_df.iloc[-1].to_pickle(os.path.join(self.exp_dir, 'mean_df.pkl'))
-        std_df.iloc[-1].to_pickle(os.path.join(self.exp_dir, 'std_df.pkl'))
+            rank_df.to_pickle(os.path.join(self.out_dir, 'rank_df.pkl'))
+        mean_df.iloc[-1].to_pickle(os.path.join(self.out_dir, 'mean_df.pkl'))
+        std_df.iloc[-1].to_pickle(os.path.join(self.out_dir, 'std_df.pkl'))
 
         # self.plt = plt
         self.min_cost = min_cost
         self.max_cost = max_cost
-        self.min_regret = self.min_regret
-        self.max_regret = self.max_regret
+        # self.min_regret = self.min_regret
+        # self.max_regret = self.max_regret
         self._regret_plot(**kwargs)
 
     def _set_plot(self, fix_colors=False):
@@ -301,7 +303,7 @@ class Analyse():
         elif self.benchmark == "paramnet":
             print("Max time: {}".format(self.max_cost))
             plt.xlim(self.min_cost, self.max_cost)
-        elif self.benchmark == "101":
+        elif self.benchmark == "nas_101_cifar10":
             plt.xlim(1e2, self.max_cost)
         else:
             plt.xlim(self.min_cost, self.max_cost)
@@ -320,8 +322,8 @@ class Analyse():
 
         plt.grid(which='both', alpha=0.2, linewidth=0.5)
         print(
-            os.path.join(self.exp_dir, '{}.{}'.format(plot_name, output_type)))
-        plt.savefig(os.path.join(self.exp_dir,
+            os.path.join(self.out_dir, '{}.{}'.format(plot_name, output_type)))
+        plt.savefig(os.path.join(self.out_dir,
                                  '{}.{}'.format(plot_name, output_type)),
                     bbox_inches='tight')
 

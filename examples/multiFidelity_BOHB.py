@@ -11,12 +11,12 @@ from xbbo.utils.constants import MAXINT
 def mf_iter(config, info=None):
     if info is None:
         info = {}
-    budget = info.get("budget", 100)
+    budget = info.get(Key.BUDGET, 100)
     
     res = {
     "fitness": config['x']/budget,  # must-have key that DE/DEHB minimizes
     # "cost": budget,  # must-have key that associates cost/runtime 
-    # "eval_time": time.time() - st
+    # Key.EVAL_TIME: time.time() - st
     # "info": dict() # optional key containing a dictionary of additional info
     }
     return res
