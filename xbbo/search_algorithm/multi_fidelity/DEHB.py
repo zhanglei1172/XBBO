@@ -2,7 +2,6 @@
 Reference: https://github.com/automl/DEHB
 '''
 
-import time
 from typing import List
 import numpy as np
 
@@ -11,6 +10,7 @@ from xbbo.search_algorithm.multi_fidelity.hyperband import HB
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import DEHB_ConfigGenerator, SHBracketManager
+from xbbo.utils.constants import Key
 from .. import alg_register
 
 
