@@ -1,19 +1,37 @@
 import numpy as np
+from ConfigSpace import ConfigurationSpace
 # import matplotlib.pyplot as plt
 from xbbo.search_space.fast_example_problem import mf_stochastic_count_one, build_mf_SCO_space
-
+from ConfigSpace.hyperparameters import \
+    CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
 from xbbo.search_algorithm.multi_fidelity.hyperband import HB
+from xbbo.search_algorithm.multi_fidelity.RFHB import RFHB
 from xbbo.utils.constants import MAXINT
+
+# def mf_iter(config, inf=None):
+#     if 
+#     budget = info.get(Key.BUDGET, 100)
+    
+#     res = {
+#     "fitness": config['x']/budget,  # must-have key that DE/DEHB minimizes
+#     # "cost": budget,  # must-have key that associates cost/runtime 
+#     # Key.EVAL_TIME: time.time() - st
+#     # "info": dict() # optional key containing a dictionary of additional info
+#     }
+#     return res
 
 if __name__ == "__main__":
     rng = np.random.RandomState(42)
 
     # define black box function
     mf_blackbox_func = mf_stochastic_count_one
-    # define search space
+    # mf_blackbox_func = mf_iter
+    # # define search space
     cs = build_mf_SCO_space(rng, dim=8)
+    # cs = ConfigurationSpace(seed=rng.randint(MAXINT))
+    # cs.add_hyperparameter(UniformFloatHyperparameter('x',0,1))
     # define black box optimizer
-    mf_hpopt = HB(space=cs,
+    mf_hpopt = RFHB(space=cs,
                   budget_bound=[9, 729],
                   eta=3,
                   seed=rng.randint(MAXINT),
@@ -32,7 +50,7 @@ if __name__ == "__main__":
         trial_list[0].add_observe_value(observe_value=res['fitness'],
                                         obs_info=res)
         mf_hpopt.observe(trial_list=trial_list)
-        
+
         print(res['fitness'])
         cnt += 1
     print(cnt)

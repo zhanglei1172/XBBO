@@ -11,6 +11,7 @@ from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import ConfigGenerator, SHBracketManager
+from xbbo.utils.constants import Key
 from .. import alg_register
 
 
@@ -182,10 +183,10 @@ class HB(AbstractOptimizer):
                     bracket.complete_job(
                         budget)  # IMPORTANT to perform synchronous SH
             # carry out DE selection
-            assert np.isposinf(self.de[budget].population_fitness[parent_id])
-            if fitness <= self.de[budget].population_fitness[parent_id]:  # TODO
-                self.de[budget].population[parent_id] = individual
-                self.de[budget].population_fitness[parent_id] = fitness
+            assert np.isposinf(self.rs[budget].population_fitness[parent_id])
+            if fitness <= self.rs[budget].population_fitness[parent_id]:  # TODO
+                self.rs[budget].population[parent_id] = individual
+                self.rs[budget].population_fitness[parent_id] = fitness
                 # updating incumbents
                 if fitness < self.current_best_fitness:
                     self.current_best = individual
@@ -224,9 +225,9 @@ class HB(AbstractOptimizer):
     def _init_subpop(self, **kwargs):
         """ List of DE objects corresponding to the budgets (fidelities)
         """
-        self.de = {}
+        self.rs = {}
         for i, b in enumerate(self._max_pop_size.keys()):
-            self.de[b] = ConfigGenerator(self.space,
+            self.rs[b] = ConfigGenerator(self.space,
                                          budget=b,
                                          max_pop_size=self._max_pop_size[b],
                                          rng=self.rng,
@@ -244,7 +245,7 @@ class HB(AbstractOptimizer):
         """
         # select a parent/target
         if bracket.is_new_rung():
-            self.de[budget].reset(bracket.current_n_config)
+            self.rs[budget].reset(bracket.current_n_config)
             if budget != bracket.budgets[0]:  # 每一列中的第二行开始，进行seed
                 # TODO: check if generalizes to all budget spacings
                 lower_budget, num_configs = bracket.get_lower_budget_promotions(
@@ -255,7 +256,7 @@ class HB(AbstractOptimizer):
 
         parent_id = self._get_next_idx_for_subpop(budget, bracket)
 
-        target = self.de[budget].population[parent_id]
+        target = self.rs[budget].population[parent_id]
 
         target = self.fix_boundary(target)
         return target, parent_id
@@ -268,28 +269,28 @@ class HB(AbstractOptimizer):
         """
         # finding the individuals that have been evaluated (fitness < np.inf)
         evaluated_configs = np.where(
-            self.de[low_budget].population_fitness != np.inf)[0]
-        promotion_candidate_pop = self.de[low_budget].population[
+            self.rs[low_budget].population_fitness != np.inf)[0]
+        promotion_candidate_pop = self.rs[low_budget].population[
             evaluated_configs]
-        promotion_candidate_fitness = self.de[low_budget].population_fitness[
+        promotion_candidate_fitness = self.rs[low_budget].population_fitness[
             evaluated_configs]
         # ordering the evaluated individuals based on their fitness values
         pop_idx = np.argsort(promotion_candidate_fitness)
         # n_configs = len(self.de[high_budget].population) # not sure eta multiple configs
         elite_index = pop_idx[:n_configs]
         # self.de[high_budget].population_fitness = self.de[low_budget].population_fitness[elite_index]
-        self.de[high_budget].population = self.de[low_budget].population[
+        self.rs[high_budget].population = self.rs[low_budget].population[
             elite_index]
         # return
 
     def _get_next_idx_for_subpop(self, budget, bracket):
         """ Maintains a looping counter over a subpopulation, to iteratively select a parent
         """
-        parent_id = self.de[budget].parent_idx
-        self.de[budget].parent_idx += 1
+        parent_id = self.rs[budget].parent_idx
+        self.rs[budget].parent_idx += 1
         # self.de[budget].parent_idx = self.de[
         #     budget].parent_idx % self._max_pop_size[budget]
-        self.de[budget].parent_idx = self.de[
+        self.rs[budget].parent_idx = self.rs[
             budget].parent_idx % bracket.current_n_config
         return parent_id
 

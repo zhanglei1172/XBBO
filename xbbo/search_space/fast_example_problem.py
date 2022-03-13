@@ -8,7 +8,7 @@ from ConfigSpace.conditions import InCondition, LessThanCondition
 from ConfigSpace.hyperparameters import \
     CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
 
-from xbbo.utils.constants import MAXINT
+from xbbo.utils.constants import MAXINT, Key
 
 
 def mf_stochastic_count_one(config, info=None):

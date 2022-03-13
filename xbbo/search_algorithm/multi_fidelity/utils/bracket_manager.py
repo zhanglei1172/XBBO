@@ -4,6 +4,9 @@ Reference: https://github.com/automl/DEHB
 
 from typing import List
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+
+from xbbo.utils.constants import Key
 
 
 class SHBracketManager(object):
@@ -373,3 +376,53 @@ class DEHB_ConfigGenerator(ConfigGenerator):
         for i in range(pop_size):
             mutants[i] = self.mutation(current=target, best=best, alt_pop=population)
         return mutants
+
+
+class RFHB_ConfigGenerator(ConfigGenerator):
+    def __init__(self, cs, budget, max_pop_size, rng, eta=3, **kwargs) -> None:
+        super().__init__(cs, budget, max_pop_size, rng, **kwargs)
+        self.dimension = self.cs.get_dimensions()
+        self.reset(max_pop_size)
+        self.rf = RandomForestClassifier(n_estimators=25)
+        self.reject_rate = kwargs.get("reject_rate", 10)
+        self.trained_samples = np.empty((0,self.dimension))
+        self.trained_labels = np.empty((0))
+        self.fited = False
+        self.eta = eta
+        # self.population = [None] * self.llambda
+        # self.population_fitness = [np.inf] * self.llambda
+        # self.current_best = None
+        # self.current_best_fitness = np.inf
+        self._set_min_train_size()
+
+    def _set_min_train_size(self):
+        self._min_train_size = max(self.dimension, 10)
+
+        return self._min_train_size
+
+
+    def reset(self, pop_size):
+        self.inc_score = np.inf
+        self.inc_config = None
+        self.parent_idx = 0
+        self.population = self._init_population(pop_size)
+        self.population_fitness = np.array([np.inf] * pop_size)
+        # self.batch_sample_num = int(self.reject_rate * self.pop_size)
+    def add_fitting(self, X, y):
+        self.trained_samples = np.concatenate([self.trained_samples, X])
+        self.trained_labels = np.concatenate([self.trained_labels, y])
+        # labels = np.zeros_like(self.trained_labels)
+
+        if len(self.trained_labels) >= self._min_train_size:
+            tau = np.quantile(self.trained_labels, q=1/self.eta)
+            labels = self.trained_labels <= tau
+            self.rf.fit(self.trained_samples, labels)
+            self.fited = True
+    def update_new_subpopulation(self, elite_population):
+        if self.fited:
+            batch = self._init_population(int(self.reject_rate * len(elite_population)))
+            best_id = np.argsort(self.rf.predict_log_proba(batch)[:, 0])
+            self.population = batch[best_id]
+        else:
+            self.population = elite_population
+        self.population_fitness = np.full(len(self.population), np.inf)
