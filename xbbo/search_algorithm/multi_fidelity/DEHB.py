@@ -2,15 +2,15 @@
 Reference: https://github.com/automl/DEHB
 '''
 
-import time
 from typing import List
 import numpy as np
 
 # from xbbo.configspace.feature_space import Uniform2Gaussian
-from xbbo.search_algorithm.multi_fedility.hyperband import HB
+from xbbo.search_algorithm.multi_fidelity.hyperband import HB
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
-from xbbo.search_algorithm.multi_fedility.utils.bracket_manager import DEHB_ConfigGenerator, SHBracketManager
+from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import DEHB_ConfigGenerator, SHBracketManager
+from xbbo.utils.constants import Key
 from .. import alg_register
 
 
@@ -19,12 +19,13 @@ class DEHB(HB):
     def __init__(self,
                  space: DenseConfigurationSpace,
                  budget_bound=[9, 729],
-                 mutation_factor=0.5,
-                 crossover_prob=0.5,
-                 strategy='rand1_bin',
+                #  mutation_factor=0.5,
+                #  crossover_prob=0.5,
+                #  strategy='rand1_bin',
                  eta: int = 3,
                  seed: int = 42,
                  round_limit: int = 1,
+                 bracket_limit=np.inf,
                  boundary_fix_type='random',
                  **kwargs):
         HB.__init__(self,
@@ -33,6 +34,7 @@ class DEHB(HB):
                     eta,
                     seed=seed,
                     round_limit=round_limit,
+                    bracket_limit=bracket_limit,
                     boundary_fix_type=boundary_fix_type,
                     **kwargs)
 
@@ -63,17 +65,14 @@ class DEHB(HB):
         self._max_pop_size = None
         self.active_brackets = []  # list of SHBracketManager objects
 
-        self.round_limit = round_limit
-        self.round_recoder = -1
-        self.learner_time_recoder = 0
-        self.total_time_recoder = 0
+        # self.round_limit = round_limit
+        # self.round_recoder = -1
+
         self.kwargs = kwargs
         self._get_max_pop_sizes()
         self._init_subpop(**kwargs)
 
-
     def _suggest(self, n_suggestions=1):
-        st = time.time()
         trial_list = []
         for n in range(n_suggestions):
             if len(self.active_brackets) == 0 or \
@@ -104,22 +103,19 @@ class DEHB(HB):
                       config_dict=config.get_dictionary(),
                       array=candidate,
                       info={
-                          "budget": budget,
+                          Key.BUDGET: budget,
                           "parent_id": parent_id,
                           "bracket_id": bracket.bracket_id
                       },
                       origin='HB'))
-        self.total_time_recoder += time.time() - st
         return trial_list
 
     def _observe(self, trial_list):
-        st = time.time()
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
-            learner_train_time = job_info.get('eval_time', 0)
-            budget = job_info['budget']
+            budget = job_info[Key.BUDGET]
             parent_id = job_info['parent_id']
             individual = trial.array  # TODO
             for bracket in self.active_brackets:
@@ -140,11 +136,8 @@ class DEHB(HB):
                     self.current_best_trial = trial
 
         self._clean_inactive_brackets()
-        if len(self.active_brackets) == 0: # complete current bracket
-            self.round_recoder = self.bracket_counter // self.max_SH_iter
-        self.total_time_recoder += time.time() - st + learner_train_time
-        self.learner_time_recoder += learner_train_time
-
+        # if len(self.active_brackets) == 0:  # complete current bracket
+        #     self.round_recoder = self.bracket_counter // self.max_SH_iter
 
 
     def _init_subpop(self, **kwargs):
@@ -165,30 +158,32 @@ class DEHB(HB):
         # select a parent/target
         parent_id = self._get_next_idx_for_subpop(budget, bracket)
         target = self.de[budget].population[parent_id]
-        lower_budget, num_configs = bracket.get_lower_budget_promotions(
-                    budget)
+        lower_budget, num_configs = bracket.get_lower_budget_promotions(budget)
         # Fix bugs in the original author's implementation code
-        if self.bracket_counter == 0 and budget != bracket.budgets[0]:
+        # if self.bracket_counter == 0 and budget != bracket.budgets[0]:
+        if self.bracket_counter < self.max_SH_iter and budget != bracket.budgets[0]:
             # 第一列，第二行开始，直接挑选最优的进入下一轮
             # TODO: check if generalizes to all budget spacings
             individual = self._get_promotion_candidate(lower_budget, budget,
-                                            num_configs)
+                                                       num_configs)
             individual = self.fix_boundary(individual)
             return individual, parent_id
             # else: # 每一列中的第一行，随机生成config
-        mutation_pop_idx = np.argsort(self.de[lower_budget].population_fitness)[:num_configs]
+        mutation_pop_idx = np.argsort(
+            self.de[lower_budget].population_fitness)[:num_configs]
         mutation_pop = self.de[lower_budget].population[mutation_pop_idx]
         # generate mutants from previous budget subpopulation or global population
         if len(mutation_pop) < self.de[budget]._min_pop_size:
             filler = self.de[budget]._min_pop_size - len(mutation_pop) + 1
             new_pop = self.de[budget]._init_mutant_population(
-                pop_size=filler, population=self._concat_pops(),
-                target=target, best=self.current_best
-            )
+                pop_size=filler,
+                population=self._concat_pops(),
+                target=target,
+                best=self.current_best)
             mutation_pop = np.concatenate((mutation_pop, new_pop))
-        mutant = self.de[budget].mutation(
-            current=target, best=self.current_best, alt_pop=mutation_pop
-        )
+        mutant = self.de[budget].mutation(current=target,
+                                          best=self.current_best,
+                                          alt_pop=mutation_pop)
         # perform crossover with selected parent
         individual = self.de[budget].crossover(target=target, mutant=mutant)
 
@@ -202,9 +197,12 @@ class DEHB(HB):
         to the number of brackets <= max_SH_iter.
         """
         # finding the individuals that have been evaluated (fitness < np.inf)
-        evaluated_configs = np.where(self.de[low_budget].population_fitness != np.inf)[0]
-        promotion_candidate_pop = self.de[low_budget].population[evaluated_configs]
-        promotion_candidate_fitness = self.de[low_budget].population_fitness[evaluated_configs]
+        evaluated_configs = np.where(
+            self.de[low_budget].population_fitness != np.inf)[0]
+        promotion_candidate_pop = self.de[low_budget].population[
+            evaluated_configs]
+        promotion_candidate_fitness = self.de[low_budget].population_fitness[
+            evaluated_configs]
         # ordering the evaluated individuals based on their fitness values
         pop_idx = np.argsort(promotion_candidate_fitness)
 
@@ -220,25 +218,29 @@ class DEHB(HB):
             for idx in pop_idx:
                 individual = promotion_candidate_pop[idx]
                 # checks if the candidate individual already exists in the high budget population
-                if np.any(np.all(individual == self.de[high_budget].population, axis=1)):
+                if np.any(
+                        np.all(individual == self.de[high_budget].population,
+                               axis=1)):
                     # skipping already present individual to allow diversity and reduce redundancy
                     continue
                 self.de[high_budget].promotion_pop = np.append(
-                    self.de[high_budget].promotion_pop, [individual], axis=0
-                )
+                    self.de[high_budget].promotion_pop, [individual], axis=0)
                 self.de[high_budget].promotion_fitness = np.append(
-                    self.de[high_budget].promotion_pop, promotion_candidate_fitness[pop_idx]
-                )
+                    self.de[high_budget].promotion_pop,
+                    promotion_candidate_fitness[pop_idx])
             # retaining only n_configs
-            self.de[high_budget].promotion_pop = self.de[high_budget].promotion_pop[:n_configs]
+            self.de[high_budget].promotion_pop = self.de[
+                high_budget].promotion_pop[:n_configs]
             self.de[high_budget].promotion_fitness = \
                 self.de[high_budget].promotion_fitness[:n_configs]
 
         if len(self.de[high_budget].promotion_pop) > 0:
             config = self.de[high_budget].promotion_pop[0]
             # removing selected configuration from population
-            self.de[high_budget].promotion_pop = self.de[high_budget].promotion_pop[1:]
-            self.de[high_budget].promotion_fitness = self.de[high_budget].promotion_fitness[1:]
+            self.de[high_budget].promotion_pop = self.de[
+                high_budget].promotion_pop[1:]
+            self.de[high_budget].promotion_fitness = self.de[
+                high_budget].promotion_fitness[1:]
         else:
             # in case of an edge failure case where all high budget individuals are same
             # just choose the best performing individual from the lower budget (again)
@@ -264,7 +266,6 @@ class DEHB(HB):
         for budget in budgets:
             pop.extend(self.de[budget].population.tolist())
         return np.array(pop)
-
 
 
 opt_class = DEHB

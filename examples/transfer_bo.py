@@ -71,14 +71,14 @@ if __name__ == "__main__":
         base_models[-1].train(test_model.old_D_x[i], test_model.old_D_y[i])
 
     # use transfer
-    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='ei', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # vanila bo
-    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='tst', acq_func='ei', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # TST-R
-    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # TAF
-    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='tst', acq_func='ei', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RGPE(mean)
-    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='rw', acq_opt='rs', base_models=base_models) # TAF(rw)
-    hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='mogp', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RMoGP
+    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='ei', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # vanila bo
+    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='tst', acq_func='ei', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # TST-R
+    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='kernel', acq_opt='rs', base_models=base_models) # TAF
+    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='tst', acq_func='ei', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RGPE(mean)
+    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='taf', weight_srategy='rw', acq_opt='rs', base_models=base_models) # TAF(rw)
+    hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_func='mogp', weight_srategy='rw', acq_opt='rs', base_models=base_models) # RMoGP
     # not use transfer
-    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_opt='rs_ls', base_models=[]]) 
+    # hpopt = SMBO(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', surrogate='gp', acq_opt='rs_ls', base_models=[]]) 
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)

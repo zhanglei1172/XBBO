@@ -14,7 +14,7 @@ class Anneal(AbstractOptimizer):
     def __init__(self,
                  space,
                  seed: int = 42,
-                 total_limit=10,
+                 suggest_limit=10,
                  initial_design: str = 'sobol',
                  **kwargs):
         AbstractOptimizer.__init__(self,
@@ -22,11 +22,12 @@ class Anneal(AbstractOptimizer):
                                    encoding_cat='round',
                                    encoding_ord='round',
                                    seed=seed,
+                                   suggest_limit=suggest_limit,
                                    **kwargs)
         self.dimension = self.space.get_dimensions()
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit, **kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
@@ -46,11 +47,9 @@ class Anneal(AbstractOptimizer):
                     } for i in range(len(self.space.map[k].src))
                 ])
             else:
-                self.num_nodes.extend([
-                    {
-                        "idx": self.space.map[k].src[i],
-                    } for i in range(len(self.space.map[k].src))
-                ])
+                self.num_nodes.extend([{
+                    "idx": self.space.map[k].src[i],
+                } for i in range(len(self.space.map[k].src))])
 
         self.trials = Trials(dim=self.dimension)
 
@@ -95,8 +94,7 @@ class Anneal(AbstractOptimizer):
                     # X[:, idx]
                     low, high = self._handle_uniform(best_val, len(y))
                     array[idx] = self.rng.uniform(low, high)
-                config = DenseConfiguration.from_array(
-                    self.space, array)
+                config = DenseConfiguration.from_array(self.space, array)
                 array = config.get_array()
                 trial_list.append(
                     Trial(configuration=config,

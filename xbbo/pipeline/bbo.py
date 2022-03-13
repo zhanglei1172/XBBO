@@ -22,7 +22,7 @@ class BBO:
 
         # Setup optimizer
         opt_class = alg_register[cfg.OPTM.name]
-        self.optimizer_instance = opt_class(self.config_spaces,total_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
+        self.optimizer_instance = opt_class(self.config_spaces,suggest_limit=cfg.OPTM.max_call,seed=self.rng.randint(MAXINT), **dict(cfg.OPTM.kwargs))
 
 
         self.n_suggestions = cfg.OPTM.n_suggestions
@@ -83,7 +83,7 @@ class BBO:
                 #     loss = np.full((len(self.cfg.TEST_PROBLEM.losses),), np.inf, dtype=float)
 
 
-                trial.add_observe_value(observe_value=f_current_eval, obs_info={'eval_time':eval_time})
+                trial.add_observe_value(observe_value=f_current_eval, obs_info={Key.EVAL_TIME:eval_time})
                 function_evals.append(f_current_eval)
             # if self.cfg.OPTM.n_obj == 1:
             #     eval_list = np.asarray(function_evals)[:, :self.cfg.OPTM.n_obj].ravel().tolist() # TODO

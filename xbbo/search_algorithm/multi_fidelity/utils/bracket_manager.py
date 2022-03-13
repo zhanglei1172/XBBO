@@ -145,7 +145,7 @@ class SHBracketManager(object):
         cell_width = 9
         cell = "{{:^{}}}".format(cell_width)
         budget_cell = "{{:^{}.2f}}".format(cell_width)
-        header = "|{}|{}|{}|{}|".format(cell.format("budget"),
+        header = "|{}|{}|{}|{}|".format(cell.format(Key.BUDGET),
                                         cell.format("pending"),
                                         cell.format("waiting"),
                                         cell.format("done"))

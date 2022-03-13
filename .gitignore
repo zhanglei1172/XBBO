@@ -155,6 +155,7 @@ cython_debug/
 .idea/
 /xbbo/data/cifar-10-batches-py/
 /xbbo/exp
+/xbbo/data
 exp
 .
 *smac3*/

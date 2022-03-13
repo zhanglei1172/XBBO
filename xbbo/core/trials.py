@@ -15,7 +15,7 @@ class Trial:
                  time=None,
                  origin: str = '',
                  marker=None,
-                 info: dict={},
+                 info: dict=None,
                  **kwargs) -> None:
         self.config_dict = config_dict
         self.array = array
@@ -25,11 +25,13 @@ class Trial:
         self.time = time
         self.origin = origin
         self.marker = marker
-        self.info = info
+        self.info = info if info else {}
         for k in kwargs:
             setattr(self, k, kwargs[k])
 
-    def add_observe_value(self, observe_value=None, obs_info={}):
+    def add_observe_value(self, observe_value=None, obs_info=None):
+        if obs_info is None:
+            obs_info = {}
         self.info.update(obs_info)
         self.observe_value = observe_value
 

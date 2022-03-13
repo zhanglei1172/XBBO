@@ -2,7 +2,7 @@ import numpy as np
 # import matplotlib.pyplot as plt
 from xbbo.search_space.fast_example_problem import mf_stochastic_count_one, build_mf_SCO_space
 
-from xbbo.search_algorithm.multi_fedility.hyperband import HB
+from xbbo.search_algorithm.multi_fidelity.hyperband import HB
 from xbbo.utils.constants import MAXINT
 
 if __name__ == "__main__":

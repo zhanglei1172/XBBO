@@ -1,9 +1,28 @@
 import numpy as np
+import pickle, os, json
 from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
                                          OrdinalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
                                          UniformIntegerHyperparameter)
 
+
+def dumpOBJ(path, filename, obj):
+    with open(os.path.join(path, filename), 'wb') as f:
+        pickle.dump(obj, f)
+
+def loadOBJ(filename):
+    with open(filename, 'rb') as f:
+        obj = pickle.load(f)
+    return obj
+
+def dumpJson(path, filename, j):
+    with open(os.path.join(path, filename), 'w') as f:
+        json.dump(j, f)
+
+def loadJson(filename):
+    with open(filename, 'r') as f:
+        j = json.load(f)
+    return j
 
 def get_types(config_space, instance_features=None):
     """TODO"""
@@ -55,10 +74,10 @@ def get_types(config_space, instance_features=None):
                 bounds[i] = (-1.0, 1.0)
             else:
                 bounds[i] = (0, 1.0)
-        elif not isinstance(param, (UniformFloatHyperparameter,
-                                    UniformIntegerHyperparameter,
-                                    OrdinalHyperparameter,
-                                    CategoricalHyperparameter)):
+        elif not isinstance(
+                param,
+            (UniformFloatHyperparameter, UniformIntegerHyperparameter,
+             OrdinalHyperparameter, CategoricalHyperparameter)):
             raise TypeError("Unknown hyperparameter type %s" % type(param))
 
     if instance_features is not None:

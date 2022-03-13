@@ -37,7 +37,7 @@ blackbox_func = rosenbrock_2d
 # define search space
 cs = build_space(rng)
 # define black box optimizer
-hpopt = BO(config_spaces=cs, seed=rng.randint(MAXINT), total_limit=MAX_CALL)
+hpopt = BO(config_spaces=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL)
 # Example call of the black-box function
 def_value = blackbox_func(cs.get_default_configuration())
 print("Default Value: %.2f" % def_value)

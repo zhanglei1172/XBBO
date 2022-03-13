@@ -21,6 +21,7 @@ from xbbo.utils.util import get_types
 
 logger = logging.getLogger(__name__)
 
+
 @alg_register.register('basic-bo')
 class BO(AbstractOptimizer):
     def __init__(
@@ -32,8 +33,9 @@ class BO(AbstractOptimizer):
             acq_opt: str = 'rs_ls',
             initial_design: str = 'sobol',
             #  min_sample=1,
-            total_limit: int = 10,
-            predict_x_best: bool = True,**kwargs):
+            suggest_limit: int = 10,
+            predict_x_best: bool = True,
+            **kwargs):
         '''
         predict_x_best: bool
             Choose x_best for computing the acquisition function via the model instead of via the observations.
@@ -43,6 +45,7 @@ class BO(AbstractOptimizer):
                                    encoding_cat='round',
                                    encoding_ord='round',
                                    seed=seed,
+                                   suggest_limit=suggest_limit,
                                    **kwargs)
         # self.min_sample = min_sample
         # configs = self.space.get_hyperparameters()
@@ -50,7 +53,7 @@ class BO(AbstractOptimizer):
         self.dimension = self.space.get_dimensions()
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
@@ -60,11 +63,14 @@ class BO(AbstractOptimizer):
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         elif surrogate == 'prf':
-            self.surrogate_model = RandomForestWithInstances(self.space,rng=self.rng)
+            self.surrogate_model = RandomForestWithInstances(self.space,
+                                                             rng=self.rng)
         elif surrogate == 'rf':
-            self.surrogate_model = RandomForestSurrogate(self.space,rng=self.rng)
+            self.surrogate_model = RandomForestSurrogate(self.space,
+                                                         rng=self.rng)
         elif surrogate == 'sk_prf':
-             self.surrogate_model = skRandomForestWithInstances(self.space,rng=self.rng)
+            self.surrogate_model = skRandomForestWithInstances(self.space,
+                                                               rng=self.rng)
         else:
             raise ValueError('surrogate {} not in {}'.format(
                 surrogate, ['gp', 'rf', 'prf', 'sk_prf']))
@@ -97,7 +103,9 @@ class BO(AbstractOptimizer):
             raise ValueError('acq_opt {} not in {}'.format(
                 acq_opt,
                 ['ls', 'rs', 'rs_ls', 'scipy', 'scipy_global', 'r_scipy']))
-        logger.info("Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]".format(surrogate, acq_func, acq_opt))
+        logger.info(
+            "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
+            .format(surrogate, acq_func, acq_opt))
 
     def _suggest(self, n_suggestions=1):
         trial_list = []

@@ -8,13 +8,12 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: rs
+  name: dehb
   n_suggestions: 1
-  # max_call: 30
+  max_call: 30
   kwargs:
-    # round_limit: 4
-    suggest_limit: 100
+    round_limit: 4
 
 TEST_PROBLEM:
-  name: nas_201 # countingones
+  name: nas_201 # svm # cc18 # countingones
 

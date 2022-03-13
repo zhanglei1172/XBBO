@@ -7,6 +7,7 @@ from . import alg_register
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.core.trials import Trial, Trials
 
+
 @alg_register.register('cem')
 class CEM(AbstractOptimizer):
     def __init__(self,
@@ -36,7 +37,7 @@ class CEM(AbstractOptimizer):
 
         self.buffer_x = []
         self.buffer_y = []
-        self.llambda = llambda #if llambda else 4 + math.floor(3 * math.log(self.dimension))
+        self.llambda = llambda  #if llambda else 4 + math.floor(3 * math.log(self.dimension))
         self.elite_ratio = elite_ratio
         self.elite_num = max(int(round(self.llambda * self.elite_ratio)), 2)
         self.trials = Trials(dim=self.dimension)
@@ -47,8 +48,7 @@ class CEM(AbstractOptimizer):
             # new_individual = self.feature_to_array(new_individual, )
             new_individual = self.sampler.sample()
 
-            config = DenseConfiguration.from_array(
-                self.space, new_individual)
+            config = DenseConfiguration.from_array(self.space, new_individual)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),

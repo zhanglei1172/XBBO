@@ -22,7 +22,7 @@ class SMBO(AbstractOptimizer):
                  space: DenseConfigurationSpace,
                  seed: int = 42,
                  initial_design: str = 'sobol',
-                 total_limit: int = 100,
+                 suggest_limit: int = 100,
                  surrogate: str = 'gp',
                  acq_func: str = 'ei',
                  acq_opt: str = 'rs_ls',
@@ -34,12 +34,13 @@ class SMBO(AbstractOptimizer):
                                    encoding_cat='round',
                                    encoding_ord='round',
                                    seed=seed,
+                                   suggest_limit=suggest_limit,
                                    **kwargs)
         self.predict_x_best = predict_x_best
         self.dimension = self.space.get_dimensions()
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
@@ -66,7 +67,8 @@ class SMBO(AbstractOptimizer):
             self.weight_sratety = RankingWeight(self.space,
                                                 self.base_models,
                                                 self.surrogate_model,
-                                                self.rng,budget=total_limit,
+                                                self.rng,
+                                                budget=suggest_limit,
                                                 is_purn=True)
         elif weight_srategy == 'zero':
             self.weight_sratety = ZeroWeight(self.space, self.base_models,
@@ -133,7 +135,7 @@ class SMBO(AbstractOptimizer):
             # calculate base incuments (only use for acq base EI)
             observed_X = self.trials.get_array()
             base_incuments = []
-            for model in self.base_models: # TODO make sure untransform ?
+            for model in self.base_models:  # TODO make sure untransform ?
                 base_incuments.append(model.predict(observed_X, None)[0].min())
             _, best_val = self._get_x_best(self.predict_x_best)
             self.acquisition_func.update(surrogate_model=self.surrogate_model,
@@ -142,13 +144,13 @@ class SMBO(AbstractOptimizer):
             # caculate weight for base+target model
             weight = self.weight_sratety.get_weight(self.trials)
             self.surrogate_model.update_weight(weight)
-            self.acquisition_func.update_weight(weight
-                )
+            self.acquisition_func.update_weight(weight)
             # acq maximize
             configs = []
             configs = self.acq_maximizer.maximize(self.trials,
                                                   1000,
-                                                  drop_self_duplicate=True, _sorted=True)
+                                                  drop_self_duplicate=True,
+                                                  _sorted=True)
             _idx = 0
             for n in range(n_suggestions):
                 while _idx < len(configs):  # remove history suggest
