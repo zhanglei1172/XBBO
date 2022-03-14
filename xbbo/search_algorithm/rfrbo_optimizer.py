@@ -40,7 +40,7 @@ def latin_hypercube(n_pts, dim):
     return X
 
 
-class TuRBO_state():
+class RFRBO_state():
     def __init__(self,
                  surrogate_model,
                  marker,
@@ -190,11 +190,8 @@ class TuRBO_state():
         return xx
 
 
-@alg_register.register('turbo')
-class TuRBO(AbstractOptimizer):
-    '''
-    reference: https://github.com/uber-research/TuRBO/blob/master/turbo/turbo_m.py
-    '''
+@alg_register.register('rfrbo')
+class RFRBO(AbstractOptimizer):
     def __init__(
             self,
             space: DenseConfigurationSpace,
@@ -203,7 +200,6 @@ class TuRBO(AbstractOptimizer):
             # acq_func: str = 'mc',
             # acq_opt: str = 'design',
             initial_design: str = 'sobol',
-            num_tr=1,
             #  suggest_limit: int = 10,
             **kwargs):
         AbstractOptimizer.__init__(self,
@@ -213,6 +209,7 @@ class TuRBO(AbstractOptimizer):
                                    seed=seed,
                                    **kwargs)
         self.dimension = self.space.get_dimensions()
+        num_tr = self.dimension
         self.bounds = self.space.get_bounds()
         self.n_min_sample = kwargs.get('n_min_sample', 5)
         self.init_budget = self.n_min_sample  # self.initial_design.init_budget
@@ -231,7 +228,7 @@ class TuRBO(AbstractOptimizer):
 
         if surrogate == 'gp':
             self.turbo_states = [
-                TuRBO_state(GPR_sklearn(self.space, rng=self.rng),
+                RFRBO_state(GPR_sklearn(self.space, rng=self.rng),
                             i,
                             self.bounds,
                             self.rng,
@@ -323,4 +320,4 @@ class TuRBO(AbstractOptimizer):
         return trial_list
 
 
-opt_class = TuRBO
+opt_class = RFRBO

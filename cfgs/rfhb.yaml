@@ -8,7 +8,7 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: dehb
+  name: rfhb
   n_suggestions: 1
   max_call: 30
   kwargs:

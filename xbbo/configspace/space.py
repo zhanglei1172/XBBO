@@ -22,29 +22,33 @@ class Bin():
         self.src = src
         self.trg = trg
         self.sizes = sizes
+        self.bins_width = 1 / self.sizes
+        self.bins = np.array([np.arange(start=0, stop=1, step=b) for b in self.bins_width])
 
     def convert(self, array_dense, array_sparse):
-        array_sparse[self.src] = np.round(array_dense[self.trg]*self.sizes)
+        for i in range(len(self.src)):
+            array_sparse[self.src[i]] = np.searchsorted(self.bins[i], array_dense[self.trg[i]],side="right") - 1
+        # array_sparse[self.src] = np.round(array_dense[self.trg]*(self.sizes-1))
         return array_sparse
     def invconvert(self, array_dense, array_sparse):
-        array_dense[self.trg] = array_sparse[self.src] / self.sizes
+        array_dense[self.trg] = array_sparse[self.src] / self.sizes #+ self.bins_width/2
         return array_dense
     def get_bounds(self,):
         return np.zeros(len(self.trg)), np.ones(len(self.trg))
 
-class Round():
-    def __init__(self, src, trg, sizes) -> None:
-        self.src = src
-        self.trg = trg
-        self.sizes = sizes
-    def convert(self, array_dense, array_sparse):
-        array_sparse[self.src] = np.round(array_dense[self.trg])
-        return array_sparse
-    def invconvert(self, array_dense, array_sparse):
-        array_dense[self.trg] = array_sparse[self.src]
-        return array_dense
-    def get_bounds(self,):
-        return np.zeros(len(self.trg)), np.array((self.sizes))-1
+# class Round():
+#     def __init__(self, src, trg, sizes) -> None:
+#         self.src = src
+#         self.trg = trg
+#         self.sizes = sizes
+#     def convert(self, array_dense, array_sparse):
+#         array_sparse[self.src] = np.round(array_dense[self.trg])
+#         return array_sparse
+#     def invconvert(self, array_dense, array_sparse):
+#         array_dense[self.trg] = array_sparse[self.src]
+#         return array_dense
+#     def get_bounds(self,):
+#         return np.zeros(len(self.trg)), np.array((self.sizes))-1
 
 class OneHot():
     def __init__(self, src, trg, sizes) -> None:
@@ -98,6 +102,8 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         return self.size_dense
 
     def sample_configuration(self, size=1):
+        if size == 0:
+            return []
 
         config = super().sample_configuration(size=size)
 
@@ -251,6 +257,7 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         # else:
         #     self.bin = None
         if round_cats:
+            raise NotImplementedError
             self.map['round'] = Round(*list(map(np.uintp, zip(*round_cats))) if round_cats else ([], [],[]))
         # else:
         #     self.round = None
@@ -420,14 +427,15 @@ class DenseConfiguration(CS.Configuration):
     @staticmethod
     def dict_to_array(cs, dict):
         config = DenseConfiguration(cs, values=dict)  # dict构造config类
-        array_dense = config.get_array()  # ->4
+        array_dense = config.get_array(sparse=False)  # ->4
         return array_dense  #[cs.rerangeIDX]
 
-    def get_array(self, dtype="float64"):
+    def get_array(self, sparse=True, dtype="float64"):
 
         cs = self.configuration_space
         array_sparse = super(DenseConfiguration, self).get_array()
-
+        if sparse:
+            return array_sparse
         # initialize output array
         # TODO(LT): specify `dtype` flexibly
         array_dense = np.zeros(cs.size_dense, dtype=dtype)
@@ -474,7 +482,7 @@ def convert_denseConfigurations_to_array(
         Array with configuration hyperparameters. Inactive values are imputed
         with their default value.
     """
-    configs_array = np.array([config.get_array() for config in configs],
+    configs_array = np.array([config.get_array(sparse=False) for config in configs],
                              dtype=np.float64)
     # configuration_space = configs[0].configuration_space
     return configs_array

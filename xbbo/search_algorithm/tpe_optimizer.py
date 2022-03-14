@@ -35,8 +35,8 @@ class TPE(AbstractOptimizer):
             **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -92,7 +92,7 @@ class TPE(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array()))
+                          array=config.get_array(sparse=False)))
         else:
             self._fit_kde_models()
             if len(self.kde_models.keys()
@@ -102,7 +102,7 @@ class TPE(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              array=config.get_array()))
+                              array=config.get_array(sparse=False)))
             else:
                 for n in range(n_suggestions):
                     best = np.inf
@@ -170,7 +170,7 @@ class TPE(AbstractOptimizer):
                     if best_vector is None:
                         logger.debug(
                             "Sampling based optimization with %i samples failed -> using random configuration"
-                            % self.num_samples)
+                            % self.candidates_num)
                         config = self._sample_nonduplicate_config()[0]
                     else:
                         logger.debug('best_vector: {}, {}, {}, {}'.format(
@@ -188,7 +188,7 @@ class TPE(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              array=best_vector))
+                              array=config.get_array(sparse=False)))
         return trial_list
 
     def _sample_nonduplicate_config(self, num_configs=1):
@@ -247,7 +247,7 @@ class TPE(AbstractOptimizer):
 
     def _observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
 
     def impute_conditional_data(self, array):
 

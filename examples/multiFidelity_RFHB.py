@@ -35,7 +35,7 @@ if __name__ == "__main__":
                   budget_bound=[9, 729],
                   eta=3,
                   seed=rng.randint(MAXINT),
-                  round_limit=5)
+                  round_limit=10)
     # Example call of the black-box function
     def_res = mf_blackbox_func(cs.get_default_configuration())
     print("Default res: {}".format(def_res))

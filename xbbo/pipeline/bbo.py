@@ -63,7 +63,7 @@ class BBO:
             #     # TODO 直接随机采样
             #     x_guess_configs = self.optimizer_instance.space.sample_configuration(size=self.n_suggestions) # a list
             #     next_points = [x_guess_config.get_dict_unwarped() for x_guess_config in x_guess_configs]
-            #     features = [x_guess_config.get_array() for x_guess_config in x_guess_configs]
+            #     features = [x_guess_config.get_array(sparse=False) for x_guess_config in x_guess_configs]
 
             suggest_time = time() - tt
 

@@ -69,7 +69,7 @@ class BORE(AbstractOptimizer):
             return [
                 Trial(configuration=config,
                       config_dict=config.get_dictionary(),
-                      array=config.get_array(),
+                      array=config.get_array(sparse=False),
                       origin='Random') for config in
                 self.initial_design_configs[dataset_size:dataset_size +
                                             n_suggestions]
@@ -89,7 +89,7 @@ class BORE(AbstractOptimizer):
         #     return [
         #         Trial(configuration=config,
         #               config_dict=config.get_dictionary(),
-        #               array=config.get_array(),
+        #               array=config.get_array(sparse=False),
         #               origin='Random') for config in config_random
         #     ]
         targets = self.trials.get_history()[0]
@@ -146,7 +146,7 @@ class BORE(AbstractOptimizer):
             trial_list.append(
                 Trial(configuration=config,
                       config_dict=config.get_dictionary(),
-                      array=config.get_array()))
+                      array=config.get_array(sparse=False)))
 
         return trial_list
 

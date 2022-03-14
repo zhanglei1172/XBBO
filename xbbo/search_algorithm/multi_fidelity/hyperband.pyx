@@ -9,17 +9,9 @@ import numpy as np
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
-from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator, ConfigGenerator, SHBracketManager
-from xbbo.search_algorithm.random_optimizer import RandomOptimizer
-
+from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import ConfigGenerator, SHBracketManager
 from xbbo.utils.constants import Key
 from .. import alg_register
-
-class HB_CG(BasicConfigGenerator, RandomOptimizer):
-    def __init__(self, cs, budget, max_pop_size, rng, **kwargs) -> None:
-        BasicConfigGenerator.__init__(self, cs, budget, max_pop_size, rng, **kwargs)
-        RandomOptimizer.__init__(self, space=cs, init_budget=0, **kwargs)
-        self.reset(max_pop_size)
 
 alg_marker = 'hb'
 
@@ -38,8 +30,8 @@ class HB(AbstractOptimizer):
                  **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                #    encoding_cat='bin',
-                                #    encoding_ord='bin',
+                                   encoding_cat='round',
+                                   encoding_ord='round',
                                    seed=seed,
                                    **kwargs)
 
@@ -173,12 +165,12 @@ class HB(AbstractOptimizer):
                           "parent_id": parent_id,
                           "bracket_id": bracket.bracket_id
                       },
-                      origin=self.name))
+                      origin='HB'))
         return trial_list
 
     def _observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
             # learner_train_time = job_info.get(Key.EVAL_TIME, 0)
@@ -192,14 +184,16 @@ class HB(AbstractOptimizer):
                     # bracket job complete
                     bracket.complete_job(
                         budget)  # IMPORTANT to perform synchronous SH
-            self.cg[budget].population[parent_id] = individual
-            self.cg[budget].population_fitness[parent_id] = fitness
-            # updating incumbents
-            if fitness < self.current_best_fitness:
-                self.current_best = individual
-                self.current_best_fitness = trial.observe_value
-                self.current_best_trial = trial
-        self.cg[budget]._observe(trial_list)
+            # carry out DE selection
+            assert np.isposinf(self.cg[budget].population_fitness[parent_id])
+            if fitness <= self.cg[budget].population_fitness[parent_id]:  # TODO
+                self.cg[budget].population[parent_id] = individual
+                self.cg[budget].population_fitness[parent_id] = fitness
+                # updating incumbents
+                if fitness < self.current_best_fitness:
+                    self.current_best = individual
+                    self.current_best_fitness = trial.observe_value
+                    self.current_best_trial = trial
 
 
         self._clean_inactive_brackets()
@@ -235,41 +229,38 @@ class HB(AbstractOptimizer):
         """
         self.cg = {}
         for i, b in enumerate(self._max_pop_size.keys()):
-            self.cg[b] = HB_CG(self.space,
+            self.cg[b] = ConfigGenerator(self.space,
                                          budget=b,
                                          max_pop_size=self._max_pop_size[b],
                                          rng=self.rng,
                                          **kwargs)
-            # self.cg[b].population = self.cg[b].init_population(
+            # self.de[b].population = self.de[b].init_population(
             #     pop_size=self._max_pop_size[b])
-            # self.cg[b].population_fitness = np.array([np.inf] * self._max_pop_size[b])
+            # self.de[b].population_fitness = np.array([np.inf] * self._max_pop_size[b])
             # # adding attributes to DEHB objects to allow communication across subpopulations
-            # self.cg[b].parent_idx = 0
-            # self.cg[b].promotion_pop = None
-            # self.cg[b].promotion_fitness = None
+            # self.de[b].parent_idx = 0
+            # self.de[b].promotion_pop = None
+            # self.de[b].promotion_fitness = None
 
     def _acquire_candidate(self, bracket, budget):
         """ Generates/chooses a configuration based on the budget and iteration number
         """
-        parent_id = self._get_next_idx_for_subpop(budget, bracket)
-
-        if budget != bracket.budgets[0]:
-            if bracket.is_new_rung():
+        # select a parent/target
+        if bracket.is_new_rung():
+            self.cg[budget].reset(bracket.current_n_config)
+            if budget != bracket.budgets[0]:  # 每一列中的第二行开始，进行seed
                 # TODO: check if generalizes to all budget spacings
                 lower_budget, num_configs = bracket.get_lower_budget_promotions(
                     budget)
                 self._get_promotion_candidate(lower_budget, budget,
                                               num_configs)
             # else: # 每一列中的第一行，随机生成config
-            target = self.cg[budget].population[parent_id]
 
-        else: # config generator
-            trial = self.cg[budget]._suggest()[0]
+        parent_id = self._get_next_idx_for_subpop(budget, bracket)
 
-            target = trial.array
-        # parent_id = self._get_next_idx_for_subpop(budget, bracket)
+        target = self.cg[budget].population[parent_id]
 
-        # target = self.fix_boundary(target)
+        target = self.fix_boundary(target)
         return target, parent_id
 
     def _get_promotion_candidate(self, low_budget, high_budget, n_configs):
@@ -287,9 +278,9 @@ class HB(AbstractOptimizer):
             evaluated_configs]
         # ordering the evaluated individuals based on their fitness values
         pop_idx = np.argsort(promotion_candidate_fitness)
-        # n_configs = len(self.cg[high_budget].population) # not sure eta multiple configs
+        # n_configs = len(self.de[high_budget].population) # not sure eta multiple configs
         elite_index = pop_idx[:n_configs]
-        # self.cg[high_budget].population_fitness = self.cg[low_budget].population_fitness[elite_index]
+        # self.de[high_budget].population_fitness = self.de[low_budget].population_fitness[elite_index]
         self.cg[high_budget].population[:len(elite_index)] = self.cg[low_budget].population[
             elite_index]
         self.cg[high_budget].population_fitness[len(elite_index):] = np.inf
@@ -300,7 +291,7 @@ class HB(AbstractOptimizer):
         """
         parent_id = self.cg[budget].parent_idx
         self.cg[budget].parent_idx += 1
-        # self.cg[budget].parent_idx = self.cg[
+        # self.cg[budget].parent_idx = self.de[
         #     budget].parent_idx % self._max_pop_size[budget]
         self.cg[budget].parent_idx = self.cg[
             budget].parent_idx % bracket.current_n_config

@@ -61,7 +61,7 @@ class BBObenchmark:
             n_continuous = kwargs.get("n_continuous", 4)
             n_categorical = kwargs.get("n_categorical", 4)
             cs = problem.get_configuration_space(n_continuous=n_continuous,
-                                                 n_categorical=n_categorical)
+                                                 n_categorical=n_categorical,seed=seed)
             dimensions = len(cs.get_hyperparameters())
             self.min_budget = kwargs.get("min_budget", 576 / dimensions)
             self.max_budget = kwargs.get("max_budget", 93312 / dimensions)
@@ -75,7 +75,7 @@ class BBObenchmark:
             # self.max_budget = kwargs.get("max_budget", 1)
             problem = Benchmark(task_id=task_id, rng=seed)
             # Parameter space to be used by DE
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
             
             def f_trees(config, budget=None, **kwargs):
                 if budget is None:
@@ -122,7 +122,7 @@ class BBObenchmark:
             self.min_budget = kwargs.get("min_budget", 1 / 128)
             self.max_budget = kwargs.get("max_budget", 1)
             # Parameter space to be used by DE
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
 
             def f(config, budget=None, **kwargs):
                 if budget is not None:
@@ -160,7 +160,7 @@ class BBObenchmark:
 
             self._objective_function = f
             self._objective_function_test = problem.objective_function_test
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
             # y_star_valid = b.y_star_valid
             # y_star_test = b.y_star_test
             # inc_config = None
@@ -182,7 +182,7 @@ class BBObenchmark:
 
             self._objective_function = f
             self._objective_function_test = problem.objective_function_test
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
             # y_star_valid = b.y_star_valid
             # y_star_test = b.y_star_test
             # inc_config = None

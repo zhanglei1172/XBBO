@@ -1,12 +1,17 @@
 '''
 Reference: https://github.com/automl/DEHB
 '''
-
+import ConfigSpace
+import logging
 from typing import List
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+import statsmodels.api as sm
+import scipy.stats as sps
+from xbbo.configspace.space import DenseConfiguration
+from xbbo.utils.constants import MAXINT, Key
 
-from xbbo.utils.constants import Key
+logger = logging.getLogger(__name__)
 
 
 class SHBracketManager(object):
@@ -33,10 +38,12 @@ class SHBracketManager(object):
         self.n_rungs = len(budgets)
         self.current_rung = 0
 
-    def is_new_rung(self,): # is new row?
-        return self.pending_sh_bracket[self.get_budget()] == self.current_n_config
+    def is_new_rung(self, ):  # is new row?
+        return self.pending_sh_bracket[
+            self.get_budget()] == self.current_n_config
+
     @property
-    def current_n_config(self,):
+    def current_n_config(self, ):
         return self.n_configs[self.current_rung]
 
     def get_budget(self, rung=None):
@@ -106,8 +113,8 @@ class SHBracketManager(object):
     def _is_rung_waiting(self, rung):
         """ Returns True if at least one job is still pending/running and waits for results
         """
-        job_count = self.done_sh_bracket[self.budgets[rung]] + self.pending_sh_bracket[
-            self.budgets[rung]]
+        job_count = self.done_sh_bracket[
+            self.budgets[rung]] + self.pending_sh_bracket[self.budgets[rung]]
         if job_count < self.n_configs[rung]:
             return True
         return False
@@ -165,9 +172,10 @@ class SHBracketManager(object):
             table.append(entry)
         table.append(_hline)
         return "\n".join(table)
-
-
-class ConfigGenerator():
+class BasicConfigGenerator():
+    '''
+    every congfig generator only response for one specific budget!
+    '''
     def __init__(self, cs, budget, max_pop_size, rng, **kwargs) -> None:
         self.cs = cs
         self.budget = budget
@@ -176,7 +184,6 @@ class ConfigGenerator():
         # self.fitness = np.array([np.inf] * self.pop_size)
         # self.reset()
         # self.parent_counter = 0
-
 
     def reset(self, pop_size):
         self.inc_score = np.inf
@@ -206,14 +213,76 @@ class ConfigGenerator():
 
     def _init_population(self, pop_size: int) -> List:
         # sample from ConfigSpace s.t. conditional constraints (if any) are maintained
-        population = [config.get_array() for config in self.cs.sample_configuration(size=pop_size)]
+        population = [
+            config.get_array(sparse=False)
+            for config in self.cs.sample_configuration(size=pop_size)
+        ]
         if not isinstance(population, List):
             population = [population]
         # the population is maintained in a list-of-vector form where each ConfigSpace
         return np.array(population)
 
+class ConfigGenerator():
+    '''
+    every congfig generator only response for one specific budget!
+    '''
+    def __init__(self, cs, budget, max_pop_size, rng, **kwargs) -> None:
+        self.cs = cs
+        self.budget = budget
+        self.max_pop_size = max_pop_size
+        self.rng = rng
+        # self.fitness = np.array([np.inf] * self.pop_size)
+        # self.reset()
+        # self.parent_counter = 0
+
+    def reset(self, pop_size):
+        self.inc_score = np.inf
+        self.inc_config = None
+        self.population = self._init_population(pop_size)
+        self.population_fitness = np.array([np.inf] * pop_size)
+        # adding attributes to DEHB objects to allow communication across subpopulations
+        self.parent_idx = 0
+        self.promotion_pop = None
+        self.promotion_fitness = None
+
+        # self.history = []
+
+    def _shuffle_pop(self):
+        pop_order = np.arange(len(self.population))
+        self.rng.shuffle(pop_order)
+        self.population = self.population[pop_order]
+        self.population_fitness = self.population_fitness[pop_order]
+        # self.age = self.age[pop_order]
+
+    def _sort_pop(self):
+        pop_order = np.argsort(self.population_fitness)
+        self.rng.shuffle(pop_order)
+        self.population = self.population[pop_order]
+        self.population_fitness = self.population_fitness[pop_order]
+        self.age = self.age[pop_order]
+
+    def _init_population(self, pop_size: int) -> List:
+        # sample from ConfigSpace s.t. conditional constraints (if any) are maintained
+        population = [
+            config.get_array(sparse=False)
+            for config in self.cs.sample_configuration(size=pop_size)
+        ]
+        if not isinstance(population, List):
+            population = [population]
+        # the population is maintained in a list-of-vector form where each ConfigSpace
+        return np.array(population)
+
+
 class DEHB_ConfigGenerator(ConfigGenerator):
-    def __init__(self, cs, budget, max_pop_size, rng, mutation_factor=0.5,crossover_prob=0.5,strategy='rand1_bin',**kwargs) -> None:
+    def __init__(self,
+                 cs,
+                 budget,
+                 max_pop_size,
+                 rng,
+                 mutation_factor=0.5,
+                 crossover_prob=0.5,
+                 strategy='rand1_bin',
+                 **kwargs) -> None:
         super().__init__(cs, budget, max_pop_size, rng, **kwargs)
         self.mutation_factor = mutation_factor
         self.crossover_prob = crossover_prob
@@ -245,12 +314,10 @@ class DEHB_ConfigGenerator(ConfigGenerator):
 
         return self._min_pop_size
 
-
-                
     def _mutation_rand1(self, r1, r2, r3):
         '''Performs the 'rand1' type of DE mutation
         '''
-        
+
         diff = r2 - r3
         mutant = r1 + self.mutation_factor * diff
         return mutant
@@ -274,70 +341,152 @@ class DEHB_ConfigGenerator(ConfigGenerator):
         mutant = r1 + self.mutation_factor * diff / 2
         return mutant
 
+    # def mutation(self, current=None, best=None, alt_pop=None):
+    #     '''Performs DE mutation
+    #     '''
+    #     if self.mutation_strategy == 'rand1':
+    #         r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+
+    #         mutant = self._mutation_rand1(r1, r2, r3)
+
+    #     elif self.mutation_strategy == 'rand2':
+    #         r1, r2, r3, r4, r5 = self._sample_population(size=5,
+    #                                                      alt_pop=alt_pop)
+    #         mutant = self._mutation_rand2(r1, r2, r3, r4, r5)
+
+    #     elif self.mutation_strategy == 'rand2dir':
+    #         r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+
+    #         mutant = self._mutation_rand2dir(r1, r2, r3)
+
+    #     elif self.mutation_strategy == 'best1':
+    #         r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
+
+    #         if best is None:
+    #             best = self.population[np.argmin(self.population_fitness)]
+    #         mutant = self._mutation_rand1(best, r1, r2)
+
+    #     elif self.mutation_strategy == 'best2':
+    #         r1, r2, r3, r4 = self._sample_population(size=4, alt_pop=alt_pop)
+    #         if best is None:
+    #             best = self.population[np.argmin(self.population_fitness)]
+    #         mutant = self._mutation_rand2(best, r1, r2, r3, r4)
+
+    #     elif self.mutation_strategy == 'currenttobest1':
+    #         r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
+    #         if best is None:
+    #             best = self.population[np.argmin(self.population_fitness)]
+    #         mutant = self._mutation_currenttobest1(current, best, r1, r2)
+
+    #     elif self.mutation_strategy == 'randtobest1':
+    #         r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+    #         if best is None:
+    #             best = self.population[np.argmin(self.population_fitness)]
+    #         mutant = self._mutation_currenttobest1(r1, best, r2, r3)
+
+    #     return mutant
+
     def mutation(self, current=None, best=None, alt_pop=None):
         '''Performs DE mutation
         '''
         if self.mutation_strategy == 'rand1':
-            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
-
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop, target=current)
             mutant = self._mutation_rand1(r1, r2, r3)
 
         elif self.mutation_strategy == 'rand2':
-            r1, r2, r3, r4, r5 = self._sample_population(size=5, alt_pop=alt_pop)
+            r1, r2, r3, r4, r5 = self._sample_population(size=5, alt_pop=alt_pop, target=current)
             mutant = self._mutation_rand2(r1, r2, r3, r4, r5)
 
         elif self.mutation_strategy == 'rand2dir':
-            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
-
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop, target=current)
             mutant = self._mutation_rand2dir(r1, r2, r3)
 
         elif self.mutation_strategy == 'best1':
-            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
-
+            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop, target=current)
             if best is None:
-                best = self.population[np.argmin(self.population_fitness)]
+                best = self.population[np.argmin(self.fitness)]
             mutant = self._mutation_rand1(best, r1, r2)
 
         elif self.mutation_strategy == 'best2':
-            r1, r2, r3, r4 = self._sample_population(size=4, alt_pop=alt_pop)
+            r1, r2, r3, r4 = self._sample_population(size=4, alt_pop=alt_pop, target=current)
             if best is None:
-                best = self.population[np.argmin(self.population_fitness)]
+                best = self.population[np.argmin(self.fitness)]
             mutant = self._mutation_rand2(best, r1, r2, r3, r4)
 
         elif self.mutation_strategy == 'currenttobest1':
-            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop)
+            r1, r2 = self._sample_population(size=2, alt_pop=alt_pop, target=current)
             if best is None:
-                best = self.population[np.argmin(self.population_fitness)]
+                best = self.population[np.argmin(self.fitness)]
             mutant = self._mutation_currenttobest1(current, best, r1, r2)
 
         elif self.mutation_strategy == 'randtobest1':
-            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop)
+            r1, r2, r3 = self._sample_population(size=3, alt_pop=alt_pop, target=current)
             if best is None:
-                best = self.population[np.argmin(self.population_fitness)]
+                best = self.population[np.argmin(self.fitness)]
             mutant = self._mutation_currenttobest1(r1, best, r2, r3)
 
         return mutant
 
-    def _sample_population(self, size: int = 3, alt_pop= None):
-        '''Samples 'size' individuals
+    def _sample_population(self, size=3, alt_pop=None, target=None):
+        '''Samples 'size' individuals for mutation step
 
         If alt_pop is None or a list/array of None, sample from own population
-        Else sample from the specified alternate population (alt_pop)
+        Else sample from the specified alternate population
         '''
+        population = None
         if isinstance(alt_pop, list) or isinstance(alt_pop, np.ndarray):
-            idx = [indv is None for indv in alt_pop]
+            idx = [indv is None for indv in alt_pop]  # checks if all individuals are valid
             if any(idx):
-                selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
-                return np.array(self.population)[selection]
+                # default to the object's initialized population
+                population = self.population
             else:
-                if len(alt_pop) < 3:
-                    alt_pop = np.vstack((alt_pop, self.population))
-                selection = self.rng.choice(np.arange(len(alt_pop)), size, replace=False)
-                alt_pop = np.stack(alt_pop)
-                return np.array(alt_pop)[selection]
+                # choose the passed population
+                population = alt_pop
         else:
-            selection = self.rng.choice(np.arange(len(self.population)), size, replace=False)
-            return np.array(self.population)[selection]
+            # default to the object's initialized population
+            population = self.population
+
+        if target is not None and len(population) > 1:
+            # eliminating target from mutation sampling pool
+            # the target individual should not be a part of the candidates for mutation
+            for i, pop in enumerate(population):
+                if all(target == pop):
+                    population = np.concatenate((population[:i], population[i + 1:]))
+                    break
+        if len(population) < self._min_pop_size:
+            # compensate if target was part of the population and deleted earlier
+            filler = self._min_pop_size - len(population)
+            new_pop = self._init_population(pop_size=filler)  # chosen in a uniformly random manner
+            population = np.concatenate((population, new_pop))
+
+        selection = self.rng.choice(np.arange(len(population)), size, replace=False)
+        return population[selection]
+    # def _sample_population(self, size: int = 3, alt_pop=None):
+    #     '''Samples 'size' individuals
+
+    #     If alt_pop is None or a list/array of None, sample from own population
+    #     Else sample from the specified alternate population (alt_pop)
+    #     '''
+    #     if isinstance(alt_pop, list) or isinstance(alt_pop, np.ndarray):
+    #         idx = [indv is None for indv in alt_pop]
+    #         if any(idx):
+    #             selection = self.rng.choice(np.arange(len(self.population)),
+    #                                         size,
+    #                                         replace=False)
+    #             return np.array(self.population)[selection]
+    #         else:
+    #             if len(alt_pop) < 3:
+    #                 alt_pop = np.vstack((alt_pop, self.population))
+    #             selection = self.rng.choice(np.arange(len(alt_pop)),
+    #                                         size,
+    #                                         replace=False)
+    #             alt_pop = np.stack(alt_pop)
+    #             return np.array(alt_pop)[selection]
+    #     else:
+    #         selection = self.rng.choice(np.arange(len(self.population)),
+    #                                     size,
+    #                                     replace=False)
+    #         return np.array(self.population)[selection]
 
     def _crossover_bin(self, target, mutant):
         '''Performs the binomial crossover of DE
@@ -354,7 +503,7 @@ class DEHB_ConfigGenerator(ConfigGenerator):
         n = self.rng.randint(0, self.dimension)
         L = 0
         while ((self.rng.rand() < self.crossover_prob) and L < self.dimension):
-            idx = (n+L) % self.dimension
+            idx = (n + L) % self.dimension
             target[idx] = mutant[idx]
             L = L + 1
         return target
@@ -368,13 +517,18 @@ class DEHB_ConfigGenerator(ConfigGenerator):
             offspring = self._crossover_exp(target, mutant)
         return offspring
 
-
-    def _init_mutant_population(self, pop_size, population, target=None, best=None):
+    def _init_mutant_population(self,
+                                pop_size,
+                                population,
+                                target=None,
+                                best=None):
         '''Generates pop_size mutants from the passed population
         '''
         mutants = np.zeros((pop_size, self.dimension))
         for i in range(pop_size):
-            mutants[i] = self.mutation(current=target, best=best, alt_pop=population)
+            mutants[i] = self.mutation(current=target,
+                                       best=best,
+                                       alt_pop=population)
         return mutants
 
 
@@ -385,10 +539,11 @@ class RFHB_ConfigGenerator(ConfigGenerator):
         self.reset(max_pop_size)
         self.rf = RandomForestClassifier(n_estimators=25)
         self.reject_rate = kwargs.get("reject_rate", 10)
-        self.trained_samples = np.empty((0,self.dimension))
+        self.trained_samples = np.empty((0, self.dimension))
         self.trained_labels = np.empty((0))
         self.fited = False
         self.eta = eta
+        self.warmup_scale = kwargs.get("warmup_scale", 3)
         # self.population = [None] * self.llambda
         # self.population_fitness = [np.inf] * self.llambda
         # self.current_best = None
@@ -396,10 +551,9 @@ class RFHB_ConfigGenerator(ConfigGenerator):
         self._set_min_train_size()
 
     def _set_min_train_size(self):
-        self._min_train_size = max(self.dimension, 10)
+        self._min_train_size = max(self.warmup_scale * self.dimension, 10)
 
         return self._min_train_size
-
 
     def reset(self, pop_size):
         self.inc_score = np.inf
@@ -414,15 +568,256 @@ class RFHB_ConfigGenerator(ConfigGenerator):
         # labels = np.zeros_like(self.trained_labels)
 
         if len(self.trained_labels) >= self._min_train_size:
-            tau = np.quantile(self.trained_labels, q=1/self.eta)
+            tau = np.quantile(self.trained_labels, q=1 / self.eta)
             labels = self.trained_labels <= tau
             self.rf.fit(self.trained_samples, labels)
             self.fited = True
+
     def update_new_subpopulation(self, elite_population):
+        num_configs = len(elite_population)
         if self.fited:
-            batch = self._init_population(int(self.reject_rate * len(elite_population)))
+            batch = self._init_population(
+                int(self.reject_rate * num_configs))
             best_id = np.argsort(self.rf.predict_log_proba(batch)[:, 0])
-            self.population = batch[best_id]
+            self.population[:num_configs] = batch[best_id[:num_configs]]
         else:
-            self.population = elite_population
+            self.population[:num_configs] = elite_population
         self.population_fitness = np.full(len(self.population), np.inf)
+
+
+class BOHB_ConfigGenerator(ConfigGenerator):
+    def __init__(self,
+                 cs,
+                 budget,
+                 max_pop_size,
+                 rng,
+                 eta=3,
+                 gamma=0.15,
+                 candidates_num=64,
+                 min_bandwidth=1e-3,
+                 bandwidth_factor=3,
+                 min_points_in_model=None,
+                 random_fraction=1 / 3,
+                 trials=None,
+                 **kwargs) -> None:
+        super().__init__(cs, budget, max_pop_size, rng, **kwargs)
+        self.dimension = self.cs.get_dimensions()
+        self.reset(max_pop_size)
+        self.reject_rate = kwargs.get("reject_rate", 10)
+        self.trained_samples = np.empty((0, self.dimension))
+        self.trained_labels = np.empty((0))
+        self.fited = False
+        self.eta = eta
+        self.min_bandwidth = min_bandwidth
+        self.bw_factor = bandwidth_factor
+        self.warmup_scale = kwargs.get("warmup_scale", 3)
+        # self.population = [None] * self.llambda
+        # self.population_fitness = [np.inf] * self.llambda
+        # self.current_best = None
+        # self.current_best_fitness = np.inf
+        self.gamma = gamma
+        self.candidates_num = candidates_num
+        self.min_points_in_model = min_points_in_model
+
+        hps = self.cs.get_hyperparameters()
+
+        if min_points_in_model is None:
+            self.min_points_in_model = len(hps) + 1
+
+        if self.min_points_in_model < len(hps) + 1:
+            self.min_points_in_model = len(hps) + 1
+
+        self.random_fraction = random_fraction
+        self.kde_models = dict()
+
+        self.kde_vartypes = ""
+        self.vartypes = []
+
+        self.population = np.empty((0, self.dimension))
+        self.trials = trials
+        self.population_fitness = np.empty(0)
+
+    def add_obs(self, population, population_fitness):
+        self.population = np.concatenate([self.population, population], axis=0)
+        self.population_fitness = np.concatenate(
+            [self.population_fitness, population_fitness])
+
+    def reset(self, pop_size):
+        self.inc_score = np.inf
+        self.inc_config = None
+        self.parent_idx = 0
+        # self.population = self._init_population(pop_size)
+        # self.population_fitness = np.array([np.inf] * pop_size)
+        # self.batch_sample_num = int(self.reject_rate * self.pop_size)
+    def _sample_nonduplicate_config(self, num_configs=1):
+        configs = list()
+        sample_cnt = 0
+        max_sample_cnt = 1000
+        while len(configs) < num_configs:
+            config = self.cs.sample_configuration()[0]
+            sample_cnt += 1
+            if (self.trials is None or not self.trials.is_contain(config)
+                ) and config not in configs:
+                configs.append(config)
+                sample_cnt = 0
+                continue
+            if sample_cnt >= max_sample_cnt:
+                logger.warning(
+                    'Cannot sample non duplicate configuration after %d iterations.'
+                    % max_sample_cnt)
+                configs.append(config)
+                sample_cnt = 0
+        return configs
+
+    def get_config(self):
+        self._fit_kde_models()
+        if len(self.kde_models.keys()
+               ) == 0 or self.rng.rand() < self.random_fraction:
+            config = self._sample_nonduplicate_config()[0]
+        else:
+            best = np.inf
+            best_vector = None
+            l = self.kde_models['good'].pdf
+            g = self.kde_models['bad'].pdf
+
+            minimize_me = lambda x: max(1e-32, g(x)) / max(l(x), 1e-32)
+
+            kde_good = self.kde_models['good']
+            kde_bad = self.kde_models['bad']
+
+            for i in range(self.candidates_num):
+                idx = self.rng.randint(0, len(kde_good.data))
+                datum = kde_good.data[idx]
+                vector = []
+
+                for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
+
+                    bw = max(bw, self.min_bandwidth)
+                    if t == 0:
+                        bw = self.bw_factor * bw
+                        try:
+                            vector.append(
+                                sps.truncnorm.rvs(-m / bw, (1 - m) / bw,
+                                                  loc=m,
+                                                  scale=bw))
+                        except:
+                            logger.warning(
+                                "Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"
+                                % (datum, kde_good.bw, m))
+                            logger.warning("data in the KDE:\n%s" %
+                                           kde_good.data)
+                    else:
+
+                        if self.rng.rand() < (1 - bw):
+                            vector.append(int(m))
+                        else:
+                            vector.append(self.rng.randint(t))
+                val = minimize_me(vector)
+
+                if not np.isfinite(val):
+                    logger.warning('sampled vector: %s has EI value %s' %
+                                   (vector, val))
+                    logger.warning("data in the KDEs:\n%s\n%s" %
+                                   (kde_good.data, kde_bad.data))
+                    logger.warning("bandwidth of the KDEs:\n%s\n%s" %
+                                   (kde_good.bw, kde_bad.bw))
+                    logger.warning("l(x) = %s" % (l(vector)))
+                    logger.warning("g(x) = %s" % (g(vector)))
+
+                    # right now, this happens because a KDE does not contain all values for a categorical parameter
+                    # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
+                    # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
+                    if np.isfinite(l(vector)):
+                        best_vector = vector
+                        break
+
+                if val < best:
+                    best = val
+                    best_vector = vector
+
+            if best_vector is None:
+                logger.debug(
+                    "Sampling based optimization with %i samples failed -> using random configuration"
+                    % self.candidates_num)
+                config = self._sample_nonduplicate_config()[0]
+            else:
+                logger.debug('best_vector: {}, {}, {}, {}'.format(
+                    best_vector, best, l(best_vector), g(best_vector)))
+                for i, hp_value in enumerate(best_vector):
+                    if isinstance(
+                            self.cs.get_hyperparameter(
+                                self.cs.get_hyperparameter_by_idx(i)),
+                            ConfigSpace.hyperparameters.
+                            CategoricalHyperparameter):
+                        best_vector[i] = int(np.rint(best_vector[i]))
+
+                config = DenseConfiguration.from_array(self.cs,
+                                                       np.asarray(best_vector))
+        array = config.get_array(sparse=False)
+
+        return array
+
+    def _fit_kde_models(self, ):
+        train_configs = self.population
+        n_good = max(self.min_points_in_model,
+                     int(self.gamma * len(self.population_fitness)) // 100)
+        # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_configs.shape[0])//100), 10)
+        n_bad = max(self.min_points_in_model,
+                    int((1 - self.gamma) * len(self.population_fitness)))
+
+        # Refit KDE for the current budget
+        idx = np.argsort(self.population_fitness)
+
+        train_data_good = self.impute_conditional_data(
+            train_configs[idx[:n_good]])
+        train_data_bad = self.impute_conditional_data(
+            train_configs[idx[n_good:n_good + n_bad]])
+
+        if train_data_good.shape[0] <= train_data_good.shape[1]:
+            return
+        if train_data_bad.shape[0] <= train_data_bad.shape[1]:
+            return
+
+        bw_estimation = 'normal_reference'
+        np.random.seed(self.rng.randint(MAXINT))
+        bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,
+                                                   var_type=self.kde_vartypes,
+                                                   bw=bw_estimation)
+        good_kde = sm.nonparametric.KDEMultivariate(data=train_data_good,
+                                                    var_type=self.kde_vartypes,
+                                                    bw=bw_estimation)
+
+        bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth, None)
+        good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth, None)
+
+        self.kde_models = {'good': good_kde, 'bad': bad_kde}
+
+    def impute_conditional_data(self, array):
+
+        return_array = np.empty_like(array)
+
+        for i in range(array.shape[0]):
+            datum = np.copy(array[i])
+            nan_indices = np.argwhere(np.isnan(datum)).ravel()
+
+            while np.any(nan_indices):
+                nan_idx = nan_indices[0]
+                valid_indices = np.argwhere(np.isfinite(
+                    array[:, nan_idx])).ravel()
+
+                if len(valid_indices) > 0:
+                    # pick one of them at random and overwrite all NaN values
+                    row_idx = self.rng.choice(valid_indices)
+                    datum[nan_indices] = array[row_idx, nan_indices]
+
+                else:
+                    # no good point in the data has this value activated, so fill it with a valid but random value
+                    t = self.vartypes[nan_idx]
+                    if t == 0:
+                        datum[nan_idx] = self.rng.rand()
+                    else:
+                        datum[nan_idx] = self.rng.randint(t)
+
+                nan_indices = np.argwhere(np.isnan(datum)).ravel()
+            return_array[i, :] = datum
+        return return_array

@@ -31,8 +31,8 @@ class SMBO(AbstractOptimizer):
                  **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -126,7 +126,7 @@ class SMBO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array()))
+                          array=config.get_array(sparse=False)))
         else:
             # update target surrogate model
             self.surrogate_model.train(
@@ -160,7 +160,7 @@ class SMBO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  array=config.get_array()))
+                                  array=config.get_array(sparse=False)))
                         _idx += 1
 
                         break
