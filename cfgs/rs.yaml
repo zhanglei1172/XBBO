@@ -13,8 +13,9 @@ OPTM:
   # max_call: 30
   kwargs:
     # round_limit: 4
-    suggest_limit: 100
+    # suggest_limit: 100
+    budget_limit: 2449440
 
 TEST_PROBLEM:
-  name: nas_201 # countingones
+  name: countingones # countingones
 

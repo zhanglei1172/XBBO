@@ -50,7 +50,7 @@ for i in range(MAX_CALL):
     # observe
     trial_list[0].add_observe_value(observe_value=value)
     hpopt.observe(trial_list=trial_list)
-    
+  
     print(value)  
 ```
 
@@ -59,12 +59,14 @@ All examples can be found in `examples/` folder.
 ## Supported Algorithms
 
 - [X] Transfer
+
   - [X] TST-R
   - [X] TAF
   - [X] TAF(RGPE)
   - [X] RMoGP
   - [X] RGPE(mean)
 - [X] Optimizer
+
   - [X] BORE optimizer
   - [X] Anneal
   - [X] DE
@@ -73,11 +75,11 @@ All examples can be found in `examples/` folder.
   - [X] Regularized EA
   - [X] PBT
   - [X] TuRBO
+- [X] multi-fidelity
 
-- [ ] multi-fidelity
-  - [x] HyperBand
-  - [ ] BOHB
-  - [x] DEHB
+  - [X] HyperBand
+  - [X] BOHB
+  - [X] DEHB
 
 ## Benchmark
 
@@ -133,4 +135,4 @@ Here you can **comparison** with commonly used and well-known Hyperparameter Opt
 ## TODO
 
 - [ ] parallel
-- [ ] multi-fidelity
+- [X] multi-fidelity

@@ -132,6 +132,6 @@ class AbstractOptimizer(ABC):
                 info = trial.info.copy()
                 res = self.objective_function(trial, **info)
                 info.update(res)
-                trial.add_observe_value(observe_value=info['function_value'],
+                trial.add_observe_value(observe_value=info[Key.FUNC_VALUE],
                                         obs_info=info)
             self.observe(trial_list)

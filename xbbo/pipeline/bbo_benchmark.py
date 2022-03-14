@@ -87,7 +87,7 @@ class BBObenchmark:
                 res = problem.objective_function(config,
                                                  fidelity,
                                                  rng=self.rng)
-                fitness = res['function_value']
+                fitness = res[Key.FUNC_VALUE]
                 cost = res[Key.COST]
                 res[Key.COST] = res['info']['fidelity']["n_estimators"]
                 return res
@@ -99,7 +99,7 @@ class BBObenchmark:
                 res = problem.objective_function(config,
                                                  fidelity,
                                                  rng=self.rng)
-                fitness = res['function_value']
+                fitness = res[Key.FUNC_VALUE]
                 cost = res[Key.COST]
                 res[Key.COST] = res['info']['fidelity']["subsample"]
 
@@ -132,7 +132,7 @@ class BBObenchmark:
                     res = problem.objective_function(config)
                 res[Key.COST] = res['info']['fidelity']["dataset_fraction"]
 
-                fitness, cost = res['function_value'], res[Key.COST]
+                fitness, cost = res[Key.FUNC_VALUE], res[Key.COST]
                 return res
 
             self._objective_function = f
@@ -206,8 +206,8 @@ class BBObenchmark:
         r.update(kwargs)
         r.update(res)
         res_test = self._objective_function_test(config, **kwargs)
-        r[Key.REGRET_TEST] = res_test["function_value"]
-        r[Key.REGRET_VAL] = res["function_value"]
+        r[Key.REGRET_TEST] = res_test[Key.FUNC_VALUE]
+        r[Key.REGRET_VAL] = res[Key.FUNC_VALUE]
         if Key.COST not in r:
             r[Key.COST] = r.get(Key.BUDGET, kwargs[Key.BUDGET])
         return r
