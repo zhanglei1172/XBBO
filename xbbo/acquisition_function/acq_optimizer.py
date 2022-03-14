@@ -385,7 +385,7 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
 
         if initial_config is None:
             initial_config = self.config_space.sample_configuration()
-        init_point = initial_config.get_array()
+        init_point = initial_config.get_array(sparse=False)
 
         acq_configs = []
         result = scipy.optimize.minimize(fun=negative_acquisition,

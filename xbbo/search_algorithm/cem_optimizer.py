@@ -19,8 +19,8 @@ class CEM(AbstractOptimizer):
                  **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    **kwargs)
         # Uniform2Gaussian.__init__(self, )

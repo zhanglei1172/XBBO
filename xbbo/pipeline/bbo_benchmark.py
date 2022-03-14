@@ -61,7 +61,7 @@ class BBObenchmark:
             n_continuous = kwargs.get("n_continuous", 4)
             n_categorical = kwargs.get("n_categorical", 4)
             cs = problem.get_configuration_space(n_continuous=n_continuous,
-                                                 n_categorical=n_categorical)
+                                                 n_categorical=n_categorical,seed=seed)
             dimensions = len(cs.get_hyperparameters())
             self.min_budget = kwargs.get("min_budget", 576 / dimensions)
             self.max_budget = kwargs.get("max_budget", 93312 / dimensions)
@@ -75,7 +75,7 @@ class BBObenchmark:
             # self.max_budget = kwargs.get("max_budget", 1)
             problem = Benchmark(task_id=task_id, rng=seed)
             # Parameter space to be used by DE
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
             
             def f_trees(config, budget=None, **kwargs):
                 if budget is None:
@@ -87,7 +87,7 @@ class BBObenchmark:
                 res = problem.objective_function(config,
                                                  fidelity,
                                                  rng=self.rng)
-                fitness = res['function_value']
+                fitness = res[Key.FUNC_VALUE]
                 cost = res[Key.COST]
                 res[Key.COST] = res['info']['fidelity']["n_estimators"]
                 return res
@@ -99,7 +99,7 @@ class BBObenchmark:
                 res = problem.objective_function(config,
                                                  fidelity,
                                                  rng=self.rng)
-                fitness = res['function_value']
+                fitness = res[Key.FUNC_VALUE]
                 cost = res[Key.COST]
                 res[Key.COST] = res['info']['fidelity']["subsample"]
 
@@ -122,7 +122,7 @@ class BBObenchmark:
             self.min_budget = kwargs.get("min_budget", 1 / 128)
             self.max_budget = kwargs.get("max_budget", 1)
             # Parameter space to be used by DE
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
 
             def f(config, budget=None, **kwargs):
                 if budget is not None:
@@ -132,7 +132,7 @@ class BBObenchmark:
                     res = problem.objective_function(config)
                 res[Key.COST] = res['info']['fidelity']["dataset_fraction"]
 
-                fitness, cost = res['function_value'], res[Key.COST]
+                fitness, cost = res[Key.FUNC_VALUE], res[Key.COST]
                 return res
 
             self._objective_function = f
@@ -160,7 +160,7 @@ class BBObenchmark:
 
             self._objective_function = f
             self._objective_function_test = problem.objective_function_test
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
             # y_star_valid = b.y_star_valid
             # y_star_test = b.y_star_test
             # inc_config = None
@@ -182,7 +182,7 @@ class BBObenchmark:
 
             self._objective_function = f
             self._objective_function_test = problem.objective_function_test
-            cs = problem.get_configuration_space()
+            cs = problem.get_configuration_space(seed=seed)
             # y_star_valid = b.y_star_valid
             # y_star_test = b.y_star_test
             # inc_config = None
@@ -206,8 +206,8 @@ class BBObenchmark:
         r.update(kwargs)
         r.update(res)
         res_test = self._objective_function_test(config, **kwargs)
-        r[Key.REGRET_TEST] = res_test["function_value"]
-        r[Key.REGRET_VAL] = res["function_value"]
+        r[Key.REGRET_TEST] = res_test[Key.FUNC_VALUE]
+        r[Key.REGRET_VAL] = res[Key.FUNC_VALUE]
         if Key.COST not in r:
             r[Key.COST] = r.get(Key.BUDGET, kwargs[Key.BUDGET])
         return r

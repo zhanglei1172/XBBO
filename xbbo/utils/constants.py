@@ -8,3 +8,4 @@ class Key():
     COST = "cost"
     BUDGET = "budget"
     EVAL_TIME = "eval_time"
+    FUNC_VALUE = "function_value"

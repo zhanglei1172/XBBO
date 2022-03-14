@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from xbbo.configspace.space import DenseConfiguration
+from xbbo.utils.constants import Key
 
 
 class Trial:
@@ -38,7 +39,7 @@ class Trial:
 
 class Trials:
     def __init__(self, dim):
-        self._his_configs_set = set()
+        self._his_hash_configs_set = set()
         self._his_configs = []
         self._his_array = np.empty((0, dim))
         self._his_observe_value = []
@@ -54,10 +55,11 @@ class Trials:
         # self.use_dense = use_dense
 
     def add_a_trial(self, trial: Trial, permit_duplicate=False):
+        hash_config = str(trial.configuration)+str(trial.info.get(Key.BUDGET, 'max_budget'))
         if not permit_duplicate:
-            assert trial.configuration not in self._his_configs_set
+            assert hash_config not in self._his_hash_configs_set
         self.infos.append(trial.info)
-        self._his_configs_set.add(trial.configuration)
+        self._his_hash_configs_set.add(hash_config)
         self._his_configs.append(trial.configuration)
         self.traj_history.append(trial)
         self._his_configs_dict.append(trial.config_dict)
@@ -83,7 +85,7 @@ class Trials:
         if len(self._his_array) == self.trials_num:
             return self._his_array
         self._his_array = [
-            config.get_array() for config in self._his_configs
+            config.get_array(sparse=False) for config in self._his_configs
         ]
         return self._his_array
 
@@ -100,7 +102,7 @@ class Trials:
             self.add_a_trial(trial)
 
     def is_contain(self, config: DenseConfiguration) -> bool:
-        return config in self._his_configs_set
+        return config in self._his_hash_configs_set
 
     def is_empty(self, ):
         return self.trials_num == 0

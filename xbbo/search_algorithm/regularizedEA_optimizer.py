@@ -23,8 +23,8 @@ class RegularizedEA(AbstractOptimizer):
                  **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    **kwargs)
         # FeatureSpace_gaussian.__init__(self, self.space.dtypes_idx_map)

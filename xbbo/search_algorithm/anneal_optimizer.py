@@ -19,8 +19,8 @@ class Anneal(AbstractOptimizer):
                  **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -65,7 +65,7 @@ class Anneal(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array()))
+                          array=config.get_array(sparse=False)))
         else:
             for n in range(n_suggestions):
                 X = self.trials.get_array()
@@ -95,7 +95,7 @@ class Anneal(AbstractOptimizer):
                     low, high = self._handle_uniform(best_val, len(y))
                     array[idx] = self.rng.uniform(low, high)
                 config = DenseConfiguration.from_array(self.space, array)
-                array = config.get_array()
+                array = config.get_array(sparse=False)
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),

@@ -18,8 +18,8 @@ class AbstractOptimizer(ABC):
 
     def __init__(self,
                  space: CS.ConfigurationSpace,
-                 encoding_cat='round',
-                 encoding_ord='round',
+                 encoding_cat='bin',
+                 encoding_ord='bin',
                  seed=42,
                  suggest_limit: float = np.inf,
                  total_time_limit: float = np.inf,
@@ -56,7 +56,7 @@ class AbstractOptimizer(ABC):
     def fix_boundary(self, individual):
         if self.fix_type == 'random':
             return np.where(
-                (individual > self.bounds.lb) & (individual < self.bounds.ub),
+                (individual >= self.bounds.lb) & (individual <= self.bounds.ub),
                 individual,
                 self.rng.uniform(self.bounds.lb, self.bounds.ub,
                                  self.dimension))  # FIXME
@@ -132,6 +132,6 @@ class AbstractOptimizer(ABC):
                 info = trial.info.copy()
                 res = self.objective_function(trial, **info)
                 info.update(res)
-                trial.add_observe_value(observe_value=info['function_value'],
+                trial.add_observe_value(observe_value=info[Key.FUNC_VALUE],
                                         obs_info=info)
             self.observe(trial_list)

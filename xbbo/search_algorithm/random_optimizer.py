@@ -16,8 +16,8 @@ class RandomOptimizer(AbstractOptimizer):
             **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -38,7 +38,7 @@ class RandomOptimizer(AbstractOptimizer):
                     Trial(
                         configuration=config,
                         config_dict=config.get_dictionary(),
-                        #   array=config.get_array())
+                        #   array=config.get_array(sparse=False))
                     ))
                 continue
             iter_ = 0
@@ -48,7 +48,7 @@ class RandomOptimizer(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              array=config.get_array()))
+                              array=config.get_array(sparse=False)))
 
                     break
                 iter_ += 1

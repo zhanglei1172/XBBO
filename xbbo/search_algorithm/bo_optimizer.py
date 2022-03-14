@@ -42,8 +42,8 @@ class BO(AbstractOptimizer):
         '''
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='round',
-                                   encoding_ord='round',
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -120,7 +120,7 @@ class BO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array()))
+                          array=config.get_array(sparse=False)))
         else:
             self.surrogate_model.train(
                 np.asarray(self.trials.get_array()),
@@ -141,7 +141,7 @@ class BO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  array=config.get_array()))
+                                  array=config.get_array(sparse=False)))
                         _idx += 1
 
                         break
