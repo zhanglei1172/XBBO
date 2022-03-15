@@ -178,7 +178,7 @@ class HB(AbstractOptimizer):
 
     def _observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, True)
             fitness = trial.observe_value
             job_info = trial.info
             # learner_train_time = job_info.get(Key.EVAL_TIME, 0)

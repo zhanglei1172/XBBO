@@ -33,7 +33,7 @@ class BO(AbstractOptimizer):
             acq_opt: str = 'rs_ls',
             initial_design: str = 'sobol',
             #  min_sample=1,
-            suggest_limit: int = 10,
+            suggest_limit: int = np.inf,
             predict_x_best: bool = True,
             **kwargs):
         '''

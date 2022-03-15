@@ -22,7 +22,7 @@ class SMBO(AbstractOptimizer):
                  space: DenseConfigurationSpace,
                  seed: int = 42,
                  initial_design: str = 'sobol',
-                 suggest_limit: int = 100,
+                 suggest_limit: int = np.inf,
                  surrogate: str = 'gp',
                  acq_func: str = 'ei',
                  acq_opt: str = 'rs_ls',

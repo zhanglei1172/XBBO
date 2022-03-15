@@ -18,8 +18,8 @@ class AbstractOptimizer(ABC):
 
     def __init__(self,
                  space: CS.ConfigurationSpace,
-                 encoding_cat='bin',
-                 encoding_ord='bin',
+                 encoding_cat='round',
+                 encoding_ord='round',
                  seed=42,
                  suggest_limit: float = np.inf,
                  total_time_limit: float = np.inf,

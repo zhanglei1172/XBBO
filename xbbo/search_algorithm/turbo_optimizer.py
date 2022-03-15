@@ -204,7 +204,7 @@ class TuRBO(AbstractOptimizer):
             # acq_opt: str = 'design',
             initial_design: str = 'sobol',
             num_tr=1,
-            #  suggest_limit: int = 10,
+            #  suggest_limit: int = np.inf,
             **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,

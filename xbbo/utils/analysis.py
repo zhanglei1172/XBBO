@@ -17,6 +17,7 @@ class Analyse():
                  exp_dir_root='./exp',
                  benchmark='countingones',
                  methods=None,
+                 marks=None,
                  limit=1e7,
                  **kwargs) -> None:
         self.exp_dir_root = exp_dir_root
@@ -24,6 +25,7 @@ class Analyse():
         if not os.path.exists(self.out_dir):
             os.mkdir(self.out_dir)
         self.methods = methods
+        self.marks = marks
         self.benchmark = benchmark
         self._set_plot()
         plt.clf()
@@ -45,23 +47,33 @@ class Analyse():
             mark_label = cfg["mark_label"]
             method_name = cfg["OPTM"]["name"]  # tmp[-1][:-5]
             if cfg["TEST_PROBLEM"]["name"] != self.benchmark or (
-                    self.methods is None or method_name
-                    not in self.methods) or mark_label in hashset:
+                (self.methods is not None) and
+                (method_name not in self.methods)) or (
+                    (self.marks is not None) and
+                    (mark_label not in self.marks)) or mark_label in hashset:
+                continue
+            jfiles = glob('{}/{}/*.json'.format(cfg["GENERAL"]["exp_dir"],
+                                                method_name))
+            if len(jfiles) == 0:
                 continue
             hashset.add(mark_label)
             index += 1
 
             regret = []
             costs = []
-            for jfile in glob('{}/{}/*.json'.format(cfg["GENERAL"]["exp_dir"],
-                                                    method_name)):
+            for jfile in jfiles:
                 j = loadJson(jfile)
                 curr_regret = np.array(j[self.regret_key])
-                curr_cost = np.array(j[Key.COST])
+                if method_name == 'dehb_':
+                    curr_cost = np.array(j['runtime'])
+                else:
+                    curr_cost = np.array(j[Key.COST])
                 if self.benchmark == "countingones":
                     d = cfg["TEST_PROBLEM"].get("n_continuous",
                                                 4) + cfg["TEST_PROBLEM"].get(
                                                     "n_categorical", 4)
+                    if method_name == 'dehb_':
+                        curr_regret = curr_regret * d - d
                     curr_regret = (curr_regret + d) / d  # 0-1
                     max_budget = 93312 / d
                     curr_cost /= max_budget
@@ -120,9 +132,9 @@ class Analyse():
 
             # For final score table
             mean_df[mark_label] = pd.Series(data=np.mean(te, axis=1)[idx],
-                                             index=cost[idx])
-            std_df[mark_label] = pd.Series(data=np.std(te, axis=1)[idx],
                                             index=cost[idx])
+            std_df[mark_label] = pd.Series(data=np.std(te, axis=1)[idx],
+                                           index=cost[idx])
         mean_df = pd.DataFrame(mean_df)
         all_mean_df = mean_df.copy()
         all_mean_df.ffill().to_pickle(
@@ -232,6 +244,7 @@ class Analyse():
         plot_type = kwargs.get("plot_type", "wallclock")
         # bench_type = kwargs.get("bench_type", 'protein')
         title = kwargs.get("title", "benchmark")
+        legend_size = kwargs.get("legend_size", 40)
         if self.benchmark != 'cc18':
             plt.xscale("log")
         if self.benchmark != 'svm' and self.benchmark != 'bnn':
@@ -241,14 +254,14 @@ class Analyse():
             plt.legend(loc='upper right',
                        framealpha=1,
                        prop={
-                           'size': 40,
+                           'size': legend_size,
                            'weight': 'normal'
                        })
         elif self.benchmark == "rl":
             plt.legend(loc='lower left',
                        framealpha=1,
                        prop={
-                           'size': 40,
+                           'size': legend_size,
                            'weight': 'normal'
                        },
                        ncol=1)
@@ -256,7 +269,7 @@ class Analyse():
             plt.legend(loc='lower left',
                        framealpha=1,
                        prop={
-                           'size': 40,
+                           'size': legend_size,
                            'weight': 'normal'
                        })
         plt.title(title, size=40)

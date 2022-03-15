@@ -40,6 +40,7 @@ class Trial:
 class Trials:
     def __init__(self, dim):
         self._his_hash_configs_set = set()
+        self._his_configs_set = set()
         self._his_configs = []
         self._his_array = np.empty((0, dim))
         self._his_observe_value = []
@@ -60,6 +61,7 @@ class Trials:
             assert hash_config not in self._his_hash_configs_set
         self.infos.append(trial.info)
         self._his_hash_configs_set.add(hash_config)
+        self._his_configs_set.add(trial.configuration)
         self._his_configs.append(trial.configuration)
         self.traj_history.append(trial)
         self._his_configs_dict.append(trial.config_dict)

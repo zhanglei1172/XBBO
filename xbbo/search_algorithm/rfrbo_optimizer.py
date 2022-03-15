@@ -200,7 +200,7 @@ class RFRBO(AbstractOptimizer):
             # acq_func: str = 'mc',
             # acq_opt: str = 'design',
             initial_design: str = 'sobol',
-            #  suggest_limit: int = 10,
+            #  suggest_limit: int = np.inf,
             **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,

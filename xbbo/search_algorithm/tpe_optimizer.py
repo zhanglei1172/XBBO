@@ -26,7 +26,7 @@ class TPE(AbstractOptimizer):
             #  bandwidth=1,
             gamma=0.15,
             initial_design: str = 'sobol',
-            suggest_limit: int = 10,
+            suggest_limit: int = np.inf,
             candidates_num=64,
             min_bandwidth=1e-3,
             bandwidth_factor=3,
@@ -35,8 +35,8 @@ class TPE(AbstractOptimizer):
             **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='bin',
-                                   encoding_ord='bin',
+                                   encoding_cat='round',
+                                   encoding_ord='round',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -92,7 +92,7 @@ class TPE(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array(sparse=False)))
+                          array=config.get_array()))
         else:
             self._fit_kde_models()
             if len(self.kde_models.keys()
@@ -102,7 +102,7 @@ class TPE(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              array=config.get_array(sparse=False)))
+                              array=config.get_array()))
             else:
                 for n in range(n_suggestions):
                     best = np.inf
@@ -188,7 +188,7 @@ class TPE(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              array=config.get_array(sparse=False)))
+                              array=config.get_array()))
         return trial_list
 
     def _sample_nonduplicate_config(self, num_configs=1):

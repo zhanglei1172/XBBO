@@ -91,18 +91,54 @@ class BOHB(HB):
             # else: # 每一列中的第一行，随机生成config
 
         else:
+            if bracket.is_new_rung():
+                lower_budget, num_configs = bracket.get_lower_budget_promotions(
+                    budget)
+                self.cg[budget].population_fitness[num_configs:] = np.inf
+                
             for b in reversed(self.budgets):
                 if self.cg[b].kde_models:
                     break 
-            trial = self.cg[b]._suggest()[0]
-
-            self.cg[budget].population[parent_id] = trial.array
+            # trial = self.cg[b]._suggest()[0]
+            trials = self.cg[b]._suggest(1)
+            for i in range(len(trials)):
+                self.cg[budget].population[parent_id+i] = trials[i].array
+                # self.cg[budget].population[parent_id] = trial.array
         # parent_id = self._get_next_idx_for_subpop(budget, bracket)
 
         target = self.cg[budget].population[parent_id]
         # target = self.fix_boundary(target)
         return target, parent_id
 
+    def _observe(self, trial_list):
+        for trial in trial_list:
+            self.trials.add_a_trial(trial, True)
+            fitness = trial.observe_value
+            job_info = trial.info
+            # learner_train_time = job_info.get(Key.EVAL_TIME, 0)
+            budget = job_info[Key.BUDGET]
+            parent_id = job_info['parent_id']
+            individual = trial.array  # TODO
+            for bracket in self.active_brackets:
+                if bracket.bracket_id == job_info['bracket_id']:
+                    # registering is IMPORTANT for Bracket Manager to perform SH
+                    bracket.register_job(budget)  # may be new row
+                    # bracket job complete
+                    bracket.complete_job(
+                        budget)  # IMPORTANT to perform synchronous SH
+            self.cg[budget].population[parent_id] = individual
+            self.cg[budget].population_fitness[parent_id] = fitness
+            # updating incumbents
+            if fitness < self.current_best_fitness:
+                self.current_best = individual
+                self.current_best_fitness = trial.observe_value
+                self.current_best_trial = trial
+        for rung in range(bracket.n_rungs-1, bracket.current_rung, -1):
+            if self.cg[bracket.budgets[rung]].kde_models:
+                break
+        else:
+            self.cg[budget]._observe(trial_list)
 
+        self._clean_inactive_brackets()
 
 opt_class = BOHB
