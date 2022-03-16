@@ -36,19 +36,19 @@ class Bin():
     def get_bounds(self,):
         return np.zeros(len(self.trg)), np.ones(len(self.trg))
 
-# class Round():
-#     def __init__(self, src, trg, sizes) -> None:
-#         self.src = src
-#         self.trg = trg
-#         self.sizes = sizes
-#     def convert(self, array_dense, array_sparse):
-#         array_sparse[self.src] = np.round(array_dense[self.trg])
-#         return array_sparse
-#     def invconvert(self, array_dense, array_sparse):
-#         array_dense[self.trg] = array_sparse[self.src]
-#         return array_dense
-#     def get_bounds(self,):
-#         return np.zeros(len(self.trg)), np.array((self.sizes))-1
+class Round():
+    def __init__(self, src, trg, sizes) -> None:
+        self.src = src
+        self.trg = trg
+        self.sizes = sizes
+    def convert(self, array_dense, array_sparse):
+        array_sparse[self.src] = np.round(array_dense[self.trg])
+        return array_sparse
+    def invconvert(self, array_dense, array_sparse):
+        array_dense[self.trg] = array_sparse[self.src]
+        return array_dense
+    def get_bounds(self,):
+        return np.zeros(len(self.trg)), np.array((self.sizes))-1
 
 class OneHot():
     def __init__(self, src, trg, sizes) -> None:
@@ -58,13 +58,16 @@ class OneHot():
         self.cats = list(zip(self.src.tolist(),self.trg.tolist(),self.sizes.tolist()))
     def convert(self, array_dense, array_sparse):
         for src_ind, trg_ind, size in self.cats:
-            ind_max = np.argmax(array_dense[trg_ind:trg_ind + size])
+            tmp = array_dense[trg_ind:trg_ind + size]
+            # ind_max = np.argmax(tmp) if tmp.any() else np.nan
+            ind_max = np.argmax(tmp)
             array_sparse[src_ind] = ind_max
         return array_sparse
     def invconvert(self,array_dense, array_sparse):
         choice = array_sparse[self.src] # conditional=>nan
         cat_trg_offset = np.uintp(choice)
-        array_dense[self.trg + cat_trg_offset] = 1 if choice else choice
+        idx = np.where(~np.isnan(choice))[0]
+        array_dense[(self.trg + cat_trg_offset)[idx]] = 1
         return array_dense
     # def get_bounds(self,):
     #     return np.zeros(self.trg), np.ones(self.trg)
@@ -257,7 +260,7 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         # else:
         #     self.bin = None
         if round_cats:
-            raise NotImplementedError
+            # raise NotImplementedError
             self.map['round'] = Round(*list(map(np.uintp, zip(*round_cats))) if round_cats else ([], [],[]))
         # else:
         #     self.round = None
@@ -397,7 +400,7 @@ class DenseConfiguration(CS.Configuration):
         '''
         cs = configuration_space
         # initialize output array
-        array_sparse = np.empty(cs.size_sparse, dtype=dtype)
+        array_sparse = np.zeros(cs.size_sparse, dtype=dtype)
         for v in cs.map.values():
             array_sparse = v.convert(array_dense, array_sparse)
         # process numerical hyperparameters

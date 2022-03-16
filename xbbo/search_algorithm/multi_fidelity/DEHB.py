@@ -102,6 +102,8 @@ class DEHB(HB):
         parent_id = self._get_next_idx_for_subpop(budget, bracket)
         target = self.cg[budget].population[parent_id]
         lower_budget, num_configs = bracket.get_lower_budget_promotions(budget)
+        # if bracket.is_new_rung():
+        #     self.cg[budget].population_fitness[num_configs:] = np.inf
         # Fix bugs in the original author's implementation code
         # if self.bracket_counter == 0 and budget != bracket.budgets[0]:
         if self.bracket_counter < self.max_SH_iter and budget != bracket.budgets[

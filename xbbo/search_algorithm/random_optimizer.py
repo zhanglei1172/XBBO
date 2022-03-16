@@ -1,3 +1,4 @@
+import numpy as np
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.search_algorithm.base import AbstractOptimizer
@@ -12,12 +13,12 @@ class RandomOptimizer(AbstractOptimizer):
             seed: int = 42,
             initial_design: str = 'random',
             #  min_sample=1,
-            suggest_limit: int = 10,
+            suggest_limit: int = np.inf,
             **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
-                                   encoding_cat='bin',
-                                   encoding_ord='bin',
+                                   encoding_cat='round',
+                                   encoding_ord='round',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -59,7 +60,7 @@ class RandomOptimizer(AbstractOptimizer):
 
     def _observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
 
 
 opt_class = RandomOptimizer

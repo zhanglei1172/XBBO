@@ -23,7 +23,7 @@ class BORE(AbstractOptimizer):
                  seed: int = 42,
                  random_rate: float = 0.1,
                  initial_design: str = 'sobol',
-                 suggest_limit: int = 10,
+                 suggest_limit: int = np.inf,
                  classify: str = 'rf',
                  **kwargs):
 

@@ -13,6 +13,7 @@ OPTM:
   max_call: 30
   kwargs:
     round_limit: 10
+    # encoding_cat: one-hot
 
 TEST_PROBLEM:
   name: countingones # svm # cc18 # countingones

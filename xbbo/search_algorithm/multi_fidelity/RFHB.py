@@ -58,6 +58,7 @@ class RFHB(HB):
             lower_budget, num_configs = bracket.get_lower_budget_promotions(
                     budget)
             self.cg[budget].reset(bracket.current_n_config)
+            self.cg[budget].population_fitness[num_configs:] = np.inf
             if budget != bracket.budgets[0]:  # 每一列中的第二行开始，进行seed
                 # TODO: check if generalizes to all budget spacings
                 
@@ -100,7 +101,7 @@ class RFHB(HB):
 
     def _observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial, permit_duplicate=False)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
             fitness = trial.observe_value
             job_info = trial.info
             budget = job_info[Key.BUDGET]
