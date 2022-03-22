@@ -11,6 +11,12 @@ class Ext_opt():
                  budget_bound=[0, np.inf],
                  seed=0,
                  **kwargs) -> None:
+        '''
+        ::objective_function: _call_obj(self, trial, **kwargs),
+            trial: Trial or Configuration
+            kwargs: kwargs[Key.BUDGET]...
+            ::return: dict[Key.COST]...
+        '''
         self._inner_opt = None
         self.cs = cs
         self.dim = len(self.cs)

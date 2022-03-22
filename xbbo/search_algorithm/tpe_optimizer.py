@@ -1,11 +1,12 @@
 import logging
+import traceback
 import numpy as np
 import statsmodels.api as sm
 import scipy.stats as sps
 import ConfigSpace
 
 from xbbo.search_algorithm.base import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, deactivate_inactive_hyperparameters
 from xbbo.core.trials import Trial, Trials
 from xbbo.utils.constants import MAXINT
 from . import alg_register
@@ -105,90 +106,107 @@ class TPE(AbstractOptimizer):
                               array=config.get_array()))
             else:
                 for n in range(n_suggestions):
-                    best = np.inf
-                    best_vector = None
-                    l = self.kde_models['good'].pdf
-                    g = self.kde_models['bad'].pdf
+                    try:
+                        best = np.inf
+                        best_vector = None
+                        l = self.kde_models['good'].pdf
+                        g = self.kde_models['bad'].pdf
 
-                    minimize_me = lambda x: max(1e-32, g(x)) / max(l(x), 1e-32)
+                        minimize_me = lambda x: max(1e-32, g(x)) / max(l(x), 1e-32)
 
-                    kde_good = self.kde_models['good']
-                    kde_bad = self.kde_models['bad']
+                        kde_good = self.kde_models['good']
+                        kde_bad = self.kde_models['bad']
 
-                    for i in range(self.candidates_num):
-                        idx = self.rng.randint(0, len(kde_good.data))
-                        datum = kde_good.data[idx]
-                        vector = []
+                        for i in range(self.candidates_num):
+                            idx = self.rng.randint(0, len(kde_good.data))
+                            datum = kde_good.data[idx]
+                            vector = []
 
-                        for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
+                            for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
 
-                            bw = max(bw, self.min_bandwidth)
-                            if t == 0:
-                                bw = self.bw_factor * bw
-                                try:
-                                    vector.append(
-                                        sps.truncnorm.rvs(-m / bw,
-                                                          (1 - m) / bw,
-                                                          loc=m,
-                                                          scale=bw))
-                                except:
-                                    logger.warning(
-                                        "Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"
-                                        % (datum, kde_good.bw, m))
-                                    logger.warning("data in the KDE:\n%s" %
-                                                   kde_good.data)
-                            else:
-
-                                if self.rng.rand() < (1 - bw):
-                                    vector.append(int(m))
+                                bw = max(bw, self.min_bandwidth)
+                                if t == 0:
+                                    bw = self.bw_factor * bw
+                                    try:
+                                        vector.append(
+                                            sps.truncnorm.rvs(-m / bw,
+                                                            (1 - m) / bw,
+                                                            loc=m,
+                                                            scale=bw))
+                                    except:
+                                        logger.warning(
+                                            "Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"
+                                            % (datum, kde_good.bw, m))
+                                        logger.warning("data in the KDE:\n%s" %
+                                                    kde_good.data)
                                 else:
-                                    vector.append(self.rng.randint(t))
-                        val = minimize_me(vector)
 
-                        if not np.isfinite(val):
-                            logger.warning(
-                                'sampled vector: %s has EI value %s' %
-                                (vector, val))
-                            logger.warning("data in the KDEs:\n%s\n%s" %
-                                           (kde_good.data, kde_bad.data))
-                            logger.warning("bandwidth of the KDEs:\n%s\n%s" %
-                                           (kde_good.bw, kde_bad.bw))
-                            logger.warning("l(x) = %s" % (l(vector)))
-                            logger.warning("g(x) = %s" % (g(vector)))
+                                    if self.rng.rand() < (1 - bw):
+                                        vector.append(int(m))
+                                    else:
+                                        vector.append(self.rng.randint(t))
+                            val = minimize_me(vector)
 
-                            # right now, this happens because a KDE does not contain all values for a categorical parameter
-                            # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
-                            # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
-                            if np.isfinite(l(vector)):
+                            if not np.isfinite(val):
+                                logger.warning(
+                                    'sampled vector: %s has EI value %s' %
+                                    (vector, val))
+                                logger.warning("data in the KDEs:\n%s\n%s" %
+                                            (kde_good.data, kde_bad.data))
+                                logger.warning("bandwidth of the KDEs:\n%s\n%s" %
+                                            (kde_good.bw, kde_bad.bw))
+                                logger.warning("l(x) = %s" % (l(vector)))
+                                logger.warning("g(x) = %s" % (g(vector)))
+
+                                # right now, this happens because a KDE does not contain all values for a categorical parameter
+                                # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
+                                # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
+                                if np.isfinite(l(vector)):
+                                    best_vector = vector
+                                    break
+
+                            if val < best:
+                                best = val
                                 best_vector = vector
-                                break
 
-                        if val < best:
-                            best = val
-                            best_vector = vector
-
-                    if best_vector is None:
-                        logger.debug(
-                            "Sampling based optimization with %i samples failed -> using random configuration"
-                            % self.candidates_num)
-                        config = self._sample_nonduplicate_config()[0]
-                    else:
-                        logger.debug('best_vector: {}, {}, {}, {}'.format(
-                            best_vector, best, l(best_vector), g(best_vector)))
-                        for i, hp_value in enumerate(best_vector):
-                            if isinstance(
-                                    self.space.get_hyperparameter(
-                                        self.space.get_hyperparameter_by_idx(
-                                            i)), ConfigSpace.hyperparameters.
-                                    CategoricalHyperparameter):
-                                best_vector[i] = int(np.rint(best_vector[i]))
-
-                        config = DenseConfiguration.from_array(
+                        if best_vector is None:
+                            logger.debug(
+                                "Sampling based optimization with %i samples failed -> using random configuration"
+                                % self.candidates_num)
+                            config = self._sample_nonduplicate_config()[0]
+                        else:
+                            logger.debug('best_vector: {}, {}, {}, {}'.format(
+                                best_vector, best, l(best_vector), g(best_vector)))
+                            for i, hp_value in enumerate(best_vector):
+                                if isinstance(
+                                        self.space.get_hyperparameter(
+                                            self.space.get_hyperparameter_by_idx(
+                                                i)), ConfigSpace.hyperparameters.
+                                        CategoricalHyperparameter):
+                                    best_vector[i] = int(np.rint(best_vector[i]))
+                            config = DenseConfiguration.from_array(
                             self.space, np.asarray(best_vector))
+                        try:
+                            config = deactivate_inactive_hyperparameters(
+                                        configuration_space=self.space,
+                                        configuration=config.get_dictionary()
+                                        )
+
+                        except Exception as e:
+                            logger.warning(("="*50 + "\n")*3 +\
+                                    "Error converting configuration:\n%s"%config+\
+                                    "\n here is a traceback:" +\
+                                    traceback.format_exc())
+                            raise(e)
+
+
+                    except:
+                        logger.warning("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc()))
+                        config = self._sample_nonduplicate_config()[0]
                     trial_list.append(
-                        Trial(configuration=config,
-                              config_dict=config.get_dictionary(),
-                              array=config.get_array()))
+                            Trial(configuration=config,
+                                config_dict=config.get_dictionary(),
+                                array=config.get_array()))
         return trial_list
 
     def _sample_nonduplicate_config(self, num_configs=1):

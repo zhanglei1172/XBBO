@@ -94,7 +94,7 @@ class BOHB(HB):
             if bracket.is_new_rung():
                 lower_budget, num_configs = bracket.get_lower_budget_promotions(
                     budget)
-                self.cg[budget].population_fitness[num_configs:] = np.inf
+                self.cg[budget].population_fitness[:] = np.inf
                 
             for b in reversed(self.budgets):
                 if self.cg[b].kde_models:

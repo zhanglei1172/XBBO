@@ -578,7 +578,9 @@ class RFHB_ConfigGenerator(ConfigGenerator):
         if self.fited:
             batch = self._init_population(
                 int(self.reject_rate * num_configs))
-            best_id = np.argsort(self.rf.predict_log_proba(batch)[:, 0])
+            tmp = self.rf.predict_proba(batch)[:, 0]
+            tmp[tmp==0] = np.inf
+            best_id = np.argsort(tmp)
             self.population[:num_configs] = batch[best_id[:num_configs]]
         else:
             self.population[:num_configs] = elite_population
@@ -821,3 +823,75 @@ class BOHB_ConfigGenerator(ConfigGenerator):
                 nan_indices = np.argwhere(np.isnan(datum)).ravel()
             return_array[i, :] = datum
         return return_array
+
+class RFDEHB_ConfigGenerator(DEHB_ConfigGenerator):
+    def __init__(self, cs, budget, max_pop_size, rng, eta=3, **kwargs) -> None:
+        super().__init__(cs, budget, max_pop_size, rng, **kwargs)
+        self.dimension = self.cs.get_dimensions()
+        self.rf = RandomForestClassifier(n_estimators=25)
+        self.reject_rate = kwargs.get("reject_rate", 10)
+        self.trained_samples = np.empty((0, self.dimension))
+        self.trained_labels = np.empty((0))
+        self.fited = False
+        self.eta = eta
+        self.warmup_scale = kwargs.get("warmup_scale", 3)
+        # self.population = [None] * self.llambda
+        # self.population_fitness = [np.inf] * self.llambda
+        # self.current_best = None
+        # self.current_best_fitness = np.inf
+        self._set_min_train_size()
+
+    def _set_min_train_size(self):
+        self._min_train_size = max(self.warmup_scale * self.dimension, 10)
+
+        return self._min_train_size
+
+        # self.batch_sample_num = int(self.reject_rate * self.pop_size)
+    def add_fitting(self, X, y):
+        self.trained_samples = np.concatenate([self.trained_samples, X])
+        self.trained_labels = np.concatenate([self.trained_labels, y])
+        # labels = np.zeros_like(self.trained_labels)
+
+        if len(self.trained_labels) >= self._min_train_size:
+            tau = np.quantile(self.trained_labels, q=1 / self.eta)
+            labels = self.trained_labels <= tau
+            self.rf.fit(self.trained_samples, labels)
+            self.fited = True
+
+    # def update_new_subpopulation(self, elite_population):
+    #     num_configs = len(elite_population)
+    #     if self.fited:
+    #         batch = self._init_population(
+    #             int(self.reject_rate * num_configs))
+    #         best_id = np.argsort(self.rf.predict_proba(batch)[:, 0])
+    #         self.population[:num_configs] = batch[best_id[:num_configs]]
+    #     else:
+    #         self.population[:num_configs] = elite_population
+    #     self.population_fitness = np.full(len(self.population), np.inf)
+    
+    def batch_select_mut_cross_child(self,current=None, best=None, alt_pop=None, num_configs=0):
+        if self.fited:
+            batch_size = int(self.reject_rate * num_configs)
+            best_id = None
+        else:
+            batch_size = 1
+            best_id = 0
+        individuals = []
+        for i in range(batch_size):
+            mutant = self.mutation(current,
+                                          best=best,
+                                          alt_pop=alt_pop)
+            # perform crossover with selected parent
+            individuals.append(self.crossover(target=current, mutant=mutant))
+        if best_id is None:
+            # tmp = self.rf.predict_proba(np.array(individuals))[:, 0]
+            # idxs = np.argwhere(tmp>0)
+            tmp = self.rf.predict_proba(np.array(individuals))[:, 0]
+            tmp[tmp==0] = np.inf
+            best_id = np.argmin(tmp).item()
+            # if len(idxs) == 0:
+            #     best_id = 0
+            # else:
+            #     best_id = np.argmin(tmp[idxs])
+            #     best_id = idxs[best_id].item()
+        return individuals[best_id]

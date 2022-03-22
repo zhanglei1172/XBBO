@@ -113,6 +113,8 @@ Here you can **comparison** with commonly used and well-known Hyperparameter Opt
 
 [Bayesian Optimization](tests/BayesianOptimization/bayes_opt.md)
 
+[DEHB、HpBandSter](tests/multifidelity/mf.md)
+
 ## Algorithms notes
 
 - [BORE](docs/BBO_paper_reading/BORE_BayesianOptimization_by_Density-Ratio_Estimation.pdf)
