@@ -290,9 +290,10 @@ class HB(AbstractOptimizer):
         # n_configs = len(self.cg[high_budget].population) # not sure eta multiple configs
         elite_index = pop_idx[:n_configs]
         # self.cg[high_budget].population_fitness = self.cg[low_budget].population_fitness[elite_index]
-        self.cg[high_budget].population[:len(elite_index)] = self.cg[low_budget].population[
+        self.cg[high_budget].population[:len(elite_index)] = promotion_candidate_pop[
             elite_index]
-        self.cg[high_budget].population_fitness[len(elite_index):] = np.inf
+        # self.cg[high_budget].population_fitness[len(elite_index):] = np.inf
+        self.cg[high_budget].population_fitness[:] = np.inf
         # return
 
     def _get_next_idx_for_subpop(self, budget, bracket):

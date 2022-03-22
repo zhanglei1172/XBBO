@@ -58,7 +58,7 @@ class RFHB(HB):
             lower_budget, num_configs = bracket.get_lower_budget_promotions(
                     budget)
             self.cg[budget].reset(bracket.current_n_config)
-            self.cg[budget].population_fitness[num_configs:] = np.inf
+            self.cg[budget].population_fitness[:] = np.inf
             if budget != bracket.budgets[0]:  # 每一列中的第二行开始，进行seed
                 # TODO: check if generalizes to all budget spacings
                 
@@ -96,6 +96,7 @@ class RFHB(HB):
         # labels[elite_index] = 1
         # fiting low; gen high
         self.cg[low_budget].add_fitting(promotion_candidate_pop, labels)
+        # promotion top to down
         self.cg[high_budget].update_new_subpopulation(
             self.cg[low_budget].population[elite_index])
 

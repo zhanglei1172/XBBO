@@ -8,13 +8,14 @@ GENERAL:
 #    name: ''
 
 OPTM:
-  name: ext_smac3
+  name: ext_dehb
   n_suggestions: 1
   # max_call: 30
   kwargs:
+    bracket_limit: 50
     # round_limit: 4
-    n_iters: 100
+    # n_iters: 100
 
 TEST_PROBLEM:
-  name: nas_201 #nas_201 # countingones
+  name: countingones #nas_201 # countingones
 
