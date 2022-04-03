@@ -74,14 +74,16 @@ class HB_opt(Ext_opt):
             runtime_limit=np.inf,
             ip='127.0.0.1', port=self.port, authkey=b'abc'
         )
-        p=Process(target=work, args=())
-        p.start()
+        self.p=Process(target=work, args=())
+        self.p.start()
 
         self.kwargs = kwargs
 
     def _optimize(self):
         self._inner_opt.run()
+        self.p.terminate()
         self._calc_trials(self._inner_opt.recorder)
+        self.p.join()
         return self.trials
 
     def _calc_trials(self, data):
@@ -90,7 +92,8 @@ class HB_opt(Ext_opt):
         # costs = []
         
         for obs in data:
-            curr_regret = obs[0].loss
+            r_info = obs["return_info"]
+            curr_regret = r_info["loss"]
             config = obs["configuration"]
             dic = config.get_dictionary()
             curr_test_regret = curr_regret.regret_test
@@ -101,7 +104,7 @@ class HB_opt(Ext_opt):
                       info={
                           Key.REGRET_TEST: curr_test_regret,
                           Key.REGRET_VAL: curr_regret,
-                          Key.COST: obs["n_iteration"] * self.min_budget
+                          Key.COST: r_info["n_iteration"] * self.min_budget
                       }), permit_duplicate=True)
 
 

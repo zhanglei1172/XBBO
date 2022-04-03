@@ -45,30 +45,31 @@ def do_experiment(cfg_clone):  # pragma: main
 
 if __name__ == '__main__':
     confs = {
-        # "./cfgs/ext_openbox_hb.yaml": ["--mark", "openbox_hb"],
-        "./cfgs/rfdehb.yaml": ["--mark", "rfdehb"],
-        "./cfgs/ext_dehb.yaml": ["--mark", "ext_dehb"],
-        "./cfgs/rfhb.yaml": ["--mark", "RFHB"],
-        "./cfgs/dehb.yaml": ["--mark", "DEHB"],
-        "./cfgs/rs.yaml": ["--mark", "RS"],
-        "./cfgs/bohb.yaml": ["--mark", "bohb"],
-        "./cfgs/hb.yaml": ["--mark", "hb"],
-        "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
-        "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
+        "./cfgs/ext_openbox_hb.yaml": ["--mark", "openbox_hb"],
+        # "./cfgs/rfdehb.yaml": ["--mark", "rfdehb"],
+        # "./cfgs/ext_dehb.yaml": ["--mark", "ext_dehb"],
+        # "./cfgs/rfhb.yaml": ["--mark", "RFHB"],
+        # "./cfgs/dehb.yaml": ["--mark", "DEHB"],
+        # "./cfgs/rs.yaml": ["--mark", "RS"],
+        # "./cfgs/bohb.yaml": ["--mark", "bohb"],
+        # "./cfgs/hb.yaml": ["--mark", "hb"],
+        # "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
+        # "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
     }
     general_argv = ["-r", "50"]
     general_opts = ["TEST_PROBLEM.name", "countingones"]
     for conf in confs:
         cfg_clone = cfg.clone()
-        cfg_clone.OPTM.kwargs.bracket_limit=200
-        cfg_clone.OPTM.kwargs.round_limit=40
         cfg.freeze()
+
         argv = ["-c", conf]
         argv.extend(general_argv)
         argv.extend(confs[conf])
         argv.extend(general_opts)
         load_cfg_fom_args(cfg_clone,
                           argv=argv)  # repeat 3 times with diffent seeds
+        cfg_clone.OPTM.kwargs.bracket_limit=200
+        cfg_clone.OPTM.kwargs.round_limit=40
         do_experiment(cfg_clone)
         cfg.defrost()
 

@@ -31,8 +31,8 @@ class DEHB_opt(Ext_opt):
             # config = Configuration(cs, config)
             dic = config.get_dictionary()
             res = objective_function(config, budget=budget, **kwargs)
-            res = {
-                Key.FUNC_VALUE: res[Key.FUNC_VALUE],
+            r = {
+                "fitness": res[Key.FUNC_VALUE],
                 Key.COST: res.get(Key.COST, budget),
                 "info": {
                     Key.REGRET_TEST: res.get(Key.REGRET_TEST, 0),
@@ -43,12 +43,12 @@ class DEHB_opt(Ext_opt):
                                      dic,
                                      observe_value=res[Key.FUNC_VALUE],
                                      info={
-                                         Key.REGRET_TEST: res["info"][Key.REGRET_TEST],
+                                         Key.REGRET_TEST: r["info"][Key.REGRET_TEST],
                                          Key.REGRET_VAL: res[Key.FUNC_VALUE],
-                                         Key.COST: res[Key.COST]
+                                         Key.COST: r[Key.COST]
                                      }),
                                permit_duplicate=True)
-            return res
+            return r
 
         kwargs["eta"] = kwargs.get("eta", 3)
         kwargs["n_workers"] = kwargs.get("n_workers", 1)
@@ -62,7 +62,7 @@ class DEHB_opt(Ext_opt):
             # output_path=None,
             # if client is not None and of type Client, n_workers is ignored
             # if client is None, a Dask client with n_workers is set up
-            client=None,output_path='/dev/null'
+            client=None,
             **kwargs)
         self.kwargs = kwargs
 

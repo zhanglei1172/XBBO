@@ -1,6 +1,6 @@
 import logging
 
-from tests.xbbo_benchmark import benchmark
+from comparison.xbbo_benchmark import benchmark
 
 logging.basicConfig(level=logging.INFO)
 
