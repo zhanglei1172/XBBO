@@ -83,7 +83,7 @@ All examples can be found in `examples/` folder.
 
 ## Benchmark
 
-Run `tests/xbbo_benchmark.py` to benchmark general BBO optimizer.
+Run `comparison/xbbo_benchmark.py` to benchmark general BBO optimizer.
 
 | Method        | Minimum       | Best minimum | Mean f_calls to min | Std f_calls to min | Fastest f_calls to min |
 | ------------- | ------------- | ------------ | ------------------- | ------------------ | ---------------------- |
@@ -103,17 +103,19 @@ Run `tests/xbbo_benchmark.py` to benchmark general BBO optimizer.
 
 Here you can **comparison** with commonly used and well-known Hyperparameter Optimization (HPO) packages:
 
-[SMAC3](tests/smac3/SMAC3.md)
+[SMAC3](comparison/smac3/SMAC3.md)
 
-[hyperopt](tests/hyperopt/hyperopt.md)
+[hyperopt](comparison/hyperopt/hyperopt.md)
 
-[scikit-optimize](tests/scikit_optimize/skopt.md)
+[scikit-optimize](comparison/scikit_optimize/skopt.md)
 
-[TuRBO](tests/turbo/turbo.md)
+[TuRBO](comparison/turbo/turbo.md)
 
-[Bayesian Optimization](tests/BayesianOptimization/bayes_opt.md)
+[Bayesian Optimization](comparison/BayesianOptimization/bayes_opt.md)
 
-[DEHB、HpBandSter](tests/multifidelity/mf.md)
+[DEHB、HpBandSter](comparison/multifidelity/mf.md)
+
+[OpenBox](comparison/openbox/openbox.md)
 
 ## Algorithms notes
 

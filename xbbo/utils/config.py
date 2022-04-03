@@ -94,7 +94,7 @@ def load_cfg_fom_args(cfg_, description = "Config file options.", argv=None):
     m = hashlib.md5(cfg_.__repr__().encode('utf-8'))
     exp_dir = time.strftime('/%Y-%m-%d__%H_%M_%S__',time.localtime(time.time()))+m.hexdigest()
     # _C.runtime = time.time()
-    if cfg_.mark_label is '':
+    if cfg_.mark_label == '':
         cfg_.mark_label = '{}-{}'.format(cfg_.OPTM.name, m.hexdigest())
     cfg_.GENERAL.exp_dir = cfg_.GENERAL.exp_dir_root + exp_dir # TODO
     if os.path.exists(cfg_.GENERAL.exp_dir):
@@ -113,7 +113,7 @@ def load_cfg_fom_args(cfg_, description = "Config file options.", argv=None):
 
 
     # _C.freeze()
-    cfg_.freeze()
+    # cfg_.freeze()
 
 
 
