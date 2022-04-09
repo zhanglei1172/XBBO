@@ -11,7 +11,7 @@ from multiprocessing import Process
 
 sys.path.append('../open-box')
 
-from openbox.apps.multi_fidelity.mq_hb import mqHyperband
+from openbox.apps.multi_fidelity.mq_mfes import mqMFES
 from openbox.apps.multi_fidelity.mq_mf_worker import mqmfWorker
 # logging.basicConfig(level=logging.ERROR)
 
@@ -31,7 +31,7 @@ class HB_opt(Ext_opt):
                          seed=seed)
         
         np.random.seed(self.seed)
-        self.port = kwargs.get("port", 13579)
+        self.port = kwargs.get("port", 13577)
         self.cs = cs
         self.trials = Trials(len(cs))
         new_max_budget = self.max_budget / self.min_budget
@@ -67,7 +67,7 @@ class HB_opt(Ext_opt):
             worker = mqmfWorker(obj, '127.0.0.1', self.port, authkey=b'abc')
             worker.run()
 
-        self._inner_opt  = mqHyperband(
+        self._inner_opt  = mqMFES(
             None, cs, new_max_budget, eta=kwargs.get("eta", 3),
             num_iter=kwargs.get('round_limit', 50), random_state=seed,
             method_id='-', restart_needed=True,

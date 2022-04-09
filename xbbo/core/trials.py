@@ -55,7 +55,7 @@ class Trials:
         self.traj_history = []
         # self.use_dense = use_dense
 
-    def add_a_trial(self, trial: Trial, permit_duplicate=False):
+    def add_a_trial(self, trial: Trial, permit_duplicate=True):
         hash_config = str(trial.configuration)+str(trial.info.get(Key.BUDGET, 'max_budget'))
         if not permit_duplicate:
             assert hash_config not in self._his_hash_configs_set

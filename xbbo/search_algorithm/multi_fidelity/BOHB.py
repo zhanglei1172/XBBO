@@ -133,11 +133,11 @@ class BOHB(HB):
                 self.current_best = individual
                 self.current_best_fitness = trial.observe_value
                 self.current_best_trial = trial
-        for rung in range(bracket.n_rungs-1, bracket.current_rung, -1):
-            if self.cg[bracket.budgets[rung]].kde_models:
-                break
-        else:
-            self.cg[budget]._observe(trial_list)
+        # for rung in range(bracket.n_rungs-1, bracket.current_rung, -1):
+        #     if self.cg[bracket.budgets[rung]].kde_models:
+        #         break
+        # else:
+            self.cg[budget]._observe([trial])
 
         self._clean_inactive_brackets()
 
