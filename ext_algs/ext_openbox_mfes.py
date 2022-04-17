@@ -63,9 +63,9 @@ class HB_opt(Ext_opt):
                  "objective_value":obs,
             }
             return result
-        def work():
-            worker = mqmfWorker(obj, '127.0.0.1', self.port, authkey=b'abc')
-            worker.run()
+        # def work():
+        #     worker = mqmfWorker(obj, '127.0.0.1', self.port, authkey=b'abc')
+        #     worker.run()
 
         self._inner_opt  = mqMFES(
             None, cs, new_max_budget, eta=kwargs.get("eta", 3),
@@ -75,6 +75,14 @@ class HB_opt(Ext_opt):
             runtime_limit=np.inf,
             ip='127.0.0.1', port=self.port, authkey=b'abc'
         )
+        self._inner_opt.iterate_r = (self._inner_opt.R * self._inner_opt.eta ** -np.linspace(
+                    start=self._inner_opt.s_max, stop=0, num=self._inner_opt.s_max+1)).astype('int').tolist()
+        self._inner_opt.target_x = {k:[] for k in self._inner_opt.iterate_r}
+        self._inner_opt.target_y = {k:[] for k in self._inner_opt.iterate_r}
+        map_old = self._inner_opt.weighted_surrogate.surrogate_r.copy()
+        self._inner_opt.weighted_surrogate.surrogate_r = self._inner_opt.iterate_r.copy()
+        self._inner_opt.weighted_surrogate.surrogate_container = {self._inner_opt.weighted_surrogate.surrogate_r[i]:self._inner_opt.weighted_surrogate.surrogate_container[map_old[i]] for i in range(len(map_old))}
+        self._inner_opt.weighted_surrogate.surrogate_weight = {self._inner_opt.weighted_surrogate.surrogate_r[i]:self._inner_opt.weighted_surrogate.surrogate_weight[map_old[i]] for i in range(len(map_old))}
         self.p=Process(target=work, args=())
         self.p.start()
 

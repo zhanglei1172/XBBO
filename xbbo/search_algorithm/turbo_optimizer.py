@@ -87,8 +87,13 @@ class TuRBO_state():
             X, 'full_cov')
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            sample = self.rng.multivariate_normal(mean.ravel(), var,
+            try:
+                sample = self.rng.multivariate_normal(mean.ravel(), var,
                                             size=size).T  # (sample, N)
+            except:
+                sample = self.rng.multivariate_normal(mean.ravel(), np.diag(np.diag(var)),
+                                            size=size).T # TODO
+                
         return sample
 
     def update(self, trial: Trial, trials: Trials, obs_num: int):

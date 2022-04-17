@@ -129,7 +129,7 @@ if __name__ == '__main__':
     #                      "hb"])  # repeat 3 times with diffent seeds
     # do_experiment(cfg_clone)
     # cfg.defrost()
-    marks = [ "RFHB", "hb","DEHB","bohb", "RFHB_OH", "rfdehb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb", "DEHB-all","openbox_bohb", "mfes-bohb", "openbox-mfes"]
+    marks = ["hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "mfes-bohb", "openbox-mfes"]
     # marks = ["DEHB_DEHB", "RFHB", "hb","DEHB","bohb_array_inf", "RFHB_OH"]
     Analyse('./exp', benchmark='countingones', marks=marks, legend_size=16)
     # Analyse_multi_benchmark()
