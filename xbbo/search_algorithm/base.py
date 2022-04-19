@@ -36,9 +36,12 @@ class AbstractOptimizer(ABC):
             Configuration of the optimization variables. See API description.
         """
         assert isinstance(space, CS.ConfigurationSpace)
-        self.space = DenseConfigurationSpace(space,
+        if not isinstance(space, DenseConfigurationSpace):
+            self.space = DenseConfigurationSpace(space,
                                              encoding_cat=encoding_cat,
                                              encoding_ord=encoding_ord)
+        else:
+            self.space = space
         self.rng = np.random.RandomState(seed)
         self.suggest_limit = suggest_limit
         self.budget_limit = budget_limit

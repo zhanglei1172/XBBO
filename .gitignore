@@ -160,3 +160,13 @@ exp
 .
 *smac3*/
 .vscode/
+
+noise-*
+/*.pkl
+/*.png
+*.npy
+.gitignore
+comparison/noise_analysis.py
+xbbo_benchmark_noise.py
+branin_output_samples.csv
+comparison/xbbo_benchmark_noise_101.py

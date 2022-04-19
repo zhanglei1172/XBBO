@@ -5,8 +5,9 @@ from xbbo.pipeline.bbo_benchmark import BBObenchmark
 from xbbo.utils.analysis import Analyse, Analyse_multi_benchmark
 from xbbo.utils.config import cfg, load_cfg_fom_args
 from xbbo.utils.constants import MAXINT
+from xbbo.utils.util import dumpJson
 
-
+exp = []
 def do_experiment(cfg_clone):  # pragma: main
     # seed = cfg.GENARAL.random_seed
     SEED = cfg_clone.GENERAL.random_seed
@@ -30,28 +31,30 @@ def do_experiment(cfg_clone):  # pragma: main
             print('==EXP{}-{}-dir:"{}"==:'.format(r,cfg_clone.OPTM.name,cfg_clone.GENERAL.exp_dir))
             # np.random.seed(SEED)
             # random.seed(SEED)
-            bbo = BBObenchmark(cfg_clone, r)
+            seed = rng.randint(MAXINT)
+            bbo = BBObenchmark(cfg_clone, seed)
 
             bbo.run_one_exp()
             bbo.save_to_file(r)
+            # exp.append(bbo.optimizer_instance.exp_selection_success)
             print('='*20)
-            seed = rng.randint(MAXINT)
-            bbo.reset(seed)
-            gc.collect()
-
+        # dumpJson('./', 'exp.json', exp)
     else:
         raise NotImplementedError
 
 
 if __name__ == '__main__':
     confs = {
-        "./cfgs/ext_openbox_hb.yaml": ["--mark", "openbox_hb"],
+        # "./cfgs/ext_openbox_bohb.yaml": ["--mark", "openbox_bohb"],
+        # "./cfgs/ext_openbox_hb.yaml": ["--mark", "openbox_hb"],
         # "./cfgs/rfdehb.yaml": ["--mark", "rfdehb"],
         # "./cfgs/ext_dehb.yaml": ["--mark", "ext_dehb"],
         # "./cfgs/rfhb.yaml": ["--mark", "RFHB"],
         # "./cfgs/dehb.yaml": ["--mark", "DEHB"],
         # "./cfgs/rs.yaml": ["--mark", "RS"],
         # "./cfgs/bohb.yaml": ["--mark", "bohb"],
+        # "./cfgs/mfes-bohb.yaml": ["--mark", "mfes-bohb"],
+        "./cfgs/ext_openbox_mfes.yaml": ["--mark", "openbox-mfes"],
         # "./cfgs/hb.yaml": ["--mark", "hb"],
         # "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
         # "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
@@ -126,7 +129,7 @@ if __name__ == '__main__':
     #                      "hb"])  # repeat 3 times with diffent seeds
     # do_experiment(cfg_clone)
     # cfg.defrost()
-    marks = [ "RFHB", "hb","DEHB","bohb", "RFHB_OH", "rfdehb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb"]
+    marks = ["hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "mfes-bohb", "openbox-mfes"]
     # marks = ["DEHB_DEHB", "RFHB", "hb","DEHB","bohb_array_inf", "RFHB_OH"]
     Analyse('./exp', benchmark='countingones', marks=marks, legend_size=16)
     # Analyse_multi_benchmark()

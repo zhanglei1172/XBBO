@@ -2,6 +2,7 @@
 Reference: https://github.com/automl/DEHB
 '''
 
+from collections import defaultdict
 from typing import List
 import numpy as np
 
@@ -53,7 +54,7 @@ class DEHB(HB):
                     encoding_cat=encoding_cat,
                     encoding_ord=encoding_ord,
                     **kwargs)
-
+        self.exp_selection_success = {k:[] for k in self.cg}
     def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
@@ -78,6 +79,9 @@ class DEHB(HB):
                     self.current_best = individual
                     self.current_best_fitness = trial.observe_value
                     self.current_best_trial = trial
+                self.exp_selection_success[budget].append(1)
+            else:
+                self.exp_selection_success[budget].append(0)
 
         self._clean_inactive_brackets()
         # if len(self.active_brackets) == 0:  # complete current bracket
@@ -108,7 +112,7 @@ class DEHB(HB):
         # if self.bracket_counter == 0 and budget != bracket.budgets[0]:
         if self.bracket_counter < self.max_SH_iter and budget != bracket.budgets[
                 0]:
-            # 第一列，第二行开始，直接挑选最优的进入下一轮
+            # 第一轮HB，第二行开始，直接挑选最优的进入下一轮
             # TODO: check if generalizes to all budget spacings
             individual = self._get_promotion_candidate(lower_budget, budget,
                                                        num_configs)

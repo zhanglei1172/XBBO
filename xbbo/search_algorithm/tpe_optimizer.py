@@ -202,7 +202,8 @@ class TPE(AbstractOptimizer):
 
                     except:
                         logger.warning("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc()))
-                        config = self._sample_nonduplicate_config()[0]
+                        # config = self._sample_nonduplicate_config()[0]
+                        config = self.space.sample_configuration()[0]
                     trial_list.append(
                             Trial(configuration=config,
                                 config_dict=config.get_dictionary(),
@@ -250,7 +251,7 @@ class TPE(AbstractOptimizer):
             return
 
         bw_estimation = 'normal_reference'
-        np.random.seed(self.rng.randint(MAXINT))
+        # np.random.seed(self.rng.randint(MAXINT))
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,
                                                    var_type=self.kde_vartypes,
                                                    bw=bw_estimation)

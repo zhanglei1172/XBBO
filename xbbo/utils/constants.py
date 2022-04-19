@@ -1,6 +1,6 @@
 VERY_SMALL_NUMBER = 1e-10
 MAXINT = 2 ** 31 - 1
-
+N_TREES = 10
 
 class Key():
     REGRET_VAL = "regret_validation"

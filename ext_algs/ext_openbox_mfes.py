@@ -11,7 +11,7 @@ from multiprocessing import Process
 
 sys.path.append('../open-box')
 
-from openbox.apps.multi_fidelity.mq_hb import mqHyperband
+from openbox.apps.multi_fidelity.mq_mfes import mqMFES
 from openbox.apps.multi_fidelity.mq_mf_worker import mqmfWorker
 # logging.basicConfig(level=logging.ERROR)
 
@@ -31,7 +31,7 @@ class HB_opt(Ext_opt):
                          seed=seed)
         
         np.random.seed(self.seed)
-        self.port = kwargs.get("port", 13579)
+        self.port = kwargs.get("port", 13577)
         self.cs = cs
         self.trials = Trials(len(cs))
         new_max_budget = self.max_budget / self.min_budget
@@ -63,11 +63,11 @@ class HB_opt(Ext_opt):
                  "objective_value":obs,
             }
             return result
-        def work():
-            worker = mqmfWorker(obj, '127.0.0.1', self.port, authkey=b'abc')
-            worker.run()
+        # def work():
+        #     worker = mqmfWorker(obj, '127.0.0.1', self.port, authkey=b'abc')
+        #     worker.run()
 
-        self._inner_opt  = mqHyperband(
+        self._inner_opt  = mqMFES(
             None, cs, new_max_budget, eta=kwargs.get("eta", 3),
             num_iter=kwargs.get('round_limit', 50), random_state=seed,
             method_id='-', restart_needed=True,
@@ -75,6 +75,14 @@ class HB_opt(Ext_opt):
             runtime_limit=np.inf,
             ip='127.0.0.1', port=self.port, authkey=b'abc'
         )
+        self._inner_opt.iterate_r = (self._inner_opt.R * self._inner_opt.eta ** -np.linspace(
+                    start=self._inner_opt.s_max, stop=0, num=self._inner_opt.s_max+1)).astype('int').tolist()
+        self._inner_opt.target_x = {k:[] for k in self._inner_opt.iterate_r}
+        self._inner_opt.target_y = {k:[] for k in self._inner_opt.iterate_r}
+        map_old = self._inner_opt.weighted_surrogate.surrogate_r.copy()
+        self._inner_opt.weighted_surrogate.surrogate_r = self._inner_opt.iterate_r.copy()
+        self._inner_opt.weighted_surrogate.surrogate_container = {self._inner_opt.weighted_surrogate.surrogate_r[i]:self._inner_opt.weighted_surrogate.surrogate_container[map_old[i]] for i in range(len(map_old))}
+        self._inner_opt.weighted_surrogate.surrogate_weight = {self._inner_opt.weighted_surrogate.surrogate_r[i]:self._inner_opt.weighted_surrogate.surrogate_weight[map_old[i]] for i in range(len(map_old))}
         self.p=Process(target=work, args=())
         self.p.start()
 

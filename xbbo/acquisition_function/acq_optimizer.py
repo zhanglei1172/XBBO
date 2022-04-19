@@ -506,11 +506,12 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
             trials, self.n_sls_iterations, **kwargs)
 
         # Get configurations sorted by EI
+        new_kwargs = {"_sorted":True}
+        new_kwargs.update(kwargs)
         next_configs_by_random_search_sorted = self.random_search._maximize(
             trials,
             num_points - len(next_configs_by_local_search),
-            _sorted=True,
-            **kwargs)
+            **new_kwargs)
 
         # Having the configurations from random search, sorted by their
         # acquisition function value is important for the first few iterations
