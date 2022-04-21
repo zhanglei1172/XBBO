@@ -1,7 +1,5 @@
 from typing import Iterable
 import numpy as np
-import matplotlib.pyplot as plt
-
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.utils.constants import Key
 

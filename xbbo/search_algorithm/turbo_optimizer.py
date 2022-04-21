@@ -7,8 +7,6 @@ from scipy.stats.qmc import Sobol
 
 import numpy as np
 # from xbbo.acquisition_function.acq_optimizer import DesignBoundSearch
-# import torch
-# from torch.quasirandom import SobolEngine
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
@@ -16,11 +14,7 @@ from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 
-# from xbbo.surrogate.prf import RandomForestWithInstances
-# from xbbo.surrogate.sk_prf import skRandomForestWithInstances
-# from xbbo.surrogate.skrf import RandomForestSurrogate
-# from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
-#     GaussianProcessRegressorARD_torch
+
 from xbbo.utils.constants import MAXINT
 from . import alg_register
 

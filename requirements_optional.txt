@@ -1,0 +1,4 @@
+# optional
+pytest>=6.2.4
+prettytable>=3.2.0
+seaborn

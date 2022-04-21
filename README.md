@@ -4,7 +4,15 @@
 
 ## Installation
 
-`Python >= 3.8` is required.
+`Python >= 3.7` is required.
+
+### For PIP
+
+```bash
+pip install xbbo
+```
+
+### For Development
 
 ```bash
 git clone REPO_URL
@@ -17,11 +25,37 @@ export PYTHONPATH=$PYTHONPATH:/Path/to/XBBO
 
 ## Quick Start
 
-### Bayesian Optimization test
-
-`python ./examples/rosenbrock_bo.py`
-
 `note:`XBBO default **minimize** black box function.
+
+### Bayesian Optimization example
+
+Script path is `./examples/optimize_api_rosenbrock_bo.py`
+
+```python
+# define black box function
+blackbox_func = rosenbrock_2d_hard
+# define search space
+cs = build_space_hard(rng)
+# define black box optimizer
+hpopt = BO(space=cs,
+            objective_function=blackbox_func,
+            seed=rng.randint(MAXINT),
+            suggest_limit=MAX_CALL,
+            initial_design='sobol',
+            surrogate='gp',
+            acq_opt='rs_ls')
+
+# ---- Use minimize API ----
+hpopt.optimize()
+best_value, best_config = hpopt.trials.get_best()
+print('Find best value:{}'.format(best_value))
+print('Best Config:{}'.format(best_config))
+```
+
+> This example shows how to use this `.optimize()` api to easily and quickly optimize a black box function.
+
+Script path is `./examples/rosenbrock_bo.py`
+
 
 ```python
 def build_space(rng):
@@ -54,6 +88,8 @@ for i in range(MAX_CALL):
     print(value)  
 ```
 
+> This example shows how to use `.ask()`、`.tell()` api to quickly optimize a black box function.
+
 All examples can be found in `examples/` folder.
 
 ## Supported Algorithms
@@ -80,6 +116,7 @@ All examples can be found in `examples/` folder.
   - [X] HyperBand
   - [X] BOHB
   - [X] DEHB
+  - [x] MFES-BO
 
 ## Benchmark
 

@@ -132,8 +132,11 @@ class AbstractOptimizer(ABC):
         while not self.check_stop():
             trial_list = self.suggest()
             for trial in (trial_list):
+                print('Current suggest count={}.'.format(self.suggest_counter))
                 info = trial.info.copy()
-                res = self.objective_function(trial, **info)
+                res = self.objective_function(trial.config_dict, **info)
+                if not isinstance(res, dict):
+                    res = {Key.FUNC_VALUE: res}
                 info.update(res)
                 trial.add_observe_value(observe_value=info[Key.FUNC_VALUE],
                                         obs_info=info)
