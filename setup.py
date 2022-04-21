@@ -22,12 +22,12 @@ VERSION = '0.1.0'
 
 # What packages are required for this module to be executed?
 REQUIRED = Path(f"requirements.txt").read_text().splitlines()
-
+# REQUIRED = []
 # What packages are optional?
 EXTRAS = {
     'dev':Path(f"requirements_optional.txt").read_text().splitlines() 
 }
-
+# EXTRAS={}
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
 # Except, perhaps the License and Trove Classifiers!
