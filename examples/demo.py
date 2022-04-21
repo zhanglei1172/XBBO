@@ -3,11 +3,11 @@ import glob
 import numpy as np
 import random
 
-from xbbo.bbo import BBO
-from xbbo.pbt import PBT
-from xbbo.transfer_bbo import Transfer_BBO
+from xbbo.pipeline.bbo import BBO
+from xbbo.pipeline.pbt import PBT
+from xbbo.pipeline.transfer_bbo import Transfer_BBO
 from xbbo.utils.config import cfg, load_cfg_fom_args
-from xbbo.nas import NAS
+from xbbo.pipeline.nas import NAS
 from xbbo.utils.constants import MAXINT
 
 # cfg.freeze()

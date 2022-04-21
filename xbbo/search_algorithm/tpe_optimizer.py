@@ -1,17 +1,19 @@
 import logging
+import traceback
 import numpy as np
 import statsmodels.api as sm
 import scipy.stats as sps
 import ConfigSpace
 
 from xbbo.search_algorithm.base import AbstractOptimizer
-from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
+from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, deactivate_inactive_hyperparameters
 from xbbo.core.trials import Trial, Trials
 from xbbo.utils.constants import MAXINT
 from . import alg_register
 from xbbo.initial_design import ALL_avaliable_design
 
 logger = logging.getLogger(__name__)
+
 
 @alg_register.register('tpe')
 class TPE(AbstractOptimizer):
@@ -25,28 +27,32 @@ class TPE(AbstractOptimizer):
             #  bandwidth=1,
             gamma=0.15,
             initial_design: str = 'sobol',
-            total_limit: int = 10,
+            suggest_limit: int = np.inf,
             candidates_num=64,
             min_bandwidth=1e-3,
             bandwidth_factor=3,
             min_points_in_model=None,
             random_fraction=1 / 3,
             **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='round',
+                                   encoding_ord='round',
+                                   seed=seed,
+                                   suggest_limit=suggest_limit,
+                                   **kwargs)
         self.min_bandwidth = min_bandwidth
         self.bw_factor = bandwidth_factor
 
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=total_limit,**kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension, use_dense=False)
+        self.trials = Trials(dim=self.dimension)
         self.gamma = gamma
         self.candidates_num = candidates_num
         self.min_points_in_model = min_points_in_model
@@ -75,7 +81,7 @@ class TPE(AbstractOptimizer):
 
         self.vartypes = np.array(self.vartypes, dtype=int)
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         if (self.trials.trials_num) < self.init_budget:
             assert self.trials.trials_num % n_suggestions == 0
@@ -87,7 +93,7 @@ class TPE(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          sparse_array=config.get_sparse_array()))
+                          array=config.get_array()))
         else:
             self._fit_kde_models()
             if len(self.kde_models.keys()
@@ -97,97 +103,111 @@ class TPE(AbstractOptimizer):
                     trial_list.append(
                         Trial(configuration=config,
                               config_dict=config.get_dictionary(),
-                              sparse_array=config.get_sparse_array()))
+                              array=config.get_array()))
             else:
                 for n in range(n_suggestions):
-                    best = np.inf
-                    best_vector = None
-                    l = self.kde_models['good'].pdf
-                    g = self.kde_models['bad'].pdf
+                    try:
+                        best = np.inf
+                        best_vector = None
+                        l = self.kde_models['good'].pdf
+                        g = self.kde_models['bad'].pdf
 
-                    minimize_me = lambda x: max(1e-32, g(x)) / max(l(x), 1e-32)
+                        minimize_me = lambda x: max(1e-32, g(x)) / max(l(x), 1e-32)
 
-                    kde_good = self.kde_models['good']
-                    kde_bad = self.kde_models['bad']
+                        kde_good = self.kde_models['good']
+                        kde_bad = self.kde_models['bad']
 
-                    for i in range(self.candidates_num):
-                        idx = self.rng.randint(0, len(kde_good.data))
-                        datum = kde_good.data[idx]
-                        vector = []
+                        for i in range(self.candidates_num):
+                            idx = self.rng.randint(0, len(kde_good.data))
+                            datum = kde_good.data[idx]
+                            vector = []
 
-                        for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
+                            for m, bw, t in zip(datum, kde_good.bw, self.vartypes):
 
-                            bw = max(bw, self.min_bandwidth)
-                            if t == 0:
-                                bw = self.bw_factor * bw
-                                try:
-                                    vector.append(
-                                        sps.truncnorm.rvs(-m / bw,
-                                                          (1 - m) / bw,
-                                                          loc=m,
-                                                          scale=bw))
-                                except:
-                                    logger.warning(
-                                        "Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"
-                                        % (datum, kde_good.bw, m))
-                                    logger.warning("data in the KDE:\n%s" %
-                                                   kde_good.data)
-                            else:
-
-                                if self.rng.rand() < (1 - bw):
-                                    vector.append(int(m))
+                                bw = max(bw, self.min_bandwidth)
+                                if t == 0:
+                                    bw = self.bw_factor * bw
+                                    try:
+                                        vector.append(
+                                            sps.truncnorm.rvs(-m / bw,
+                                                            (1 - m) / bw,
+                                                            loc=m,
+                                                            scale=bw))
+                                    except:
+                                        logger.warning(
+                                            "Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"
+                                            % (datum, kde_good.bw, m))
+                                        logger.warning("data in the KDE:\n%s" %
+                                                    kde_good.data)
                                 else:
-                                    vector.append(self.rng.randint(t))
-                        val = minimize_me(vector)
 
-                        if not np.isfinite(val):
-                            logger.warning(
-                                'sampled vector: %s has EI value %s' %
-                                (vector, val))
-                            logger.warning("data in the KDEs:\n%s\n%s" %
-                                                (kde_good.data, kde_bad.data))
-                            logger.warning(
-                                "bandwidth of the KDEs:\n%s\n%s" %
-                                (kde_good.bw, kde_bad.bw))
-                            logger.warning("l(x) = %s" % (l(vector)))
-                            logger.warning("g(x) = %s" % (g(vector)))
+                                    if self.rng.rand() < (1 - bw):
+                                        vector.append(int(m))
+                                    else:
+                                        vector.append(self.rng.randint(t))
+                            val = minimize_me(vector)
 
-                            # right now, this happens because a KDE does not contain all values for a categorical parameter
-                            # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
-                            # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
-                            if np.isfinite(l(vector)):
+                            if not np.isfinite(val):
+                                logger.warning(
+                                    'sampled vector: %s has EI value %s' %
+                                    (vector, val))
+                                logger.warning("data in the KDEs:\n%s\n%s" %
+                                            (kde_good.data, kde_bad.data))
+                                logger.warning("bandwidth of the KDEs:\n%s\n%s" %
+                                            (kde_good.bw, kde_bad.bw))
+                                logger.warning("l(x) = %s" % (l(vector)))
+                                logger.warning("g(x) = %s" % (g(vector)))
+
+                                # right now, this happens because a KDE does not contain all values for a categorical parameter
+                                # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
+                                # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
+                                if np.isfinite(l(vector)):
+                                    best_vector = vector
+                                    break
+
+                            if val < best:
+                                best = val
                                 best_vector = vector
-                                break
 
-                        if val < best:
-                            best = val
-                            best_vector = vector
-
-                    if best_vector is None:
-                        logger.debug(
-                            "Sampling based optimization with %i samples failed -> using random configuration"
-                            % self.num_samples)
-                        config = self._sample_nonduplicate_config()[0]
-                    else:
-                        logger.debug('best_vector: {}, {}, {}, {}'.format(
-                            best_vector, best, l(best_vector),
-                            g(best_vector)))
-                        for i, hp_value in enumerate(best_vector):
-                            if isinstance(
-                                    self.space.get_hyperparameter(
-                                        self.space.
-                                        get_hyperparameter_by_idx(i)),
-                                    ConfigSpace.hyperparameters.
-                                    CategoricalHyperparameter):
-                                best_vector[i] = int(
-                                    np.rint(best_vector[i]))
-
-                        config = DenseConfiguration.from_sparse_array(
+                        if best_vector is None:
+                            logger.debug(
+                                "Sampling based optimization with %i samples failed -> using random configuration"
+                                % self.candidates_num)
+                            config = self._sample_nonduplicate_config()[0]
+                        else:
+                            logger.debug('best_vector: {}, {}, {}, {}'.format(
+                                best_vector, best, l(best_vector), g(best_vector)))
+                            for i, hp_value in enumerate(best_vector):
+                                if isinstance(
+                                        self.space.get_hyperparameter(
+                                            self.space.get_hyperparameter_by_idx(
+                                                i)), ConfigSpace.hyperparameters.
+                                        CategoricalHyperparameter):
+                                    best_vector[i] = int(np.rint(best_vector[i]))
+                            config = DenseConfiguration.from_array(
                             self.space, np.asarray(best_vector))
+                        try:
+                            config = deactivate_inactive_hyperparameters(
+                                        configuration_space=self.space,
+                                        configuration=config.get_dictionary()
+                                        )
+
+                        except Exception as e:
+                            logger.warning(("="*50 + "\n")*3 +\
+                                    "Error converting configuration:\n%s"%config+\
+                                    "\n here is a traceback:" +\
+                                    traceback.format_exc())
+                            raise(e)
+
+
+                    except:
+                        logger.warning("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc()))
+                        # config = self._sample_nonduplicate_config()[0]
+                        config = self.space.sample_configuration()[0]
                     trial_list.append(
-                        Trial(configuration=config,
+                            Trial(configuration=config,
                                 config_dict=config.get_dictionary(),
-                                sparse_array=best_vector))
+                                array=config.get_array()))
         return trial_list
 
     def _sample_nonduplicate_config(self, num_configs=1):
@@ -210,7 +230,7 @@ class TPE(AbstractOptimizer):
         return configs
 
     def _fit_kde_models(self, ):
-        train_configs = self.trials.get_sparse_array()
+        train_configs = self.trials.get_array()
         n_good = max(self.min_points_in_model,
                      int(self.gamma * self.trials.trials_num) // 100)
         # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_configs.shape[0])//100), 10)
@@ -231,7 +251,7 @@ class TPE(AbstractOptimizer):
             return
 
         bw_estimation = 'normal_reference'
-        np.random.seed(self.rng.randint(MAXINT))
+        # np.random.seed(self.rng.randint(MAXINT))
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,
                                                    var_type=self.kde_vartypes,
                                                    bw=bw_estimation)
@@ -244,9 +264,9 @@ class TPE(AbstractOptimizer):
 
         self.kde_models = {'good': good_kde, 'bad': bad_kde}
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
-            self.trials.add_a_trial(trial)
+            self.trials.add_a_trial(trial, permit_duplicate=True)
 
     def impute_conditional_data(self, array):
 

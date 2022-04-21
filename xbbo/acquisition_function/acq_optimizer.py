@@ -385,7 +385,7 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
 
         if initial_config is None:
             initial_config = self.config_space.sample_configuration()
-        init_point = initial_config.get_array()
+        init_point = initial_config.get_array(sparse=False)
 
         acq_configs = []
         result = scipy.optimize.minimize(fun=negative_acquisition,
@@ -506,11 +506,12 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
             trials, self.n_sls_iterations, **kwargs)
 
         # Get configurations sorted by EI
+        new_kwargs = {"_sorted":True}
+        new_kwargs.update(kwargs)
         next_configs_by_random_search_sorted = self.random_search._maximize(
             trials,
             num_points - len(next_configs_by_local_search),
-            _sorted=True,
-            **kwargs)
+            **new_kwargs)
 
         # Having the configurations from random search, sorted by their
         # acquisition function value is important for the first few iterations
@@ -533,89 +534,89 @@ class InterleavedLocalAndRandomSearch(AcquisitionFunctionMaximizer):
 
 
 
-    """Get candidate solutions via random sampling of configurations.
+    # """Get candidate solutions via random sampling of configurations.
 
-    Parameters
-    ----------
-    acquisition_function : ~xbbo.optimizer.acquisition.AbstractAcquisitionFunction
+    # Parameters
+    # ----------
+    # acquisition_function : ~xbbo.optimizer.acquisition.AbstractAcquisitionFunction
 
-    config_space : ~xbbo.configspace.DenseConfigurationSpace
+    # config_space : ~xbbo.configspace.DenseConfigurationSpace
 
-    rng : np.random.RandomState or int, optional
-    """
-    def __init__(
-        self,
-        acquisition_function: AbstractAcquisitionFunction,
-        config_space: DenseConfigurationSpace,
-        rng: np.random.RandomState = np.random.RandomState(42),
-        design_method: Optional[str] = 'sobol',
-    ):
-        super().__init__(acquisition_function, config_space, rng)
-        self.design_method = design_method
-        types, bounds = get_types(self.config_space)
-        self.bounds = bounds
-        self.dim = len(self.bounds)
+    # rng : np.random.RandomState or int, optional
+    # """
+    # def __init__(
+    #     self,
+    #     acquisition_function: AbstractAcquisitionFunction,
+    #     config_space: DenseConfigurationSpace,
+    #     rng: np.random.RandomState = np.random.RandomState(42),
+    #     design_method: Optional[str] = 'sobol',
+    # ):
+    #     super().__init__(acquisition_function, config_space, rng)
+    #     self.design_method = design_method
+    #     types, bounds = get_types(self.config_space)
+    #     self.bounds = bounds
+    #     self.dim = len(self.bounds)
 
-    def _maximize(self,
-                  trials: Trials,
-                  num_points: int,
-                  _sorted: bool = False,
-                  **kwargs) -> List[Tuple[float, DenseConfiguration]]:
-        """Design sampled configurations
+    # def _maximize(self,
+    #               trials: Trials,
+    #               num_points: int,
+    #               _sorted: bool = False,
+    #               **kwargs) -> List[Tuple[float, DenseConfiguration]]:
+    #     """Design sampled configurations
 
-        Parameters
-        ----------
-        trials: ~xbbo.trials.trials.trials
-            trials object
-        stats: ~xbbo.stats.stats.Stats
-            current stats object
-        num_points: int
-            number of points to be sampled
-        _sorted: bool
-            whether random configurations are sorted according to acquisition function
+    #     Parameters
+    #     ----------
+    #     trials: ~xbbo.trials.trials.trials
+    #         trials object
+    #     stats: ~xbbo.stats.stats.Stats
+    #         current stats object
+    #     num_points: int
+    #         number of points to be sampled
+    #     _sorted: bool
+    #         whether random configurations are sorted according to acquisition function
 
-        Returns
-        -------
-        iterable
-            An iterable consistng of
-            tuple(acqusition_value, :class:`xbbo.configspace.DenseConfiguration`).
-        """
-        X = trials.get_array()
-        fX = np.asarray(trials._his_observe_value)
-        length_scale = kwargs.get('length_scale', np.ones(self.dim))
-        length = kwargs['length']
-        weights = np.array(length_scale)
-        # Create the trust region boundaries
-        x_center = X[fX.argmin().item(), :][None, :]
-        weights = weights / weights.mean(
-        )  # This will make the next line more stable
-        weights = weights / np.prod(np.power(
-            weights, 1.0 / len(weights)))  # We now have weights.prod() = 1
-        lb = np.clip(x_center - weights * length / 2.0, 0.0, 1.0)
-        ub = np.clip(x_center + weights * length / 2.0, 0.0, 1.0)
+    #     Returns
+    #     -------
+    #     iterable
+    #         An iterable consistng of
+    #         tuple(acqusition_value, :class:`xbbo.configspace.DenseConfiguration`).
+    #     """
+    #     X = trials.get_array()
+    #     fX = np.asarray(trials._his_observe_value)
+    #     length_scale = kwargs.get('length_scale', np.ones(self.dim))
+    #     length = kwargs['length']
+    #     weights = np.array(length_scale)
+    #     # Create the trust region boundaries
+    #     x_center = X[fX.argmin().item(), :][None, :]
+    #     weights = weights / weights.mean(
+    #     )  # This will make the next line more stable
+    #     weights = weights / np.prod(np.power(
+    #         weights, 1.0 / len(weights)))  # We now have weights.prod() = 1
+    #     lb = np.clip(x_center - weights * length / 2.0, 0.0, 1.0)
+    #     ub = np.clip(x_center + weights * length / 2.0, 0.0, 1.0)
 
-        # Draw a Sobolev sequence in [lb, ub]
-        sobol_gen = Sobol(d=self.dim,
-                          scramble=True,
-                          seed=self.rng.randint(MAXINT))
-        pert = sobol_gen.random(num_points)
-        pert = lb + (ub - lb) * pert
+    #     # Draw a Sobolev sequence in [lb, ub]
+    #     sobol_gen = Sobol(d=self.dim,
+    #                       scramble=True,
+    #                       seed=self.rng.randint(MAXINT))
+    #     pert = sobol_gen.random(num_points)
+    #     pert = lb + (ub - lb) * pert
 
-        # Create a perturbation mask
-        prob_perturb = min(20.0 / self.dim, 1.0)
-        mask = self.rng.rand(num_points,
-                             self.dim) <= prob_perturb
-        ind = np.where(np.sum(mask, axis=1) == 0)[0]
-        mask[ind,
-             self.rng.randint(0, self.dim - 1, size=len(ind))] = 1
+    #     # Create a perturbation mask
+    #     prob_perturb = min(20.0 / self.dim, 1.0)
+    #     mask = self.rng.rand(num_points,
+    #                          self.dim) <= prob_perturb
+    #     ind = np.where(np.sum(mask, axis=1) == 0)[0]
+    #     mask[ind,
+    #          self.rng.randint(0, self.dim - 1, size=len(ind))] = 1
 
-        # Create candidate points
-        X_cand = x_center.copy() * np.ones(
-            (num_points, self.dim))
-        X_cand[mask] = pert[mask]
+    #     # Create candidate points
+    #     X_cand = x_center.copy() * np.ones(
+    #         (num_points, self.dim))
+    #     X_cand[mask] = pert[mask]
         
-        acq_and_configs = []
-        for n in num_points:
-            config = DenseConfiguration.from_array(self.config_space, X_cand, use_dense=trials.use_dense)
-            y_cand = self.acquisition_function(config)
-            acq_and_configs.append((y_cand, config))
+    #     acq_and_configs = []
+    #     for n in num_points:
+    #         config = DenseConfiguration.from_array(self.config_space, X_cand, use_dense=trials.use_dense)
+    #         y_cand = self.acquisition_function(config)
+    #         acq_and_configs.append((y_cand, config))

@@ -64,7 +64,7 @@ class EI_AcqFunc(AbstractAcquisitionFunction):
         
         return candidates[self.rng.choice(np.where(scores==scores.max())[0])]
 
-    def _compute(self, X: np.ndarray) -> np.ndarray:
+    def _compute(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """Computes the EI value and its derivatives.
 
         Parameters

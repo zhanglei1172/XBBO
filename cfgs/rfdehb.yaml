@@ -1,0 +1,19 @@
+GENERAL:
+  pipeline: BBO
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: rfdehb
+  n_suggestions: 1
+  max_call: 30
+  kwargs:
+    round_limit: 10
+
+TEST_PROBLEM:
+  name: countingones # cc18 # countingones
+

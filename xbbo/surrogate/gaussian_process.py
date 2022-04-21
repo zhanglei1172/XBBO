@@ -1,16 +1,13 @@
 from typing import List
 import typing
-from scipy import optimize
+from scipy import optimize, stats
 import sklearn
 # from sklearn.gaussian_process import kernels
 from sklearn.gaussian_process.kernels import Kernel, KernelOperator
-# import torch
 # from scipy.linalg import solve_triangular, cholesky
-# from scipy import optimize, stats
 import numpy as np
 # import GPy
 from sklearn import gaussian_process
-# from botorch.acquisition import ExpectedImprovement
 
 from xbbo.surrogate.base import Surrogate, BaseGP
 from xbbo.surrogate.gp_kernels import HammingKernel, Matern, ConstantKernel, WhiteKernel
@@ -608,69 +605,3 @@ class GaussianProcessRegressor(Surrogate):
                                         _LinvKstar.T @ _LinvKstar)
 
 
-class GaussianProcessRegressorARD_torch(Surrogate):
-    def __init__(self, dim, min_sample=4, name='standard'):
-        from botorch.models import SingleTaskGP, FixedNoiseGP
-        from botorch import fit_gpytorch_model
-        from botorch.optim import optimize_acqf
-        from gpytorch import ExactMarginalLogLikelihood
-        from gpytorch.likelihoods import GaussianLikelihood
-        from gpytorch.constraints import GreaterThan
-        Surrogate.__init__(self, dim, min_sample)
-        # self.cached = {}
-        # self.cached_mu_sigma = {}
-        # self.cached_mu_cov = {}
-
-        self.is_fited = False
-        assert name in ["standard", "gaussian"]
-        mapping = {
-            "standard": StandardTransform,
-            "gaussian": GaussianTransform,
-        }
-        self.normalizer = mapping[name]
-        # self.observed_z = torch.empty(size=(0, dim))
-        self.y_observed = torch.empty(size=(0, 1))
-        self.X_observed = torch.empty(size=(0, dim))
-
-    def transform_outputs(self, y: np.array):
-        # return y # TODO
-        psi = self.normalizer(y)
-        z = psi.transform(y)
-        return z
-
-    def fit(self, x, y):
-        self.X_observed = torch.cat((self.X_observed, torch.Tensor(x)), dim=0)
-        self.y_observed = torch.cat(
-            (self.y_observed, torch.Tensor(y).unsqueeze(1)), dim=0)
-        # x = torch.atleast_2d(x)
-        if self.X_observed.shape[-2] < self.min_sample:
-            return
-        self.is_fited = True
-
-        # if y.ndim == 1:
-        #     y = y[..., None]
-        self.z_observed = torch.Tensor(
-            self.transform_outputs(self.y_observed.cpu().numpy()))
-        # self.gpr = SingleTaskGP(
-        #     train_X=self.X_observed,
-        #     train_Y=self.z_observed,
-        #     # special likelihood for numerical Cholesky errors, following advice from
-        #     # https://www.gitmemory.com/issue/pytorch/botorch/179/506276521
-        #     # likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)),
-        # )
-        self.gpr = FixedNoiseGP(
-            train_X=self.X_observed,
-            train_Y=self.z_observed,
-            train_Yvar=torch.full_like(self.z_observed, 1)
-            # special likelihood for numerical Cholesky errors, following advice from
-            # https://www.gitmemory.com/issue/pytorch/botorch/179/506276521
-            # likelihood=GaussianLikelihood(noise_constraint=GreaterThan(1e-3)),
-        )
-
-        mll = ExactMarginalLogLikelihood(self.gpr.likelihood, self.gpr)
-        # with gpytorch.settings.cholesky_jitter(1e-1):
-        fit_gpytorch_model(mll)
-
-    def get_posterior(self, newX):
-        assert self.is_fited
-        return self.gpr.posterior(torch.atleast_2d(newX))

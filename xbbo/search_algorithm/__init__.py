@@ -7,7 +7,9 @@ alg_register = Register("all avaliable search algorithms")
 for model in os.listdir(os.path.dirname(__file__)):
     if model.endswith('.py'):
         module = importlib.import_module('.' + model[:-3], __package__)
-
+for model in os.listdir(os.path.dirname(__file__)+'/multi_fidelity'):
+    if model.endswith('.py'):
+        module = importlib.import_module('.' + model[:-3], __package__+'.multi_fidelity')
 
 # __all__ = alg_register.keys()
 # def get_opt_class(opt_name):

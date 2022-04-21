@@ -1,4 +1,3 @@
-import math
 import numpy as np
 
 from xbbo.search_algorithm.base import AbstractOptimizer
@@ -8,48 +7,52 @@ from . import alg_register
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.core.trials import Trial, Trials
 
+
 @alg_register.register('cem')
 class CEM(AbstractOptimizer):
     def __init__(self,
                  space: DenseConfigurationSpace,
                  seed: int = 42,
-                 llambda=None,
+                 llambda=30,
                  elite_ratio=0.3,
                  sample_method: str = 'Gaussian',
                  **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
+                                   seed=seed,
+                                   **kwargs)
         # Uniform2Gaussian.__init__(self, )
 
         # configs = self.space.get_hyperparameters()
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
+        self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
         if sample_method == 'Gaussian':
-            self.sampler = Gaussian_sampler(self.dense_dimension, self.bounds,
+            self.sampler = Gaussian_sampler(self.dimension, self.bounds,
                                             self.rng)
         elif sample_method == 'Uniform':
-            self.sampler = Uniform_sampler(self.dense_dimension, self.bounds,
+            self.sampler = Uniform_sampler(self.dimension, self.bounds,
                                            self.rng)
 
         self.buffer_x = []
         self.buffer_y = []
-        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dense_dimension))
+        self.llambda = llambda  #if llambda else 4 + math.floor(3 * math.log(self.dimension))
         self.elite_ratio = elite_ratio
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension)
+        self.elite_num = max(int(round(self.llambda * self.elite_ratio)), 2)
+        self.trials = Trials(dim=self.dimension)
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         trial_list = []
         for n in range(n_suggestions):
             # new_individual = self.feature_to_array(new_individual, )
             new_individual = self.sampler.sample()
 
-            config = DenseConfiguration.from_dense_array(
-                self.space, new_individual)
+            config = DenseConfiguration.from_array(self.space, new_individual)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      dense_array=new_individual,
+                      array=new_individual,
                       origin='CEM'))
 
         return trial_list
@@ -57,13 +60,13 @@ class CEM(AbstractOptimizer):
     def _get_elite(self):
         self.buffer_x = np.asarray(self.buffer_x)
         self.buffer_y = np.asarray(self.buffer_y)
-        idx = np.argsort(self.buffer_y)[:int(self.llambda * self.elite_ratio)]
+        idx = np.argsort(self.buffer_y)[:self.elite_num]
         return self.buffer_x[idx, :], self.buffer_y[idx]
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         for trial in trial_list:
             self.trials.add_a_trial(trial, permit_duplicate=True)
-            self.buffer_x.append(trial.dense_array)
+            self.buffer_x.append(trial.array)
             self.buffer_y.append(trial.observe_value)
         if len(self.buffer_x) < self.llambda:
             return

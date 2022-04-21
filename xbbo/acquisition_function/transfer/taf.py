@@ -4,50 +4,6 @@ import numpy as np
 from scipy import stats
 
 from xbbo.acquisition_function.base import AbstractAcquisitionFunction
-# from torch import Tensor
-# from torch.nn import ModuleList
-# import torch.nn.functional as F
-
-# class TAF_(ExpectedImprovement):
-#     def __init__(
-#             self,
-#             model,
-#             best_f,
-#             base_models,
-#             base_model_best,
-#             weights,
-#             objective: Optional[ScalarizedObjective] = None,
-#             maximize: bool = False,
-#     ) -> None:
-#         # model = ModuleList(base_models)
-#         # model.likelihood = LikelihoodList(*[m.likelihood for m in model])
-#         super().__init__(model=model, best_f=best_f, objective=objective, maximize=maximize)
-#         # self.maximize = maximize
-#         self.weights = weights
-#         self.base_models = base_models
-#         self.base_model_best = base_model_best
-
-# @t_batch_mode_transform(expected_q=1)
-# def forward(self, X: Tensor) -> Tensor:
-#     improvement = []
-#     non_zero_weight_indices = (self.weights ** 2 > 0).nonzero()[0]
-#     non_zero_weights = self.weights[non_zero_weight_indices]
-#     for m_id in range(non_zero_weight_indices.shape[0] - 1):
-#         model = self.base_models[non_zero_weight_indices[m_id]]
-#         posterior = model.posterior(X)
-#         # posterior_mean = posterior.mean.squeeze(-1) * model.Y_std + model.Y_mean
-#         posterior_mean = posterior.mean.squeeze()
-#         # apply weight
-#         weight = non_zero_weights[m_id]
-#         if self.maximize:
-#             improvement.append(
-#                 weight * F.relu(posterior_mean - self.base_model_best[non_zero_weight_indices[m_id]]))
-#         else:
-#             improvement.append(
-#                 weight * F.relu(self.base_model_best[non_zero_weight_indices[m_id]] - posterior_mean))
-#     others = torch.stack(improvement).sum(dim=0) / non_zero_weights.sum() if improvement else 0
-#     return self.weights[-1] * super().forward(X) + others
-
 
 class TAF_AcqFunc(AbstractAcquisitionFunction):
     def __init__(self, surrogate_model, base_models, rng, rho=None):

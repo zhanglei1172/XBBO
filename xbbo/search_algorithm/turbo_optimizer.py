@@ -7,8 +7,6 @@ from scipy.stats.qmc import Sobol
 
 import numpy as np
 # from xbbo.acquisition_function.acq_optimizer import DesignBoundSearch
-# import torch
-# from torch.quasirandom import SobolEngine
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 
@@ -16,11 +14,7 @@ from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 
-# from xbbo.surrogate.prf import RandomForestWithInstances
-# from xbbo.surrogate.sk_prf import skRandomForestWithInstances
-# from xbbo.surrogate.skrf import RandomForestSurrogate
-# from xbbo.surrogate.gaussian_process import GaussianProcessRegressor, GaussianProcessRegressorARD_gpy, \
-#     GaussianProcessRegressorARD_torch
+
 from xbbo.utils.constants import MAXINT
 from . import alg_register
 
@@ -87,8 +81,13 @@ class TuRBO_state():
             X, 'full_cov')
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            sample = self.rng.multivariate_normal(mean.ravel(), var,
+            try:
+                sample = self.rng.multivariate_normal(mean.ravel(), var,
                                             size=size).T  # (sample, N)
+            except:
+                sample = self.rng.multivariate_normal(mean.ravel(), np.diag(np.diag(var)),
+                                            size=size).T # TODO
+                
         return sample
 
     def update(self, trial: Trial, trials: Trials, obs_num: int):
@@ -100,7 +99,7 @@ class TuRBO_state():
         if (not np.isfinite(self.center_value)
             ) or trial.observe_value < self.center_value - 1e-3 * math.fabs(
                 self.center_value):
-            self.center = self.to_unit_cube(trial.sparse_array)
+            self.center = self.to_unit_cube(trial.array)
             self.center_value = trial.observe_value
             logger.info(
                 f"{trials.trials_num}) New best @ TR-{self.marker}: {self.center_value:.4}"
@@ -204,24 +203,26 @@ class TuRBO(AbstractOptimizer):
             # acq_opt: str = 'design',
             initial_design: str = 'sobol',
             num_tr=1,
-            #  total_limit: int = 10,
+            #  suggest_limit: int = np.inf,
             **kwargs):
-        AbstractOptimizer.__init__(self, space, seed, **kwargs)
-        self.sparse_dimension = self.space.get_dimensions(sparse=True)
-        self.dense_dimension = self.space.get_dimensions(sparse=False)
-        self.bounds = self.space.get_bounds(sparse=True)
+        AbstractOptimizer.__init__(self,
+                                   space,
+                                   encoding_cat='bin',
+                                   encoding_ord='bin',
+                                   seed=seed,
+                                   **kwargs)
+        self.dimension = self.space.get_dimensions()
+        self.bounds = self.space.get_bounds()
         self.n_min_sample = kwargs.get('n_min_sample', 5)
         self.init_budget = self.n_min_sample  # self.initial_design.init_budget
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, init_budget=self.init_budget)
 
         self.initial_design_configs = [[] for _ in range(num_tr)]
-        self.trials = Trials(sparse_dim=self.sparse_dimension,
-                             dense_dim=self.dense_dimension,
-                             use_dense=False)
+        self.trials = Trials(dim=self.dimension)
         self.n_training_steps = kwargs.get("n_training_steps", 50)
         self.max_cholesky_size = kwargs.get("max_cholesky_size", 2000)
-        self.dim = self.sparse_dimension
+        self.dim = self.dimension
         self.n_candidates = 2**int(np.log2(min(100 * self.dim, 5000)))
         self.use_ard = kwargs.get("use_ard", True)
         self.num_tr = num_tr
@@ -244,7 +245,7 @@ class TuRBO(AbstractOptimizer):
             raise ValueError('surrogate {} not in {}'.format(
                 surrogate, ['gp']))
 
-    def suggest(self, n_suggestions=1):
+    def _suggest(self, n_suggestions=1):
         markers = np.array(self.trials.markers)
 
         for m in range(self.num_tr):
@@ -276,17 +277,17 @@ class TuRBO(AbstractOptimizer):
             # Make sure we never pick this point again
             y_cand[marker, j, :] = np.inf
             array = self.turbo_states[0].from_unit_cube(X_next[b, :])
-            config = DenseConfiguration.from_sparse_array(self.space, array)
+            config = DenseConfiguration.from_array(self.space, array)
             trial_list.append(
                 Trial(config,
                       config_dict=config.get_dictionary(),
-                      sparse_array=array,
+                      array=array,
                       origin='TuRBO-region-{}'.format(marker),
                     #   region=marker,
                       marker=marker))
         return trial_list
 
-    def observe(self, trial_list):
+    def _observe(self, trial_list):
         update_markers = defaultdict(list)
         for trial in trial_list:
             self.trials.add_a_trial(trial)
@@ -313,8 +314,8 @@ class TuRBO(AbstractOptimizer):
                 Trial(
                     configuration=config,
                     config_dict=config.get_dictionary(),
-                    sparse_array=config.get_sparse_array(),
-                    #   dense_array=config.get_dense_array(),
+                    array=config.get_array(sparse=False),
+                    #   array=config.get_array(sparse=False),
                     origion='turbo-design',
                     # region=region,
                     marker=region))

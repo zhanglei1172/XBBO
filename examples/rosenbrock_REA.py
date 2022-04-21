@@ -1,8 +1,9 @@
 import numpy as np
 # import matplotlib.pyplot as plt
-from xbbo.search_space.fast_example_problem import build_space_hard, rosenbrock_2d_hard
+from xbbo.search_space.fast_example_problem import build_space, rosenbrock_2d
 
 from xbbo.search_algorithm.regularizedEA_optimizer import RegularizedEA
+from xbbo.utils.constants import MAXINT
 
 
 if __name__ == "__main__":
@@ -10,11 +11,11 @@ if __name__ == "__main__":
     rng = np.random.RandomState(42)
 
     # define black box function
-    blackbox_func = rosenbrock_2d_hard
+    blackbox_func = rosenbrock_2d
     # define search space
-    cs = build_space_hard(rng)
+    cs = build_space(rng)
     # define black box optimizer
-    hpopt = RegularizedEA(space=cs, seed=rng.randint(10000),llambda=30)
+    hpopt = RegularizedEA(space=cs, seed=rng.randint(MAXINT),llambda=100)
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)

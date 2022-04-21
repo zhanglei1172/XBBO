@@ -1,18 +1,19 @@
 import numpy as np
 # import matplotlib.pyplot as plt
-from xbbo.search_space.fast_example_problem import build_space, rosenbrock_2d
+from xbbo.search_space.fast_example_problem import build_space_hard, rosenbrock_2d_hard
 from xbbo.search_algorithm.bore_optimizer import BORE
+from xbbo.utils.constants import MAXINT
 
 if __name__ == "__main__":
     MAX_CALL = 200
     rng = np.random.RandomState(42)
 
     # define black box function
-    blackbox_func = rosenbrock_2d
+    blackbox_func = rosenbrock_2d_hard
     # define search space
-    cs = build_space(rng)
+    cs = build_space_hard(rng)
     # define black box optimizer
-    hpopt = BORE(space=cs, seed=rng.randint(10000), total_limit=MAX_CALL, initial_design='sobol', classify='rf')
+    hpopt = BORE(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol', classify='rf')
     # Example call of the black-box function
     def_value = blackbox_func(cs.get_default_configuration())
     print("Default Value: %.2f" % def_value)
