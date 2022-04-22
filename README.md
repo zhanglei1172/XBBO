@@ -10,6 +10,8 @@
 
 ```bash
 pip install xbbo
+# If you want to use the full functionality：
+pip install xbbo[dev]
 ```
 
 ### For Development
