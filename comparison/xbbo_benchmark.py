@@ -123,5 +123,5 @@ if __name__ == "__main__":
         'turbo-2',
         'bore'
     ]  # 'nsga2','bo-transfer','pbt'
-    benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')
-    # benchmark(test_algs, run_one_exp, 20, 1, 42, desc='XBBO') for fast test
+    # benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')
+    benchmark(test_algs, run_one_exp, 20, 1, 42, desc='XBBO') # for fast test
