@@ -14,11 +14,11 @@ from setuptools import find_packages, setup, Command
 # Package meta-data.
 NAME = 'XBBO'
 DESCRIPTION = 'A Python toolbox for performing Black-Box Optimization.'
-URL = 'https://github.com/zhanglei1172/XBBO'
-EMAIL = 'isleizhang@stu.xmu.edu.cn'
+URL = 'https://git.openi.org.cn/PCL_AutoML/XBBO'
+EMAIL = 'leizhang@stu.xmu.edu.cn'
 AUTHOR = '(LeiZhang)XMU-MAC Lab'
 REQUIRES_PYTHON = '>=3.7.0'
-VERSION = '0.2.2'
+VERSION = '0.2.3'
 
 # What packages are required for this module to be executed?
 REQUIRED = Path(f"requirements.txt").read_text().splitlines()

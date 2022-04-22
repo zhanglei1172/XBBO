@@ -16,8 +16,10 @@ from xbbo.search_algorithm.multi_fidelity.BOHB import BOHB
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator
-from xbbo.surrogate.transfer.rf_ensemble import RandomForestEnsemble
-from xbbo.surrogate.transfer.rf_with_instances import RandomForestWithInstances
+try:
+    from xbbo.surrogate.transfer.rf_with_instances import RandomForestWithInstances
+except:
+    print("If your want to use probability random foreset, make sure 'pyrfr' is installed!")
 from xbbo.utils.constants import MAXINT, Key
 from xbbo.utils.util import get_types
 from .. import alg_register
@@ -30,6 +32,7 @@ def std_normalization(x):
         return np.array([0.] * len(x))
     return (np.array(x) - _mean) / _std
 
+@alg_register.register('mfes-bo')
 class SMBO(AbstractOptimizer):
     def __init__(self,
                 space: DenseConfigurationSpace,
@@ -71,6 +74,7 @@ class SMBO(AbstractOptimizer):
                          init_weight)    
         self.trials = Trials(dim=self.dimension)
         if surrogate == 'rf':
+            from xbbo.surrogate.transfer.rf_ensemble import RandomForestEnsemble
             self.weighted_surrogate = RandomForestEnsemble(space, all_budgets, init_weight, fusion_method,**kwargs
         )
         self.weight_srategy = weight_srategy
