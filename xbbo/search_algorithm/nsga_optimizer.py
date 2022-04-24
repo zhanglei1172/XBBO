@@ -38,7 +38,7 @@ class NSGAII(AbstractOptimizer):
         self.crossrate = kwargs.get('crossrate',0.9)
         # ---
 
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.cur = 0
         self.gen = 0
         self.listy = []

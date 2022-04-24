@@ -64,6 +64,7 @@ class skRandomForestWithInstances(BaseRF):
                  max_num_nodes: int=2**20,
                  rng: np.random.RandomState = np.random.RandomState(42),
                  n_jobs: int=None,
+                 types=None, bounds=None,
                  **kwargs):
         """
         Parameters
@@ -108,7 +109,8 @@ class skRandomForestWithInstances(BaseRF):
             context. ``-1`` means using all processors. See :term:`Glossary
             <n_jobs>` for more details.
         """
-        types, bounds = get_types(configspace)
+        if types is None or bounds is None:
+            types, bounds = get_types(configspace)
         super().__init__(configspace, types, bounds, **kwargs)
 
 

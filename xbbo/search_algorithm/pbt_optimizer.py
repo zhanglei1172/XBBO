@@ -35,7 +35,7 @@ class PBT():
         )
         self.population_configs = self.initial_design_configs
         self.population_hp_array = convert_denseConfigurations_to_array(self.population_configs)
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
 
         # self.data_shuffle_seed = kwargs.get('seed', 0)
         self.fraction = fraction

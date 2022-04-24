@@ -16,7 +16,6 @@ from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.acquisition_function.acq_func import EI_AcqFunc
 from xbbo.surrogate.sk_prf import skRandomForestWithInstances
 from xbbo.surrogate.skrf import RandomForestSurrogate
-from xbbo.utils.util import get_types
 
 logger = logging.getLogger(__name__)
 
@@ -49,16 +48,15 @@ class BO(AbstractOptimizer):
         # self.min_sample = min_sample
         # configs = self.space.get_hyperparameters()
         self.predict_x_best = predict_x_best
-        self.dimension = self.space.get_dimensions()
+        self.dimension = self.space.get_dimensions(sparse=True)
 
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(self.dimension)
+        self.trials = Trials(space, self.dimension)
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         elif surrogate == 'prf':
@@ -120,7 +118,7 @@ class BO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array(sparse=False)))
+                          array=config.get_array()))
         else:
             self.surrogate_model.train(
                 np.asarray(self.trials.get_array()),
@@ -141,7 +139,7 @@ class BO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  array=config.get_array(sparse=False)))
+                                  array=config.get_array()))
                         _idx += 1
 
                         break

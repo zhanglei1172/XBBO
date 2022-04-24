@@ -4,7 +4,6 @@ Reference: https://github.com/automl/DEHB
 
 import logging
 from typing import List
-import typing
 from sklearn.model_selection import KFold
 import numpy as np
 from xbbo.acquisition_function.acq_func import EI_AcqFunc
@@ -64,7 +63,9 @@ class SMBO(AbstractOptimizer):
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(self.space)
+
+        self.types, self.bounds = get_types(self.space)
+
         self.initial_design_configs = self.initial_design.select_configurations(
         )
         if init_weight is None:
@@ -72,10 +73,10 @@ class SMBO(AbstractOptimizer):
             init_weight = [1. / (k-1)] * (k-1) + [0.]
         self.logger.info("Initialize weight to %s" %
                          init_weight)    
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         if surrogate == 'rf':
             from xbbo.surrogate.transfer.rf_ensemble import RandomForestEnsemble
-            self.weighted_surrogate = RandomForestEnsemble(space, all_budgets, init_weight, fusion_method,**kwargs
+            self.weighted_surrogate = RandomForestEnsemble(space, all_budgets, init_weight, fusion_method,types=self.types, bounds=self.bounds,**kwargs
         )
         self.weight_srategy = weight_srategy
         if weight_srategy == 'rank_loss_p_norm':
@@ -159,8 +160,7 @@ class SMBO(AbstractOptimizer):
                             for train_idx, valid_idx in kfold.split(test_x):
                                 train_configs, train_y = test_x[train_idx], test_y[train_idx]
                                 valid_configs, valid_y = test_x[valid_idx], test_y[valid_idx]
-                                types, bounds = get_types(self.space)
-                                _surrogate = RandomForestWithInstances(types=types, bounds=bounds)
+                                _surrogate = RandomForestWithInstances(types=self.types, bounds=self.bounds)
                                 _surrogate.train(train_configs, train_y)
                                 pred, _ = _surrogate.predict(valid_configs)
                                 cv_pred[valid_idx] = pred.reshape(-1)
@@ -208,8 +208,7 @@ class SMBO(AbstractOptimizer):
                         for train_idx, valid_idx in kfold.split(test_x):
                             train_configs, train_y = test_x[train_idx], test_y[train_idx]
                             valid_configs, valid_y = test_x[valid_idx], test_y[valid_idx]
-                            types, bounds = get_types(self.space)
-                            _surrogate = RandomForestWithInstances(types=types, bounds=bounds)
+                            _surrogate = RandomForestWithInstances(types=self.types, bounds=self.bounds)
                             _surrogate.train(train_configs, train_y)
                             _pred, _var = _surrogate.predict(valid_configs)
                             sampled_pred = self.rng.normal(_pred.reshape(-1), _var.reshape(-1))

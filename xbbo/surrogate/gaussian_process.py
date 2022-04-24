@@ -9,7 +9,7 @@ import numpy as np
 # import GPy
 from sklearn import gaussian_process
 
-from xbbo.surrogate.base import Surrogate, BaseGP
+from xbbo.surrogate.base import BaseGP
 from xbbo.surrogate.gp_kernels import HammingKernel, Matern, ConstantKernel, WhiteKernel
 from xbbo.surrogate.gp_prior import HorseshoePrior, LognormalPrior, Prior, SoftTopHatPrior, TophatPrior
 from xbbo.utils.util import get_types
@@ -104,83 +104,6 @@ class SEkernel():
             -0.5 / self.sigma_l**2 * dist_matrix) + noise
 
 
-class GaussianProcessRegressorARD_gpy(Surrogate):
-    def __init__(self, dim, min_sample=3):
-        super(GaussianProcessRegressorARD_gpy, self).__init__(dim, min_sample)
-        self.cached = {}
-        self.cached_mu_sigma = {}
-        self.cached_mu_cov = {}
-        self.kernel = GPy.kern.Matern52(input_dim=dim, ARD=True)
-        # self.kernel = GPy.kern.RBF(input_dim=self.dim,
-        #                       variance=0.001,
-        #                       lengthscale=0.5,
-        #                       ARD=True)
-
-        self.is_fited = False
-        self.standardlize = False
-
-    def fit(self, x, y):
-        x = np.atleast_2d(x)
-        if x.shape[0] < self.min_sample:
-            return
-        self.is_fited = True
-        y = np.asarray(y)
-        if self.standardlize:
-            self.Y_mean = y.mean()
-            self.Y_std = y.std()
-        else:
-            self.Y_mean = 0
-            self.Y_std = 1
-
-        y = (y - self.Y_mean) / self.Y_std
-        self.gpr = GPy.models.gp_regression.GPRegression(x, y, self.kernel)
-        self.gpr.optimize(max_iters=100)
-        # self.kernel = self.gpr.kern
-
-    def predict(self, newX):
-        assert self.is_fited
-        return np.squeeze(self.gpr.predict(
-            np.atleast_2d(newX))[0]) * self.Y_std + self.Y_mean
-
-    def cached_predict(self, newX):
-
-        key = hash(newX.data.tobytes())
-        if key in self.cached_mu_sigma:
-            return self.cached_mu_sigma[key][0]
-        if key not in self.cached:
-            self.cached[key] = self.predict(newX)
-        return self.cached[key]
-
-    def predict_with_sigma(self, newX):
-        assert self.is_fited
-        if not self.is_fited:
-            return 0, np.inf
-        else:
-            mu, std = self.gpr.predict(np.atleast_2d(newX), full_cov=True)
-            return np.squeeze(mu) * self.Y_std + self.Y_mean, np.squeeze(
-                np.sqrt(std)) * self.Y_std
-
-    def cached_predict_with_sigma(self, newX):
-        key = hash(newX.data.tobytes())
-        if key not in self.cached_mu_sigma:
-            self.cached_mu_sigma[key] = self.predict_with_sigma(newX)
-        return self.cached_mu_sigma[key]
-
-    def predict_with_cov(self, newX):
-        assert self.is_fited
-        if not self.is_fited:
-            return 0, np.inf
-        else:
-            mu, cov = self.gpr.predict(np.atleast_2d(newX), full_cov=True)
-            return np.squeeze(mu) * self.Y_std + self.Y_mean, np.squeeze(
-                cov) * self.Y_std**2
-
-    def cached_predict_with_cov(self, newX):
-        key = hash(newX.data.tobytes())
-        if key not in self.cached_mu_sigma:
-            self.cached_mu_cov[key] = self.predict_with_cov(newX)
-        return self.cached_mu_cov[key]
-
 
 class GPR_sklearn(BaseGP):
     def __init__(
@@ -192,9 +115,11 @@ class GPR_sklearn(BaseGP):
         n_opt_restarts: int = 10,
         instance_features: typing.Optional[np.ndarray] = None,
         pca_components: typing.Optional[int] = None,
+        types=None,bounds=None,
         **kwargs
     ):
-        types, bounds = get_types(cs)
+        if types is None or bounds is None:
+            types, bounds = get_types(cs)
         # self.cached = {}
 
         super(GPR_sklearn, self).__init__(cs, types, bounds, rng,instance_features=instance_features,
@@ -378,51 +303,51 @@ class GPR_sklearn(BaseGP):
             self.hypers = self.gp.kernel.theta
         self.is_fited = True
 
-    def _get_all_priors(
-        self,
-        add_bound_priors: bool = True,
-        add_soft_bounds: bool = False,
-    ) -> List[List[Prior]]:
-        # Obtain a list of all priors for each tunable hyperparameter of the kernel
-        all_priors = []
-        to_visit = []
-        to_visit.append(self.gp.kernel.k1)
-        to_visit.append(self.gp.kernel.k2)
-        while len(to_visit) > 0:
-            current_param = to_visit.pop(0)
-            if isinstance(current_param, KernelOperator):
-                to_visit.insert(0, current_param.k1)
-                to_visit.insert(1, current_param.k2)
-                continue
-            elif isinstance(current_param, Kernel):
-                hps = current_param.hyperparameters
-                assert len(hps) == 1
-                hp = hps[0]
-                if hp.fixed:
-                    continue
-                bounds = hps[0].bounds
-                for i in range(hps[0].n_elements):
-                    priors_for_hp = []
-                    if current_param.prior is not None:
-                        priors_for_hp.append(current_param.prior)
-                    if add_bound_priors:
-                        if add_soft_bounds:
-                            priors_for_hp.append(
-                                SoftTopHatPrior(
-                                    lower_bound=bounds[i][0],
-                                    upper_bound=bounds[i][1],
-                                    rng=self.rng,
-                                    exponent=2,
-                                ))
-                        else:
-                            priors_for_hp.append(
-                                TophatPrior(
-                                    lower_bound=bounds[i][0],
-                                    upper_bound=bounds[i][1],
-                                    rng=self.rng,
-                                ))
-                    all_priors.append(priors_for_hp)
-        return all_priors
+    # def _get_all_priors(
+    #     self,
+    #     add_bound_priors: bool = True,
+    #     add_soft_bounds: bool = False,
+    # ) -> List[List[Prior]]:
+    #     # Obtain a list of all priors for each tunable hyperparameter of the kernel
+    #     all_priors = []
+    #     to_visit = []
+    #     to_visit.append(self.gp.kernel.k1)
+    #     to_visit.append(self.gp.kernel.k2)
+    #     while len(to_visit) > 0:
+    #         current_param = to_visit.pop(0)
+    #         if isinstance(current_param, KernelOperator):
+    #             to_visit.insert(0, current_param.k1)
+    #             to_visit.insert(1, current_param.k2)
+    #             continue
+    #         elif isinstance(current_param, Kernel):
+    #             hps = current_param.hyperparameters
+    #             assert len(hps) == 1
+    #             hp = hps[0]
+    #             if hp.fixed:
+    #                 continue
+    #             bounds = hps[0].bounds
+    #             for i in range(hps[0].n_elements):
+    #                 priors_for_hp = []
+    #                 if current_param.prior is not None:
+    #                     priors_for_hp.append(current_param.prior)
+    #                 if add_bound_priors:
+    #                     if add_soft_bounds:
+    #                         priors_for_hp.append(
+    #                             SoftTopHatPrior(
+    #                                 lower_bound=bounds[i][0],
+    #                                 upper_bound=bounds[i][1],
+    #                                 rng=self.rng,
+    #                                 exponent=2,
+    #                             ))
+    #                     else:
+    #                         priors_for_hp.append(
+    #                             TophatPrior(
+    #                                 lower_bound=bounds[i][0],
+    #                                 upper_bound=bounds[i][1],
+    #                                 rng=self.rng,
+    #                             ))
+    #                 all_priors.append(priors_for_hp)
+    #     return all_priors
 
     def _optimize(self) -> np.ndarray:
         """
@@ -480,128 +405,21 @@ class GPR_sklearn(BaseGP):
                 theta_star = theta
         return theta_star
 
-    def _set_has_conditions(self) -> None:
-        has_conditions = len(self.configspace.get_conditions()) > 0
-        to_visit = []
-        to_visit.append(self.kernel)
-        while len(to_visit) > 0:
-            current_param = to_visit.pop(0)
-            if isinstance(current_param,
-                          sklearn.gaussian_process.kernels.KernelOperator):
-                to_visit.insert(0, current_param.k1)
-                to_visit.insert(1, current_param.k2)
-                current_param.has_conditions = has_conditions
-            elif isinstance(current_param,
-                            sklearn.gaussian_process.kernels.Kernel):
-                current_param.has_conditions = has_conditions
-            else:
-                raise ValueError(current_param)
-
-
-class GaussianProcessRegressorARD_sklearn(Surrogate):
-    def __init__(self, dim, min_sample=3):
-        super(GaussianProcessRegressorARD_sklearn,
-              self).__init__(dim, min_sample)
-        self.cached = {}
-        kernel = gaussian_process.kernels.ConstantKernel(
-            constant_value=1  #, constant_value_bounds=(1e-4, 1e4)
-        ) * gaussian_process.kernels.RBF(
-            length_scale=1  #, length_scale_bounds=(1e-4, 1e4)
-        )
-        self.gpr = gaussian_process.GaussianProcessRegressor(
-            kernel=kernel, n_restarts_optimizer=2)
-        self.is_fited = False
-
-    def fit(self, x, y):
-        x = np.atleast_2d(x)
-        if x.shape[0] < self.min_sample:
-            return
-        self.gpr.fit(x, y)
-        self.is_fited = True
-
-    def predict(self, newX):
-        assert self.is_fited
-        return self.gpr.predict(np.atleast_2d(newX))
-
-    def cached_predict(self, newX):
-
-        key = hash(newX.data.tobytes())
-        if key not in self.cached:
-            self.cached[key] = self.predict(newX)
-        return self.cached[key]
-
-    def predict_with_sigma(self, newX):
-        assert self.is_fited
-        if not self.is_fited:
-            return 0, np.inf
-        else:
-            mu, std = self.gpr.predict(np.atleast_2d(newX), return_std=True)
-            return mu, std
-
-
-class GaussianProcessRegressor(Surrogate):
-    def __init__(self, dim, min_sample=3):
-        super().__init__(dim, min_sample)
-        self.kernel = SEkernel()
-        self.cached = {}
-        self.cached_mu_sigma = {}
-        self.cached_mu_cov = {}
-        self.is_fited = False
-
-    def fit(self, x, y):
-        x = np.atleast_2d(x)
-        if x.shape[0] < self.min_sample:
-            return
-        self.is_fited = True
-        self.X = x
-        kernel = self.kernel.compute_kernel(x)
-        self.L = cholesky(kernel, lower=True)
-        _part = solve_triangular(self.L, y, lower=True)
-        self.KinvY = solve_triangular(self.L.T, _part, lower=False)
-
-    def predict(self, newX):
-        assert self.is_fited
-        # Kstar = np.squeeze(self.kernel.compute_kernel(self.X, newX))
-        Kstar = (self.kernel.compute_kernel(self.X, newX))
-        return (Kstar.T @ self.KinvY).item()
-
-    def cached_predict(self, newX):
-        key = hash(newX.data.tobytes())
-        if key not in self.cached:
-            self.cached[key] = self.predict(newX)
-        return self.cached[key]
-
-    def predict_with_sigma(self, newX):
-        assert self.is_fited
-        if not hasattr(self, 'X'):
-            return 0, np.inf
-        else:
-            Kstar = self.kernel.compute_kernel(self.X, newX)
-            _LinvKstar = solve_triangular(self.L, Kstar, lower=True)
-            return np.squeeze(Kstar.T @ self.KinvY), np.sqrt(
-                self.kernel.compute_kernel(newX) - _LinvKstar.T @ _LinvKstar)
-
-    def cached_predict_with_sigma(self, newX):
-        key = hash(newX.data.tobytes())
-        if key not in self.cached_mu_sigma:
-            self.cached_mu_sigma[key] = self.predict_with_sigma(newX)
-        return self.cached_mu_sigma[key]
-
-    def cached_predict_with_cov(self, newX):
-        key = hash(newX.data.tobytes())
-        if key not in self.cached_mu_cov:
-            self.cached_mu_cov[key] = self.predict_with_cov(newX)
-        return self.cached_mu_cov[key]
-
-    def predict_with_cov(self, newX):
-        assert self.is_fited
-        if not hasattr(self, 'X'):
-            return 0, np.inf
-        else:
-            Kstar = self.kernel.compute_kernel(self.X, newX)
-            _LinvKstar = solve_triangular(self.L, Kstar, lower=True)
-            return np.squeeze(
-                Kstar.T @ self.KinvY), (self.kernel.compute_kernel(newX) -
-                                        _LinvKstar.T @ _LinvKstar)
+    # def _set_has_conditions(self) -> None:
+    #     has_conditions = len(self.configspace.get_conditions()) > 0
+    #     to_visit = []
+    #     to_visit.append(self.kernel)
+    #     while len(to_visit) > 0:
+    #         current_param = to_visit.pop(0)
+    #         if isinstance(current_param,
+    #                       sklearn.gaussian_process.kernels.KernelOperator):
+    #             to_visit.insert(0, current_param.k1)
+    #             to_visit.insert(1, current_param.k2)
+    #             current_param.has_conditions = has_conditions
+    #         elif isinstance(current_param,
+    #                         sklearn.gaussian_process.kernels.Kernel):
+    #             current_param.has_conditions = has_conditions
+    #         else:
+    #             raise ValueError(current_param)
 
 

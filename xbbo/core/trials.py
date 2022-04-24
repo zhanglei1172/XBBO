@@ -1,5 +1,6 @@
 from typing import Iterable
 import numpy as np
+import ConfigSpace as CS
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.utils.constants import Key
 
@@ -36,11 +37,18 @@ class Trial:
 
 
 class Trials:
-    def __init__(self, dim):
+    def __init__(self, cs, dim):
+        self.cs = cs
+        # self._non_const_idx = []
+        # for i, hp in enumerate(cs.get_hyperparameters()):
+        #     if not isinstance(hp, CS.Constant):
+        #         self._non_const_idx.append(i)
+        # self._non_const_idx = np.array(self._non_const_idx)
         self._his_hash_configs_set = set()
         self._his_configs_set = set()
         self._his_configs = []
-        self._his_array = np.empty((0, dim))
+        self._his_array = None #np.empty((0, dim))
+        self.dim = dim
         self._his_observe_value = []
         self._his_configs_dict = []
         self.best_observe_value = np.inf
@@ -70,6 +78,11 @@ class Trials:
         # else:
         #     assert trial.sparse_array is not None
         if trial.array is not None:
+            # trial.array = np.atleast_2d(trial.array)
+            # if self.dim != trial.array.shape[-1]:
+            #     trial.array = (trial.array[...,self._non_const_idx])
+            if self._his_array is None:
+                self._his_array = np.empty((0,trial.array.shape[-1]))
             self._his_array = np.vstack(
                 [self._his_array, trial.array])
         # if trial.sparse_array is not None:
@@ -82,8 +95,10 @@ class Trials:
         self.trials_num += 1
 
     def get_array(self):
-        if len(self._his_array) == self.trials_num:
+        if  self._his_array is not None and len(self._his_array) == self.trials_num:
             return self._his_array
+        if self.trials_num == 0:
+            return None
         self._his_array = [
             config.get_array(sparse=False) for config in self._his_configs
         ]

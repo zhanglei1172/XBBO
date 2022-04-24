@@ -31,7 +31,7 @@ class CMAES(AbstractOptimizer):
         self.es = cma.CMAEvolutionStrategy([0.5] * self.dimension, 0.1, inopts={'seed':self.rng.randint(MAXINT),'bounds': [0, 1]})
         # self.hp_num = len(configs)
 
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.listx = []
         self.listy = []
 

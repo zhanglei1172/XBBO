@@ -51,15 +51,15 @@ if __name__ == '__main__':
         # "./cfgs/ext_dehb.yaml": ["--mark", "ext_dehb"],
         # "./cfgs/rfhb.yaml": ["--mark", "RFHB"],
         # "./cfgs/dehb.yaml": ["--mark", "DEHB"],
-        # "./cfgs/rs.yaml": ["--mark", "RS"],
+        # # "./cfgs/rs.yaml": ["--mark", "RS"],
         # "./cfgs/bohb.yaml": ["--mark", "bohb"],
-        # "./cfgs/mfes-bohb.yaml": ["--mark", "mfes-bohb"],
-        "./cfgs/ext_openbox_mfes.yaml": ["--mark", "openbox-mfes"],
-        # "./cfgs/hb.yaml": ["--mark", "hb"],
+        "./cfgs/mfes-bohb.yaml": ["--mark", "mfes-bohb"],
+        # "./cfgs/ext_openbox_mfes.yaml": ["--mark", "openbox-mfes"],
+        "./cfgs/hb.yaml": ["--mark", "hb"],
         # "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
         # "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
     }
-    general_argv = ["-r", "50"]
+    general_argv = ["-r", "5"]
     general_opts = ["TEST_PROBLEM.name", "countingones"]
     for conf in confs:
         cfg_clone = cfg.clone()
@@ -71,8 +71,8 @@ if __name__ == '__main__':
         argv.extend(general_opts)
         load_cfg_fom_args(cfg_clone,
                           argv=argv)  # repeat 3 times with diffent seeds
-        cfg_clone.OPTM.kwargs.bracket_limit=200
-        cfg_clone.OPTM.kwargs.round_limit=40
+        cfg_clone.OPTM.kwargs.bracket_limit=20
+        cfg_clone.OPTM.kwargs.round_limit=4
         do_experiment(cfg_clone)
         cfg.defrost()
 

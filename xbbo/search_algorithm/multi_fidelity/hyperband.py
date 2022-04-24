@@ -49,7 +49,7 @@ class HB(AbstractOptimizer):
         self.fix_type = boundary_fix_type
         # self.dimension = len(configs)
         # self.candidates = [None] * self.llambda
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.current_best = None
         self.current_best_fitness = np.inf
 
