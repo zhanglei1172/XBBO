@@ -47,11 +47,11 @@ class BORE(AbstractOptimizer):
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(self.space)
+        # self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.random_rate = random_rate
         self.num_starts = kwargs.get("num_starts", 5)
         self.num_samples = kwargs.get("num_samples", 1024)

@@ -219,7 +219,7 @@ class TuRBO(AbstractOptimizer):
             self.space, self.rng, init_budget=self.init_budget)
 
         self.initial_design_configs = [[] for _ in range(num_tr)]
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.n_training_steps = kwargs.get("n_training_steps", 50)
         self.max_cholesky_size = kwargs.get("max_cholesky_size", 2000)
         self.dim = self.dimension
@@ -230,7 +230,7 @@ class TuRBO(AbstractOptimizer):
 
         if surrogate == 'gp':
             self.turbo_states = [
-                TuRBO_state(GPR_sklearn(self.space, rng=self.rng),
+                TuRBO_state(GPR_sklearn(self.space, types=self.space._types, bounds=self.space._bounds,rng=self.rng),
                             i,
                             self.bounds,
                             self.rng,

@@ -44,6 +44,7 @@ class RandomForestWithInstances(BaseRF):
                  eps_purity: float = 1e-8,
                  max_num_nodes: int = 2**20,
                  rng: np.random.RandomState=np.random.RandomState(42),
+                 types=None, bounds=None,
                  **kwargs):
         """
         Parameters
@@ -82,7 +83,8 @@ class RandomForestWithInstances(BaseRF):
         seed : int
             The seed that is passed to the random_forest_run library.
         """
-        types, bounds = get_types(configspace)
+        if types is None or bounds is None:
+            types, bounds = get_types(configspace)
         super().__init__(configspace, types, bounds, **kwargs)
 
         self.log_y = log_y

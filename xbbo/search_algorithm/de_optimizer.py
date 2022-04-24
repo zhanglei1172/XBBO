@@ -42,7 +42,7 @@ class DE(AbstractOptimizer):
         self.population = [None] * self.llambda
         self.population_fitness = [np.inf] * self.llambda
         # self.candidates = [None] * self.llambda
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.current_best = None
         self.current_best_fitness = np.inf
         self._num_suggestions = 0

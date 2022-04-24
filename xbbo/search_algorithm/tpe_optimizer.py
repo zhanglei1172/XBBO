@@ -48,22 +48,22 @@ class TPE(AbstractOptimizer):
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.gamma = gamma
         self.candidates_num = candidates_num
         self.min_points_in_model = min_points_in_model
 
+        dim = self.space.get_dimensions(sparse=True)
         hps = self.space.get_hyperparameters()
 
         if min_points_in_model is None:
-            self.min_points_in_model = len(hps) + 1
+            self.min_points_in_model = dim + 1
 
-        if self.min_points_in_model < len(hps) + 1:
-            self.min_points_in_model = len(hps) + 1
+        if self.min_points_in_model < dim + 1:
+            self.min_points_in_model = dim + 1
 
         self.random_fraction = random_fraction
         self.kde_models = dict()
@@ -231,6 +231,8 @@ class TPE(AbstractOptimizer):
 
     def _fit_kde_models(self, ):
         train_configs = self.trials.get_array()
+        if train_configs is None:
+            return
         n_good = max(self.min_points_in_model,
                      int(self.gamma * self.trials.trials_num) // 100)
         # n_bad = min(max(self.min_points_in_model, ((100-self.top_n_percent)*train_configs.shape[0])//100), 10)
@@ -251,7 +253,7 @@ class TPE(AbstractOptimizer):
             return
 
         bw_estimation = 'normal_reference'
-        # np.random.seed(self.rng.randint(MAXINT))
+        np.random.seed(self.rng.randint(MAXINT))
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,
                                                    var_type=self.kde_vartypes,
                                                    bw=bw_estimation)

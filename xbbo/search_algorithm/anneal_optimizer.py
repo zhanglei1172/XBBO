@@ -29,7 +29,6 @@ class Anneal(AbstractOptimizer):
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
@@ -38,6 +37,8 @@ class Anneal(AbstractOptimizer):
         self.cat_nodes = []
         self.num_nodes = []
         for k in self.space.map:
+            if k == 'const':
+                continue
             if k != 'num':
                 self.cat_nodes.extend([
                     {
@@ -51,7 +52,7 @@ class Anneal(AbstractOptimizer):
                     "idx": self.space.map[k].src[i],
                 } for i in range(len(self.space.map[k].src))])
 
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
 
     def _suggest(self, n_suggestions=1):
         trial_list = []
@@ -65,7 +66,7 @@ class Anneal(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array(sparse=False)))
+                          array=config.get_array()))
         else:
             for n in range(n_suggestions):
                 X = self.trials.get_array()
@@ -95,7 +96,7 @@ class Anneal(AbstractOptimizer):
                     low, high = self._handle_uniform(best_val, len(y))
                     array[idx] = self.rng.uniform(low, high)
                 config = DenseConfiguration.from_array(self.space, array)
-                array = config.get_array(sparse=False)
+                array = config.get_array()
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),

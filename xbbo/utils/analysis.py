@@ -42,7 +42,7 @@ class Analyse():
         index = -1
         for cfg_path in cfg_paths:  # for every method
             with open(cfg_path, 'r') as f:
-                cfg = yaml.load(f)
+                cfg = yaml.safe_load(f)
             # hash_name = cfg_path.split('/')[-2].split('_')[-1]
             mark_label = cfg["mark_label"]
             method_name = cfg["OPTM"]["name"]  # tmp[-1][:-5]

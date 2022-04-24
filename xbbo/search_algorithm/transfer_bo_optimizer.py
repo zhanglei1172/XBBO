@@ -45,7 +45,7 @@ class SMBO(AbstractOptimizer):
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
 
         # self.rho = kwargs.get("rho", 1)
         self.bandwidth = kwargs.get("bandwdth", 0.1)

@@ -5,8 +5,9 @@ from xbbo.surrogate.transfer.rf_with_instances import RandomForestWithInstances
 from xbbo.utils.util import get_types
 
 class RandomForestEnsemble(SurrogateModel):
-    def __init__(self, cs, all_budgets, weight_list, fusion_method, **kwargs):
-        types, bounds = get_types(cs)
+    def __init__(self, cs, all_budgets, weight_list, fusion_method, types=None, bounds=None, **kwargs):
+        if types is None or bounds is None:
+            types, bounds = get_types(cs)
         super().__init__(types=types, bounds=bounds,**kwargs)
 
         # self.s_max = s_max

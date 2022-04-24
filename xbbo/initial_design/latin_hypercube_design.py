@@ -32,14 +32,14 @@ class LHDesign(InitialDesign):
             initial incumbent configuration
         """
         design_num = num if num else self.init_budget
-        params = self.cs.get_hyperparameters()
+        dim = self.cs.get_dimensions(sparse=True)
 
-        constants = 0
-        for p in params:
-            if isinstance(p, Constant):
-                constants += 1
+        # constants = 0
+        # for p in params:
+        #     if isinstance(p, Constant):
+        #         constants += 1
 
-        lhd = LatinHypercube(d=len(params) - constants, seed=self.rng.randint(0, MAXINT)).random(n=design_num)
+        lhd = LatinHypercube(d=dim, seed=self.rng.randint(0, MAXINT)).random(n=design_num)
 
         return self._transform_continuous_designs(design=lhd,
                                                   origin='LHD',

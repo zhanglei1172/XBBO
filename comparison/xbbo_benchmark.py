@@ -4,7 +4,7 @@ logging.basicConfig(level=logging.INFO)
 
 import numpy as np
 from ConfigSpace import ConfigurationSpace
-from ConfigSpace.hyperparameters import UniformFloatHyperparameter
+from ConfigSpace import UniformFloatHyperparameter, Constant
 
 from xbbo.search_space.fast_example_problem import branin
 # from xbbo.configspace.space import ConfigurationSpace
@@ -36,8 +36,9 @@ def run_one_exp(opt_name, max_call, seed):
     # Build Configuration Space which defines all parameters and their ranges
     cs = ConfigurationSpace(seed=seed)
     x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
-    x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
-    cs.add_hyperparameters([x1, x2])
+    x3 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
+    # x2 = Constant("x3", 0)
+    cs.add_hyperparameters([x1, x3])
     if opt_name in option_kwargs:
         dic = option_kwargs[opt_name]
         hpopt = alg_register[dic['name']](space=cs,
@@ -117,11 +118,11 @@ def benchmark(test_algs,
 
 if __name__ == "__main__":
     # bore currently has some bugs
-    test_algs = [
-        'anneal', 'basic-bo', 'tpe', 'cem', 'cma-es', 'de', 'rs', 'rea',
-        'turbo-1',
-        'turbo-2',
-        'bore'
+    test_algs = ["tpe"
+        # 'anneal', 'basic-bo', 'tpe', 'cem', 'cma-es', 'de', 'rs', 'rea',
+        # 'turbo-1',
+        # 'turbo-2',
+        # 'bore'
     ]  # 'nsga2','bo-transfer','pbt'
-    # benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')
-    benchmark(test_algs, run_one_exp, 20, 1, 42, desc='XBBO') # for fast test
+    benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')
+    # benchmark(test_algs, run_one_exp, 40, 1, 42, desc='XBBO') # for fast test

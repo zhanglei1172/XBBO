@@ -328,6 +328,8 @@ class BaseGP(SurrogateModel):
         kernel = kwargs.get('kernel')
         self.kernel = kernel if kernel else self._get_kernel()
         self.gp = self._get_gp()
+        self.conditional = dict()  # type: Dict[int, bool]
+        self.impute_values = dict()  # type: Dict[int, float]
 
     def _get_kernel(self) -> Kernel:
         raise NotImplementedError()
@@ -445,61 +447,37 @@ class BaseGP(SurrogateModel):
             else:
                 raise ValueError(current_param)
 
+    # def _impute_inactive(self, X: np.ndarray) -> np.ndarray:
+    #     X = X.copy()
+    #     X[~np.isfinite(X)] = -1
+    #     return X
     def _impute_inactive(self, X: np.ndarray) -> np.ndarray:
         X = X.copy()
         X[~np.isfinite(X)] = -1
+        for idx, hp in enumerate(self.configspace.get_hyperparameters()):
+            if idx not in self.conditional:
+                parents = self.configspace.get_parents_of(hp.name)
+                if len(parents) == 0:
+                    self.conditional[idx] = False
+                else:
+                    self.conditional[idx] = True
+                    if isinstance(hp, CategoricalHyperparameter):
+                        self.impute_values[idx] = len(hp.choices)
+                    elif isinstance(hp, (UniformFloatHyperparameter,
+                                         UniformIntegerHyperparameter)):
+                        self.impute_values[idx] = -1
+                    elif isinstance(hp, Constant):
+                        self.impute_values[idx] = 1
+                    else:
+                        raise ValueError
+
+            if self.conditional[idx] is True:
+                nonfinite_mask = ~np.isfinite(X[:, idx])
+                X[nonfinite_mask, idx] = self.impute_values[idx]
+
         return X
 
 
-class Surrogate():
-    def __init__(self, cs, min_sample):
-        self.cs = cs
-        self.min_sample = min_sample
-        pass
-
-    def predict(self, newX):
-        pass
-
-    def fit(self, x, y):
-        pass
-
-    def _normalize_y(self, y: np.ndarray) -> np.ndarray:
-        self.mean_y = np.mean(y)
-        self.std_y = np.std(y)
-        if self.std_y == 0:
-            self.std_y = 1
-        return (y - self.mean_y) / self.std_y
-
-    def _untransform_y(
-        self,
-        y: np.ndarray,
-        var: Optional[np.ndarray] = None,
-    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
-        """Transform zeromean unit standard deviation data into the regular space.
-
-        This function should be used after a prediction with the Gaussian process which was trained on normalized data.
-
-        Parameters
-        ----------
-        y : np.ndarray
-            Normalized data.
-        var : np.ndarray (optional)
-            Normalized variance
-
-        Returns
-        -------
-        np.ndarray on Tuple[np.ndarray, np.ndarray]
-        """
-        y = y * self.std_y_ + self.mean_y_
-        if var is not None:
-            var = var * self.std_y_**2
-            return y, var
-        return y
-
-    def _impute_inactive(self, X: np.ndarray) -> np.ndarray:
-        X = X.copy()
-        X[~np.isfinite(X)] = -1
-        return X
 
 
 class BaseRF(SurrogateModel):
