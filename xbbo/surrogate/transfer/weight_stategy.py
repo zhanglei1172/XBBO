@@ -1,6 +1,5 @@
 import abc
 import csv
-from curses import A_ATTRIBUTES
 import typing
 import numpy as np
 from xbbo.core.trials import Trials
