@@ -45,19 +45,19 @@ def do_experiment(cfg_clone):  # pragma: main
 
 if __name__ == '__main__':
     confs = {
-        # "./cfgs/ext_openbox_bohb.yaml": ["--mark", "openbox_bohb"],
         # "./cfgs/ext_openbox_hb.yaml": ["--mark", "openbox_hb"],
         # "./cfgs/rfdehb.yaml": ["--mark", "rfdehb"],
         # "./cfgs/ext_dehb.yaml": ["--mark", "ext_dehb"],
         # "./cfgs/rfhb.yaml": ["--mark", "RFHB"],
         # "./cfgs/dehb.yaml": ["--mark", "DEHB"],
-        # # "./cfgs/rs.yaml": ["--mark", "RS"],
+        # "./cfgs/rs.yaml": ["--mark", "RS"],
         # "./cfgs/bohb.yaml": ["--mark", "bohb"],
-        "./cfgs/mfes-bohb.yaml": ["--mark", "mfes-bohb"],
+        # "./cfgs/mfes-bohb.yaml": ["--mark", "mfes-bohb"],
         # "./cfgs/ext_openbox_mfes.yaml": ["--mark", "openbox-mfes"],
-        "./cfgs/hb.yaml": ["--mark", "hb"],
+        # "./cfgs/hb.yaml": ["--mark", "hb"],
         # "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
-        # "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
+        "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
+        "./cfgs/ext_openbox_bohb.yaml": ["--mark", "openbox_bohb"],
     }
     general_argv = ["-r", "5"]
     general_opts = ["TEST_PROBLEM.name", "countingones"]

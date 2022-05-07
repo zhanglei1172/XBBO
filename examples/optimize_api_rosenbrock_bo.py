@@ -18,7 +18,7 @@ if __name__ == "__main__":
                seed=rng.randint(MAXINT),
                suggest_limit=MAX_CALL,
                initial_design='sobol',
-               surrogate='gp',
+               surrogate='prf',
                acq_opt='rs_ls')
 
     # ---- Use minimize API ----

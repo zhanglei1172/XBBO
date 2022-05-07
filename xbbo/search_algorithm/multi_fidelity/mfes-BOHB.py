@@ -1,6 +1,3 @@
-'''
-Reference: https://github.com/automl/DEHB
-'''
 
 import logging
 from typing import List
@@ -16,7 +13,7 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator
 try:
-    from xbbo.surrogate.transfer.rf_with_instances import RandomForestWithInstances
+    from xbbo.surrogate.prf import RandomForestWithInstances
 except:
     print("If your want to use probability random foreset, make sure 'pyrfr' is installed!")
 from xbbo.utils.constants import MAXINT, Key
@@ -76,7 +73,7 @@ class SMBO(AbstractOptimizer):
         self.trials = Trials(space,dim=self.dimension)
         if surrogate == 'rf':
             from xbbo.surrogate.transfer.rf_ensemble import RandomForestEnsemble
-            self.weighted_surrogate = RandomForestEnsemble(space, all_budgets, init_weight, fusion_method,types=self.types, bounds=self.bounds,**kwargs
+            self.weighted_surrogate = RandomForestEnsemble(space, all_budgets, init_weight, fusion_method,types=self.types, bounds=self.bounds,rng=self.rng,**kwargs
         )
         self.weight_srategy = weight_srategy
         if weight_srategy == 'rank_loss_p_norm':
@@ -160,7 +157,7 @@ class SMBO(AbstractOptimizer):
                             for train_idx, valid_idx in kfold.split(test_x):
                                 train_configs, train_y = test_x[train_idx], test_y[train_idx]
                                 valid_configs, valid_y = test_x[valid_idx], test_y[valid_idx]
-                                _surrogate = RandomForestWithInstances(types=self.types, bounds=self.bounds)
+                                _surrogate = RandomForestWithInstances(self.space,rng=self.rng)
                                 _surrogate.train(train_configs, train_y)
                                 pred, _ = _surrogate.predict(valid_configs)
                                 cv_pred[valid_idx] = pred.reshape(-1)
@@ -208,7 +205,7 @@ class SMBO(AbstractOptimizer):
                         for train_idx, valid_idx in kfold.split(test_x):
                             train_configs, train_y = test_x[train_idx], test_y[train_idx]
                             valid_configs, valid_y = test_x[valid_idx], test_y[valid_idx]
-                            _surrogate = RandomForestWithInstances(types=self.types, bounds=self.bounds)
+                            _surrogate = RandomForestWithInstances(self.space, rng=self.rng)
                             _surrogate.train(train_configs, train_y)
                             _pred, _var = _surrogate.predict(valid_configs)
                             sampled_pred = self.rng.normal(_pred.reshape(-1), _var.reshape(-1))

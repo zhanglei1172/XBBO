@@ -19,7 +19,7 @@ class Ext_opt():
         '''
         self._inner_opt = None
         self.cs = cs
-        self.dim = len(self.cs)
+        self.dim = len(self.cs.get_hyperparameter_names())
         self.min_budget, self.max_budget = budget_bound
         self.seed = seed
         self.objective_function = objective_function
