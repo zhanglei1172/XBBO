@@ -74,7 +74,7 @@ class HB_opt(Ext_opt):
         ns_host, ns_port = self.NS.start()
         num_workers = kwargs.get('num_works', 1)
         workers = []
-        self.trials = Trials(len(cs))
+        self.trials = Trials(cs,len(cs.get_hyperparameter_names()))
         for i in range(num_workers):
             w = MyWorker(cs, self.trials,objective_function=objective_function, run_id=hb_run_id, id=i,
                         nameserver=ns_host, nameserver_port=ns_port)

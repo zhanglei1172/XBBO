@@ -49,6 +49,7 @@ class BO(AbstractOptimizer):
         # configs = self.space.get_hyperparameters()
         self.predict_x_best = predict_x_best
         self.dimension = self.space.get_dimensions(sparse=True)
+        self.min_sample = int(self.dimension * 2)
 
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
@@ -120,6 +121,16 @@ class BO(AbstractOptimizer):
                           config_dict=config.get_dictionary(),
                           array=config.get_array()))
         else:
+            if (self.trials.trials_num) < self.min_sample:
+                while len(trial_list) < n_suggestions:  # remove history suggest
+                    config = self.cs.sample_configuration(size=1)[0]
+                    if not self.trials.is_contain(config):
+                        trial_list.append(
+                            Trial(configuration=config,
+                                config_dict=config.get_dictionary(),
+                                array=config.get_array()))
+                return trial_list
+                    
             self.surrogate_model.train(
                 np.asarray(self.trials.get_array()),
                 np.asarray(self.trials.get_history()[0]))

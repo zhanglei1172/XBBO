@@ -11,14 +11,25 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator
 from xbbo.search_algorithm.tpe_optimizer import TPE
+from xbbo.search_algorithm.bo_optimizer import BO
 from xbbo.utils.constants import MAXINT, Key
 from .. import alg_register
 
-class BOHB_CG(BasicConfigGenerator, TPE):
+class BOHB_CG_TPE(BasicConfigGenerator, TPE):
     def __init__(self, cs, budget, max_pop_size, rng, **kwargs) -> None:
         BasicConfigGenerator.__init__(self, cs, budget, max_pop_size, rng, **kwargs)
         TPE.__init__(self, space=cs, **kwargs)
         self.reset(max_pop_size)
+        
+class BOHB_CG(BasicConfigGenerator, BO):
+    def __init__(self, cs, budget, max_pop_size, rng, **kwargs) -> None:
+        BasicConfigGenerator.__init__(self, cs, budget, max_pop_size, rng, **kwargs)
+        BO.__init__(self, space=cs, **kwargs)
+        self.reset(max_pop_size)
+    
+    @property
+    def kde_models(self):
+        return (self.trials.trials_num) >= self.min_sample
 
 alg_marker = 'bohb'
 
@@ -35,8 +46,10 @@ class BOHB(HB):
                  seed: int = 42,
                  round_limit: int = 1,
                  bracket_limit=np.inf,
+                 bo_opt_name='prf',
                  boundary_fix_type='random',
                  **kwargs):
+        self.bo_opt_name = bo_opt_name
         HB.__init__(self,
                     space,
                     budget_bound,
@@ -46,7 +59,6 @@ class BOHB(HB):
                     bracket_limit=bracket_limit,
                     boundary_fix_type=boundary_fix_type,
                     **kwargs)
-
         # Uniform2Gaussian.__init__(self,)
         # self._get_max_pop_sizes()
         # self._init_subpop(**kwargs)
@@ -56,15 +68,27 @@ class BOHB(HB):
         """
         self.cg = {}
         for i, b in enumerate(self._max_pop_size.keys()):
-            self.cg[b] = BOHB_CG(
-                self.space,
-                seed=self.rng.randint(MAXINT),
-                initial_design="random",
-                init_budget=0,
-                budget=b,
-                max_pop_size=self._max_pop_size[b],
-                rng=self.rng,
-                **kwargs)
+            if self.bo_opt_name.upper() == 'TPE':
+                self.cg[b] = BOHB_CG_TPE(
+                    self.space,
+                    seed=self.rng.randint(MAXINT),
+                    initial_design="random",
+                    init_budget=0,
+                    budget=b,
+                    max_pop_size=self._max_pop_size[b],
+                    rng=self.rng,
+                    **kwargs)
+            else:
+               self.cg[b] = BOHB_CG(
+                    self.space,
+                    seed=self.rng.randint(MAXINT),
+                    initial_design="random",
+                    init_budget=0,
+                    budget=b,
+                    max_pop_size=self._max_pop_size[b],
+                    rng=self.rng,
+                    surrogate=self.bo_opt_name,
+                    **kwargs) 
             # self.cg[b] = TPE(
             #     self.space,
             #     seed=self.rng.randint(MAXINT),
