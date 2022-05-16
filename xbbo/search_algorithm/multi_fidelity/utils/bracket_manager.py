@@ -621,7 +621,7 @@ class BOHB_ConfigGenerator(ConfigGenerator):
         self.candidates_num = candidates_num
         self.min_points_in_model = min_points_in_model
 
-        hps = self.cs.get_hyperparameters()
+        hps = self.cs.get_dimensions(sparse=True)
 
         if min_points_in_model is None:
             self.min_points_in_model = len(hps) + 1

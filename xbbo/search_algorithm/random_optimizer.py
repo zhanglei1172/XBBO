@@ -28,7 +28,7 @@ class RandomOptimizer(AbstractOptimizer):
         self.initial_design_configs = self.initial_design.select_configurations(
         )
         self.dimension = self.space.get_dimensions()
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
 
     def _suggest(self, n_suggestions=1):
         trial_list = []

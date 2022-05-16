@@ -3,7 +3,7 @@ from typing import Iterable, Iterator, List, Optional, Tuple, Union
 import numpy as np
 import time
 import scipy
-from scipy.stats.qmc import Sobol
+# from scipy.stats.qmc import Sobol
 
 
 from xbbo.acquisition_function.base import AbstractAcquisitionFunction, AcquisitionFunctionMaximizer
@@ -228,10 +228,11 @@ class ScipyGlobalOptimizer(AcquisitionFunctionMaximizer):
     def __init__(self,
                  acquisition_function: AbstractAcquisitionFunction,
                  config_space: DenseConfigurationSpace,
-                 rng: np.random.RandomState = np.random.RandomState(42)):
+                 rng: np.random.RandomState = np.random.RandomState(42),types=None,bounds=None):
         super().__init__(acquisition_function, config_space, rng)
 
-        types, bounds = get_types(self.config_space)
+        if types is None or bounds is None:
+            types, bounds = get_types(self.config_space)
         assert all(types == 0)
         self.bounds = bounds
 
@@ -359,10 +360,12 @@ class ScipyOptimizer(AcquisitionFunctionMaximizer):
         acquisition_function: AbstractAcquisitionFunction,
         config_space: DenseConfigurationSpace,
         rng: Union[bool, np.random.RandomState] = None,
+        types=None, bounds=None,
     ):
         super().__init__(acquisition_function, config_space, rng)
 
-        types, bounds = get_types(
+        if types is None or bounds is None:
+            types, bounds = get_types(
             self.config_space)  # todo: support constant hp in scipy optimizer
         assert all(
             types == 0

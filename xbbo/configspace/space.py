@@ -85,6 +85,22 @@ class Num():
     def get_bounds(self,):
         return np.zeros(len(self.trg)), np.ones(len(self.trg))
 
+class Const():
+    def __init__(self, src, values) -> None:
+        self.src = src
+        # self.trg = trg
+        self.values = np.array(values)
+    def convert(self, array_dense, array_sparse):
+        array_sparse[self.src] = self.values
+        return array_sparse
+    def invconvert(self, array_dense, array_sparse):
+        # array_dense[self.trg] = array_sparse[self.src]
+        # array_dense = np.delete(array_sparse, self.src, axis=-1)
+        return array_dense
+    def get_bounds(self,):
+        return None
+
+
 class DenseConfigurationSpace(CS.ConfigurationSpace):
     def __init__(self,other: CS.ConfigurationSpace, encoding_cat, encoding_ord, *args, **kwargs):
 
@@ -94,6 +110,8 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         self.random = other.random
         hps = other.get_hyperparameters()
         self.add_hyperparameters(hps)
+        cons = other.get_conditions()
+        self.add_conditions(cons)
         # self._dim = len(hps)
         self.encoding_cat = encoding_cat
         self.encoding_ord = encoding_ord
@@ -103,8 +121,8 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
     def __len__(self):
         return self.size_sparse
 
-    def get_dimensions(self):
-        return self.size_dense
+    def get_dimensions(self, sparse=False):
+        return self.size_dense if not sparse else self.size_sparse - self.const_hp_num
 
     def sample_configuration(self, size=1):
         if size == 0:
@@ -124,14 +142,17 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         for v in self.map.values():
             if isinstance(v, OneHot):
                 continue
-            l, u = v.get_bounds()
+            bounds = v.get_bounds()
+            if bounds is None:
+                continue
+            l, u = bounds
             lower[v.trg] = l
             upper[v.trg] = u
         return Bounds(lower, upper)
 
     def _create_type(self):
-        types = [0] * len(self.get_hyperparameters())
-        bounds = [(np.nan, np.nan)] * len(types)
+        types = []#[0] * len(self.get_hyperparameters())
+        bounds = []#[(np.nan, np.nan)] * len(types)
 
         for i, param in enumerate(self.get_hyperparameters()):
             parents = self.get_parents_of(param.name)
@@ -144,39 +165,42 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
                 n_cats = len(param.choices)
                 if can_be_inactive:
                     n_cats = len(param.choices) + 1
-                types[i] = n_cats
-                bounds[i] = (int(n_cats), np.nan)
+                types.append(n_cats)
+                bounds.append((int(n_cats), np.nan))
 
             elif isinstance(param, (CSH.OrdinalHyperparameter)):
                 n_cats = len(param.sequence)
-                types[i] = 0
+                types.append(0)
                 if can_be_inactive:
-                    bounds[i] = (0, int(n_cats))
+                    bounds.append((0, int(n_cats)))
                 else:
-                    bounds[i] = (0, int(n_cats) - 1)
+                    bounds.append((0, int(n_cats) - 1))
 
             elif isinstance(param, CSH.Constant):
                 # for constants we simply set types to 0 which makes it a numerical
                 # parameter
-                if can_be_inactive:
-                    bounds[i] = (2, np.nan)
-                    types[i] = 2
-                else:
-                    bounds[i] = (0, np.nan)
-                    types[i] = 0
+                pass
+                # if can_be_inactive:
+                #     bounds.append((2, np.nan))
+                #     types.append(2)
+                # else:
+                #     bounds.append((0, np.nan))
+                #     types.append(0)
                 # and we leave the bounds to be 0 for now
             elif isinstance(param, CSH.UniformFloatHyperparameter):
                 # Are sampled on the unit hypercube thus the bounds
-                # are always 0.0, 1.0
+                # are always 0.0, 1.0 
+                types.append(0)
                 if can_be_inactive:
-                    bounds[i] = (-1.0, 1.0)
+                    bounds.append((-1.0, 1.0))
                 else:
-                    bounds[i] = (0, 1.0)
+                    bounds.append((0, 1.0))
             elif isinstance(param, CSH.UniformIntegerHyperparameter):
+                types.append(0)
                 if can_be_inactive:
-                    bounds[i] = (-1.0, 1.0)
+                    bounds.append((-1.0, 1.0))
                 else:
-                    bounds[i] = (0, 1.0)
+                    bounds.append((0, 1.0))
             elif not isinstance(param, (CSH.UniformFloatHyperparameter,
                                         CSH.UniformIntegerHyperparameter,
                                         CSH.OrdinalHyperparameter,
@@ -195,7 +219,7 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         bin_cats = []
         oh_cats = []
         round_cats = []
-
+        consts = []
         src_ind = trg_ind = 0
         for src_ind, hp in enumerate(self.get_hyperparameters()):
             if isinstance(hp, CS.CategoricalHyperparameter):
@@ -230,6 +254,11 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
                                  CS.UniformFloatHyperparameter)):
                 nums.append((src_ind, trg_ind))
                 trg_ind += 1
+            elif isinstance(hp, (CS.Constant)):
+                value = hp.value
+                if not isinstance(value, (float, int)):
+                    value = 0.
+                consts.append((src_ind, float(value)))
             else:
                 raise NotImplementedError(
                     "Only hyperparameters of types "
@@ -254,21 +283,24 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         # self.nums = nums
         # self.cats = cats
         if oh_cats:
-            self.map['one-hot'] = OneHot(*list(map(np.uintp, zip(*oh_cats))) if oh_cats else ([], [],[]))
+            self.map['one-hot'] = OneHot(*list(map(np.uintp, zip(*oh_cats))))
         # else:
         #     self.onehot = None
         if bin_cats:
-            self.map['bin'] = Bin(*list(map(np.uintp, zip(*bin_cats))) if bin_cats else ([], [],[]))
+            self.map['bin'] = Bin(*list(map(np.uintp, zip(*bin_cats))))
         # else:
         #     self.bin = None
         if round_cats:
             # raise NotImplementedError
-            self.map['round'] = Round(*list(map(np.uintp, zip(*round_cats))) if round_cats else ([], [],[]))
+            self.map['round'] = Round(*list(map(np.uintp, zip(*round_cats))))
+        if consts:
+            # raise NotImplementedError
+            self.map['const'] = Const(*(zip(*consts)) if consts else ([],[]))
         # else:
         #     self.round = None
         self.size_sparse = size_sparse
         self.size_dense = size_dense
-
+        self.const_hp_num = len(consts)
 
 class DenseConfiguration(CS.Configuration):
 
@@ -369,7 +401,7 @@ class DenseConfiguration(CS.Configuration):
 
 
 def convert_denseConfigurations_to_array(
-        configs: List[DenseConfiguration]) -> np.ndarray:
+        configs: List[DenseConfiguration], sparse=True) -> np.ndarray:
     """Impute inactive hyperparameters in configurations with their default.
 
     Necessary to apply an EPM to the data.
@@ -385,12 +417,11 @@ def convert_denseConfigurations_to_array(
         Array with configuration hyperparameters. Inactive values are imputed
         with their default value.
     """
-    configs_array = np.array([config.get_array(sparse=False) for config in configs],
+    configs_array = np.array([config.get_array(sparse=sparse) for config in configs],
                              dtype=np.float64)
     # configuration_space = configs[0].configuration_space
     return configs_array
     # return impute_default_values(configuration_space, configs_array)
-
 
 def impute_default_values(configuration_space: DenseConfigurationSpace,
                           configs_array: np.ndarray) -> np.ndarray:

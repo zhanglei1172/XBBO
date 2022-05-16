@@ -40,7 +40,7 @@ class CEM(AbstractOptimizer):
         self.llambda = llambda  #if llambda else 4 + math.floor(3 * math.log(self.dimension))
         self.elite_ratio = elite_ratio
         self.elite_num = max(int(round(self.llambda * self.elite_ratio)), 2)
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
 
     def _suggest(self, n_suggestions=1):
         trial_list = []

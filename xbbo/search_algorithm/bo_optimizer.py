@@ -14,10 +14,8 @@ from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.acquisition_function.acq_func import EI_AcqFunc
-from xbbo.surrogate.prf import RandomForestWithInstances
 from xbbo.surrogate.sk_prf import skRandomForestWithInstances
 from xbbo.surrogate.skrf import RandomForestSurrogate
-from xbbo.utils.util import get_types
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +30,7 @@ class BO(AbstractOptimizer):
             acq_func: str = 'ei',
             acq_opt: str = 'rs_ls',
             initial_design: str = 'sobol',
+            init_budget: int = None,
             #  min_sample=1,
             suggest_limit: int = np.inf,
             predict_x_best: bool = True,
@@ -50,19 +49,20 @@ class BO(AbstractOptimizer):
         # self.min_sample = min_sample
         # configs = self.space.get_hyperparameters()
         self.predict_x_best = predict_x_best
-        self.dimension = self.space.get_dimensions()
+        self.dimension = self.space.get_dimensions(sparse=True)
+        self.min_sample = int(self.dimension * 2)
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit,init_budget=init_budget, **kwargs)
         self.init_budget = self.initial_design.init_budget
-        self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
 
-        self.trials = Trials(self.dimension)
+        self.trials = Trials(space, self.dimension)
         if surrogate == 'gp':
             self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
         elif surrogate == 'prf':
+            from xbbo.surrogate.prf import RandomForestWithInstances
             self.surrogate_model = RandomForestWithInstances(self.space,
                                                              rng=self.rng)
         elif surrogate == 'rf':
@@ -120,8 +120,19 @@ class BO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array(sparse=False)))
+                          array=config.get_array()))
         else:
+            if (self.trials.trials_num) < self.min_sample:
+                while len(
+                        trial_list) < n_suggestions:  # remove history suggest
+                    config = self.space.sample_configuration(size=1)[0]
+                    if not self.trials.is_contain(config):
+                        trial_list.append(
+                            Trial(configuration=config,
+                                  config_dict=config.get_dictionary(),
+                                  array=config.get_array()))
+                return trial_list
+
             self.surrogate_model.train(
                 np.asarray(self.trials.get_array()),
                 np.asarray(self.trials.get_history()[0]))
@@ -141,7 +152,7 @@ class BO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  array=config.get_array(sparse=False)))
+                                  array=config.get_array()))
                         _idx += 1
 
                         break

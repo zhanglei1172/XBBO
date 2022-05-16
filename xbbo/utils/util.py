@@ -55,6 +55,7 @@ def get_types(config_space, instance_features=None):
         elif isinstance(param, Constant):
             # for constants we simply set types to 0 which makes it a numerical
             # parameter
+            # pass
             if can_be_inactive:
                 bounds[i] = (2, np.nan)
                 types[i] = 2

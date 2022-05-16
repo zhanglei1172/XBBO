@@ -23,7 +23,7 @@ class RandomForestSurrogate(BaseRF):
             normalize_y: bool = True,
             instance_features: typing.Optional[np.ndarray] = None,
             pca_components: typing.Optional[int] = None,
-            rng: np.random.RandomState = np.random.RandomState(42),
+            rng: np.random.RandomState = np.random.RandomState(42),types=None,bounds=None,
             **kwargs
     ):
     
@@ -45,7 +45,8 @@ class RandomForestSurrogate(BaseRF):
         self.configspace = configspace
         self.rng = rng
         self.random_seeds = self.rng.randint(low=1, high=MAXINT, size=self.ensemble_size)
-        types, bounds = get_types(configspace)
+        if types is None or bounds is None:
+            types, bounds = get_types(configspace)
         super().__init__(
             configspace=configspace,
             types=types,

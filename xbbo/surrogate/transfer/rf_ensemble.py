@@ -1,12 +1,14 @@
 import typing
 import numpy as np
 from xbbo.surrogate.base import SurrogateModel
-from xbbo.surrogate.transfer.rf_with_instances import RandomForestWithInstances
-from xbbo.utils.util import get_types
+# from xbbo.surrogate.transfer.rf_with_instances import RandomForestWithInstances
+from xbbo.surrogate.prf import RandomForestWithInstances
+# from xbbo.utils.util import get_types
 
 class RandomForestEnsemble(SurrogateModel):
-    def __init__(self, cs, all_budgets, weight_list, fusion_method, **kwargs):
-        types, bounds = get_types(cs)
+    def __init__(self, cs, all_budgets, weight_list, fusion_method, types=None, bounds=None, rng=np.random.RandomState(42),**kwargs):
+        # if types is None or bounds is None:
+        #     types, bounds = get_types(cs)
         super().__init__(types=types, bounds=bounds,**kwargs)
 
         # self.s_max = s_max
@@ -20,7 +22,7 @@ class RandomForestEnsemble(SurrogateModel):
             # r = int(item)
             # self.surrogate_r.append(r)
             self.surrogate_weight[budget] = self.weight_list[i]
-            self.surrogate_container[budget] = RandomForestWithInstances(types=types, bounds=bounds)
+            self.surrogate_container[budget] = RandomForestWithInstances(cs, rng=rng)
 
     def train(self, X: np.ndarray, Y: np.ndarray, r) -> 'SurrogateModel':
         """Trains the Model on X and Y.

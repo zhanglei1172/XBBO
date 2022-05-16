@@ -56,7 +56,7 @@ class DEHB_opt(Ext_opt):
         self._inner_opt = DEHB(
             f=obj_func,
             cs=cs,
-            dimensions=len(cs),
+            dimensions=len(cs.get_hyperparameter_names()),
             min_budget=self.min_budget,
             max_budget=self.max_budget,
             # output_path=None,

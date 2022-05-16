@@ -3,7 +3,6 @@ from typing import Optional, List, Tuple, cast
 
 import numpy as np
 
-from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
@@ -45,7 +44,7 @@ class RegularizedEA(AbstractOptimizer):
 
 
 
-        self.trials = Trials(dim=self.dimension)
+        self.trials = Trials(space,dim=self.dimension)
         self.cur = 0
         self.gen = 0
         self.listy = []

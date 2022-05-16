@@ -33,7 +33,7 @@ class HB_opt(Ext_opt):
         np.random.seed(self.seed)
         self.port = kwargs.get("port", 13579)
         self.cs = cs
-        self.trials = Trials(len(cs))
+        self.trials = Trials(cs,len(cs.get_hyperparameter_names()))
         new_max_budget = self.max_budget / self.min_budget
         new_min_budget = 1
         old_min_budget = self.min_budget

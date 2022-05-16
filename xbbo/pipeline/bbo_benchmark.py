@@ -10,6 +10,9 @@ from xbbo.search_algorithm import alg_register
 from xbbo.utils.constants import MAXINT, Key
 from xbbo.utils.util import dumpJson, dumpOBJ
 
+"""
+`pip install git+https://github.com/automl/HPOlib1.5.git@development`
+"""
 
 class BBObenchmark:
     def __init__(self, cfg, seed):
@@ -61,7 +64,8 @@ class BBObenchmark:
             n_continuous = kwargs.get("n_continuous", 4)
             n_categorical = kwargs.get("n_categorical", 4)
             cs = problem.get_configuration_space(n_continuous=n_continuous,
-                                                 n_categorical=n_categorical,seed=seed)
+                                                 n_categorical=n_categorical,)
+            # seed=seed)
             dimensions = len(cs.get_hyperparameters())
             self.min_budget = kwargs.get("min_budget", 576 / dimensions)
             self.max_budget = kwargs.get("max_budget", 93312 / dimensions)
@@ -196,6 +200,8 @@ class BBObenchmark:
             config = trial.configuration
         elif isinstance(trial, Configuration):
             config = trial
+        elif isinstance(trial, dict):
+            config = Configuration(self.config_spaces, trial)
         else:
             raise NotImplementedError
         budget = kwargs.get(Key.BUDGET)
