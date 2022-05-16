@@ -30,6 +30,7 @@ class BO(AbstractOptimizer):
             acq_func: str = 'ei',
             acq_opt: str = 'rs_ls',
             initial_design: str = 'sobol',
+            init_budget: int = None,
             #  min_sample=1,
             suggest_limit: int = np.inf,
             predict_x_best: bool = True,
@@ -52,7 +53,7 @@ class BO(AbstractOptimizer):
         self.min_sample = int(self.dimension * 2)
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
+            self.space, self.rng, ta_run_limit=suggest_limit,init_budget=init_budget, **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
         )
@@ -122,15 +123,16 @@ class BO(AbstractOptimizer):
                           array=config.get_array()))
         else:
             if (self.trials.trials_num) < self.min_sample:
-                while len(trial_list) < n_suggestions:  # remove history suggest
-                    config = self.cs.sample_configuration(size=1)[0]
+                while len(
+                        trial_list) < n_suggestions:  # remove history suggest
+                    config = self.space.sample_configuration(size=1)[0]
                     if not self.trials.is_contain(config):
                         trial_list.append(
                             Trial(configuration=config,
-                                config_dict=config.get_dictionary(),
-                                array=config.get_array()))
+                                  config_dict=config.get_dictionary(),
+                                  array=config.get_array()))
                 return trial_list
-                    
+
             self.surrogate_model.train(
                 np.asarray(self.trials.get_array()),
                 np.asarray(self.trials.get_history()[0]))

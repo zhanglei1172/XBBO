@@ -27,8 +27,9 @@ class CMAES(AbstractOptimizer):
             raise NotImplementedError(
                 "BORE optimizer currently does not support conditional space!")
         self.dimension = self.space.get_dimensions()
-        # self.bounds = self.space.get_bounds()
-        self.es = cma.CMAEvolutionStrategy([0.5] * self.dimension, 0.1, inopts={'seed':self.rng.randint(MAXINT),'bounds': [0, 1]})
+        self.bounds = self.space.get_bounds()
+        ub, lb = self.bounds.ub, self.bounds.lb
+        self.es = cma.CMAEvolutionStrategy(0.5*(ub-lb), np.mean(0.1*(ub-lb)), inopts={'seed':self.rng.randint(MAXINT),'bounds': [lb.mean(), ub.mean()]})
         # self.hp_num = len(configs)
 
         self.trials = Trials(space,dim=self.dimension)

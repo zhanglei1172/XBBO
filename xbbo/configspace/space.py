@@ -110,6 +110,8 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
         self.random = other.random
         hps = other.get_hyperparameters()
         self.add_hyperparameters(hps)
+        cons = other.get_conditions()
+        self.add_conditions(cons)
         # self._dim = len(hps)
         self.encoding_cat = encoding_cat
         self.encoding_ord = encoding_ord

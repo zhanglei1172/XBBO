@@ -1,3 +1,6 @@
+'''
+`pip install git+https://github.com/automl/HPOlib1.5.git@development`
+'''
 import numpy as np
 import gc
 
@@ -53,13 +56,13 @@ if __name__ == '__main__':
         # "./cfgs/rs.yaml": ["--mark", "RS"],
         # "./cfgs/bohb.yaml": ["--mark", "bohb"],
         # "./cfgs/mfes-bohb.yaml": ["--mark", "mfes-bohb"],
-        # "./cfgs/ext_openbox_mfes.yaml": ["--mark", "openbox-mfes"],
+        # # "./cfgs/ext_openbox_mfes.yaml": ["--mark", "openbox-mfes"],
         # "./cfgs/hb.yaml": ["--mark", "hb"],
-        # "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
-        "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
-        "./cfgs/ext_openbox_bohb.yaml": ["--mark", "openbox_bohb"],
+        # # "./cfgs/ext_hb.yaml": ["--mark", "ext_hb"],
+        # "./cfgs/ext_bohb.yaml": ["--mark", "ext_bohb"],
+        #"./cfgs/ext_openbox_bohb.yaml": ["--mark", "openbox_bohb"],
     }
-    general_argv = ["-r", "5"]
+    general_argv = ["-r", "50"]
     general_opts = ["TEST_PROBLEM.name", "countingones"]
     for conf in confs:
         cfg_clone = cfg.clone()
@@ -71,8 +74,8 @@ if __name__ == '__main__':
         argv.extend(general_opts)
         load_cfg_fom_args(cfg_clone,
                           argv=argv)  # repeat 3 times with diffent seeds
-        cfg_clone.OPTM.kwargs.bracket_limit=20
-        cfg_clone.OPTM.kwargs.round_limit=4
+        cfg_clone.OPTM.kwargs.bracket_limit=100
+        cfg_clone.OPTM.kwargs.round_limit=20
         do_experiment(cfg_clone)
         cfg.defrost()
 
@@ -129,7 +132,7 @@ if __name__ == '__main__':
     #                      "hb"])  # repeat 3 times with diffent seeds
     # do_experiment(cfg_clone)
     # cfg.defrost()
-    marks = ["hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "mfes-bohb", "openbox-mfes"]
+    marks = ["rs","hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "openbox-mfes"]
     # marks = ["DEHB_DEHB", "RFHB", "hb","DEHB","bohb_array_inf", "RFHB_OH"]
     Analyse('./exp', benchmark='countingones', marks=marks, legend_size=16)
     # Analyse_multi_benchmark()

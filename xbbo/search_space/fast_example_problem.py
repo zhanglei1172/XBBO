@@ -10,6 +10,40 @@ from ConfigSpace.hyperparameters import \
 
 from xbbo.utils.constants import MAXINT, Key
 
+class Ackley:
+    def __init__(self, dims=10, rng=np.random.RandomState(42)):
+        self.dims      = dims
+        self.counter   = 0
+        self.rng = rng
+        self.keys = ["x_{}".format(i) for i in range(self.dims)]
+        # self.tracker   = tracker('Ackley'+str(dims) )
+        
+        #tunable hyper-parameters in LA-MCTS
+        # self.Cp        = 1
+        # self.leaf_size = 10
+        # self.ninits    = 40
+        # self.kernel_type = "rbf"
+        # self.gamma_type  = "auto"
+        
+        
+        
+
+    def get_configuration_space(self):
+        self.cs = ConfigurationSpace(seed=self.rng.randint(MAXINT))
+        for k in self.keys:
+            self.cs.add_hyperparameter(UniformFloatHyperparameter(k, -5, 10))
+        return self.cs
+    
+    def objective_function(self, config_dict, info=None):
+        self.counter += 1
+        # assert len(config_dict) == self.dims
+        l = []
+        for k in self.keys:
+            l.append(config_dict[k])
+        array = np.array(l)
+        result = (-20*np.exp(-0.2 * np.sqrt(np.inner(array,array) / len(array) )) -np.exp(np.cos(2*np.pi*array).sum() /len(array)) + 20 +np.e )
+                
+        return result
 
 def mf_stochastic_count_one(config, info=None):
     '''
