@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # define search space
     cs = problem.get_configuration_space()
     # define black box optimizer
-    hpopt = LaMCTS(space=cs,objective_function=blackbox_func, suggest_limit=MAX_CALL, seed=rng.randint(MAXINT), C_p=1, leaf_size=10, init_budget=40, kernel_type='rbf', gamma_type='auto',verbose=True,split_metric='mean')
+    hpopt = LaMCTS(space=cs,objective_function=blackbox_func, suggest_limit=MAX_CALL, seed=rng.randint(MAXINT), C_p=1, leaf_size=10, init_budget=40, kernel_type='rbf', gamma_type='auto',verbose=True,split_metric='mean', split_use_predict=True)
     # hpopt = LaMCTS(space=cs, seed=rng.randint(MAXINT), C_p=1, leaf_size=10, init_budget=40, kernel_type='rbf', gamma_type='auto',verbose=True, split_metric='mean', solver='random')
     
     # Example call of the black-box function
@@ -33,10 +33,11 @@ if __name__ == "__main__":
         hpopt.observe(trial_list=trial_list)
         
         print(value)
+        print('Iter {} :  Find best value:{}'.format(i, hpopt.trials.get_best()[0])) 
     # hpopt.optimize()
     # best_value, best_config = hpopt.trials.get_best()
     # plt.plot(hpopt.trials.get_history()[0])
     # plt.savefig('./out/rosenbrock_bo_gp.png')
     # plt.show()
-    print('find best value:{}'.format(hpopt.trials.get_best()[0]))
+    print('Find best value:{}'.format(hpopt.trials.get_best()[0]))
 

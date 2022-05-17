@@ -1,7 +1,6 @@
 from typing import Optional, List, Tuple, cast
 
 import numpy as np
-import cma
 from xbbo.alg_auxiliary.lamcts import MCTS
 from xbbo.initial_design import ALL_avaliable_design
 from xbbo.utils.constants import MAXINT
@@ -16,30 +15,31 @@ from . import alg_register
 @alg_register.register('lamcts')
 class LaMCTS(AbstractOptimizer):
     def __init__(
-            self,
-            space: DenseConfigurationSpace,
-            seed: int = 42,
-            initial_design: str = 'lh',
-            init_budget: int = None,
-            suggest_limit: int = np.inf,
-            split_latent_model: str = 'identity',
-            split_latent_dims: int = None,
-            sample_latent_dims: int = None,
-            sample_latent_model: str = 'identity',
-            device: str = "cpu",
-            leaf_size=20,
-            kernel_type='rbf',
-            gamma_type='auto',
-            C_p: float = 10,
-            solver="cmaes",
-            split_metric='max',
-            cmaes_sigma_mult=1.0,
-            use_gpr=True,
-            treeify_freq=1,
-            init_within_leaf="mean",
-            splitter_type="kmeans",
-            # split_use_predict=False,  # False->kmeans result; True->svm
-            **kwargs):
+        self,
+        space: DenseConfigurationSpace,
+        seed: int = 42,
+        initial_design: str = 'lh',
+        init_budget: int = None,
+        suggest_limit: int = np.inf,
+        split_latent_model: str = 'identity',
+        split_latent_dims: int = None,
+        sample_latent_dims: int = None,
+        sample_latent_model: str = 'identity',
+        device: str = "cpu",
+        leaf_size=20,
+        kernel_type='rbf',
+        gamma_type='auto',
+        C_p: float = 10,
+        solver="cmaes",
+        split_metric='max',
+        cmaes_sigma_mult=1.0,
+        use_gpr=True,
+        treeify_freq=1,
+        init_within_leaf="mean",
+        splitter_type="kmeans",
+        normalize=True,
+        split_use_predict=True,  # False->kmeans result; True->svm
+        **kwargs):
         AbstractOptimizer.__init__(self,
                                    space,
                                    encoding_cat='bin',
@@ -107,27 +107,29 @@ class LaMCTS(AbstractOptimizer):
         # self.hp_num = len(configs)
 
         self.trials = Trials(space, dim=self.dimension)
-        self.agent = MCTS(self.space,
-                          sample_latent_bounds=self.sample_latent_bounds,
-                          dims=self.dimension,
-                          split_latent_converter=self.split_latent_converter,
-                          sample_latent_converter=self.sample_latent_converter,
-                          split_latent_dims=self.split_latent_dims,
-                          sample_latent_dims=self.sample_latent_dims,
-                          solver=solver,
-                          split_metric=split_metric,
-                          cmaes_sigma_mult=cmaes_sigma_mult,
-                          use_gpr=use_gpr,
-                          treeify_freq=treeify_freq,
-                          init_within_leaf=init_within_leaf,
-                          splitter_type=splitter_type,
-                          C_p=C_p,
-                          leaf_size=leaf_size,
-                          kernel_type=kernel_type,
-                          gamma_type=gamma_type,
-                          rng=self.rng,
-                        #   split_use_predict=split_use_predict,
-                          **kwargs)
+        self.agent = MCTS(
+            self.space,
+            sample_latent_bounds=self.sample_latent_bounds,
+            dims=self.dimension,
+            split_latent_converter=self.split_latent_converter,
+            sample_latent_converter=self.sample_latent_converter,
+            split_latent_dims=self.split_latent_dims,
+            sample_latent_dims=self.sample_latent_dims,
+            solver=solver,
+            split_metric=split_metric,
+            cmaes_sigma_mult=cmaes_sigma_mult,
+            use_gpr=use_gpr,
+            treeify_freq=treeify_freq,
+            init_within_leaf=init_within_leaf,
+            splitter_type=splitter_type,
+            C_p=C_p,
+            leaf_size=leaf_size,
+            kernel_type=kernel_type,
+            gamma_type=gamma_type,
+            normalize=normalize,
+            rng=self.rng,
+            split_use_predict=split_use_predict,
+            **kwargs)
         # best_x, best_fx = agent.search(iterations = args.iterations, samples_per_iteration=args.samples_per_iteration, treeify_freq=args.treeify_freq)
         # assert func.counter == args.iterations
         # return best_x.reshape(args.horizon, env_info['action_dims']), agent
