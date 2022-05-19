@@ -48,8 +48,9 @@ class MCTS:
             init_within_leaf='mean',
             leaf_size=20,
             splitter_type='kmeans',
+            normalize=True,
             rng=np.random.RandomState(42),
-            # split_use_predict=False,
+            split_use_predict=True,
             verbose=False,
             **kwargs):
         '''
@@ -101,7 +102,7 @@ class MCTS:
         # self.cmaes_sigma_mult = args.cmaes_sigma_mult
 
         # self.solver_type             = args.solver #solver can be 'bo' or 'turbo'
-
+        self.normalize = normalize
         self.splitter_type = splitter_type
         self.verbose = verbose
 
@@ -109,22 +110,25 @@ class MCTS:
             print("gamma_type:", gamma_type)
         self.kwargs = kwargs
         #we start the most basic form of the tree, 3 nodes and height = 1
-        # self.split_use_predict = split_use_predict
-        root = Node(parent=None,
-                    sample_dims=self.sample_latent_dims,
-                    split_dims=self.split_latent_dims,
-                    true_dims=self.dims,
-                    reset_id=True,
-                    kernel_type=self.kernel_type,
-                    cmaes_sigma_mult=self.cmaes_sigma_mult,
-                    leaf_size=self.LEAF_SAMPLE_SIZE,
-                    splitter_type=self.splitter_type,
-                    split_metric=self.split_metric,
-                    use_gpr=self.use_gpr,
-                    gamma_type=self.gamma_type,
-                    verbose=self.verbose,
-                    # split_use_predict=split_use_predict,
-                    **kwargs)
+        self.split_use_predict = split_use_predict
+        root = Node(
+            parent=None,
+            sample_dims=self.sample_latent_dims,
+            split_dims=self.split_latent_dims,
+            true_dims=self.dims,
+            reset_id=True,
+            kernel_type=self.kernel_type,
+            cmaes_sigma_mult=self.cmaes_sigma_mult,
+            leaf_size=self.LEAF_SAMPLE_SIZE,
+            splitter_type=self.splitter_type,
+            split_metric=self.split_metric,
+            use_gpr=self.use_gpr,
+            gamma_type=self.gamma_type,
+            normalize=self.normalize,
+            verbose=self.verbose,
+            rng=self.rng,
+            split_use_predict=split_use_predict,
+            **kwargs)
         self.nodes.append(root)
 
         self.ROOT = root
@@ -138,27 +142,30 @@ class MCTS:
         for node in self.nodes:
             node.clear_data()
         self.nodes.clear()
-        new_root = Node(parent=None,
-                        sample_dims=self.sample_latent_dims,
-                        split_dims=self.split_latent_dims,
-                        true_dims=self.dims,
-                        reset_id=True,
-                        kernel_type=self.kernel_type,
-                        cmaes_sigma_mult=self.cmaes_sigma_mult,
-                        leaf_size=self.LEAF_SAMPLE_SIZE,
-                        splitter_type=self.splitter_type,
-                        split_metric=self.split_metric,
-                        use_gpr=self.use_gpr,
-                        gamma_type=self.gamma_type,
-                        verbose=self.verbose,
-                        rng=self.rng,
-                        # split_use_predict=self.split_use_predict,
-                        **self.kwargs)
+        new_root = Node(
+            parent=None,
+            sample_dims=self.sample_latent_dims,
+            split_dims=self.split_latent_dims,
+            true_dims=self.dims,
+            reset_id=True,
+            kernel_type=self.kernel_type,
+            cmaes_sigma_mult=self.cmaes_sigma_mult,
+            leaf_size=self.LEAF_SAMPLE_SIZE,
+            splitter_type=self.splitter_type,
+            split_metric=self.split_metric,
+            use_gpr=self.use_gpr,
+            gamma_type=self.gamma_type,
+            normalize=self.normalize,
+            verbose=self.verbose,
+            rng=self.rng,
+            split_use_predict=self.split_use_predict,
+            **self.kwargs)
         self.nodes.append(new_root)
 
         self.ROOT = new_root
         self.CURT = self.ROOT
-        self.ROOT.update_bag(self.latent_samples, self.split_vectors,self.samples, self.f_samples)
+        self.ROOT.update_bag(self.latent_samples, self.split_vectors,
+                             self.samples, self.f_samples)
 
     def get_leaf_status(self):
         status = []
@@ -206,36 +213,42 @@ class MCTS:
                     parent.sample_X)
                 assert len(good_kid_data[0]) > 0
                 assert len(bad_kid_data[0]) > 0
-                good_kid = Node(parent=parent,
-                                sample_dims=self.sample_latent_dims,
-                                split_dims=self.split_latent_dims,
-                                true_dims=self.dims,
-                                reset_id=False,
-                                kernel_type=self.kernel_type,
-                                cmaes_sigma_mult=self.cmaes_sigma_mult,
-                                leaf_size=self.LEAF_SAMPLE_SIZE,
-                                splitter_type=self.splitter_type,split_metric=self.split_metric,
-                                use_gpr=self.use_gpr,
-                                gamma_type=self.gamma_type,
-                                verbose=self.verbose,
-                                rng=self.rng,
-                                # split_use_predict=self.split_use_predict,
-                                **self.kwargs)
-                bad_kid = Node(parent=parent,
-                               sample_dims=self.sample_latent_dims,
-                               split_dims=self.split_latent_dims,
-                               true_dims=self.dims,
-                               reset_id=False,
-                               kernel_type=self.kernel_type,
-                               cmaes_sigma_mult=self.cmaes_sigma_mult,
-                               leaf_size=self.LEAF_SAMPLE_SIZE,
-                               splitter_type=self.splitter_type,split_metric=self.split_metric,
-                               use_gpr=self.use_gpr,
-                               gamma_type=self.gamma_type,
-                               verbose=self.verbose,
-                               rng=self.rng,
-                            #    split_use_predict=self.split_use_predict,
-                               **self.kwargs)
+                good_kid = Node(
+                    parent=parent,
+                    sample_dims=self.sample_latent_dims,
+                    split_dims=self.split_latent_dims,
+                    true_dims=self.dims,
+                    reset_id=False,
+                    kernel_type=self.kernel_type,
+                    cmaes_sigma_mult=self.cmaes_sigma_mult,
+                    leaf_size=self.LEAF_SAMPLE_SIZE,
+                    splitter_type=self.splitter_type,
+                    split_metric=self.split_metric,
+                    use_gpr=self.use_gpr,
+                    gamma_type=self.gamma_type,
+                    normalize=self.normalize,
+                    verbose=self.verbose,
+                    rng=self.rng,
+                    split_use_predict=self.split_use_predict,
+                    **self.kwargs)
+                bad_kid = Node(
+                    parent=parent,
+                    sample_dims=self.sample_latent_dims,
+                    split_dims=self.split_latent_dims,
+                    true_dims=self.dims,
+                    reset_id=False,
+                    kernel_type=self.kernel_type,
+                    cmaes_sigma_mult=self.cmaes_sigma_mult,
+                    leaf_size=self.LEAF_SAMPLE_SIZE,
+                    splitter_type=self.splitter_type,
+                    split_metric=self.split_metric,
+                    use_gpr=self.use_gpr,
+                    gamma_type=self.gamma_type,
+                    normalize=self.normalize,
+                    verbose=self.verbose,
+                    rng=self.rng,
+                    split_use_predict=self.split_use_predict,
+                    **self.kwargs)
                 good_kid.update_bag(good_kid_data[0], good_kid_data[1],
                                     good_kid_data[2], good_kid_data[3])
                 bad_kid.update_bag(bad_kid_data[0], bad_kid_data[1],
@@ -446,22 +459,31 @@ class MCTS:
             self.leaf, self.path = self.select()
         self.sample_per_inner_alg_count += 1
         if self.solver_type == 'bo':
-            assert type(self.split_latent_converter) == type(self.sample_latent_converter), "current sample via split path"
-            latent_samples = self.leaf.propose_samples_bo(self.latent_samples, self.f_samples,suggest_num, self.path, self.sample_latent_bounds.lb, self.sample_latent_bounds.ub, self.samples)
+            assert type(self.split_latent_converter) == type(
+                self.sample_latent_converter), "current sample via split path"
+            latent_samples = self.leaf.propose_samples_bo(
+                self.latent_samples, self.f_samples, suggest_num, self.path,
+                self.sample_latent_bounds.lb, self.sample_latent_bounds.ub,
+                self.samples)
         elif self.solver_type == 'turbo':
             raise NotImplementedError
         elif self.solver_type == 'cmaes':
             latent_samples = self.leaf.propose_samples_cmaes(
-                suggest_num, self.path, self.init_within_leaf,self.sample_latent_bounds.lb, self.sample_latent_bounds.ub)
+                suggest_num, self.path, self.init_within_leaf,
+                self.sample_latent_bounds.lb, self.sample_latent_bounds.ub)
         elif self.solver_type == 'gradient':
             raise NotImplementedError
         elif self.solver_type == 'random':
-            assert type(self.split_latent_converter) == type(self.sample_latent_converter), "current sample via split path"
-            latent_samples = self.leaf.propose_samples_rs(self.latent_samples, self.f_samples,suggest_num, self.path, self.sample_latent_bounds.lb, self.sample_latent_bounds.ub, self.samples) 
+            assert type(self.split_latent_converter) == type(
+                self.sample_latent_converter), "current sample via split path"
+            latent_samples = self.leaf.propose_samples_rs(
+                self.latent_samples, self.f_samples, suggest_num, self.path,
+                self.sample_latent_bounds.lb, self.sample_latent_bounds.ub,
+                self.samples)
         else:
             raise Exception("solver not implemented")
         samples = self.sample_latent_converter.decode(latent_samples)
-        return self.leaf, latent_samples, samples        
+        return self.leaf, latent_samples, samples
 
     # def suggest(self, suggest_num=1):
     #     if self.iterations_since_treeify % self.treeify_freq == 0:
@@ -489,7 +511,7 @@ class MCTS:
     #         raise NotImplementedError
     #     elif self.solver_type == 'random':
     #         assert type(self.split_latent_converter) == type(self.sample_latent_converter), "current sample via split path"
-    #         latent_samples = leaf.propose_samples_rs(self.latent_samples, self.f_samples,suggest_num, path, self.sample_latent_bounds.lb, self.sample_latent_bounds.ub, self.samples) 
+    #         latent_samples = leaf.propose_samples_rs(self.latent_samples, self.f_samples,suggest_num, path, self.sample_latent_bounds.lb, self.sample_latent_bounds.ub, self.samples)
     #     else:
     #         raise Exception("solver not implemented")
     #     samples = self.sample_latent_converter.decode(latent_samples)
