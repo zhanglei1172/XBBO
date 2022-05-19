@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 @alg_register.register('basic-bo')
 class BO(AbstractOptimizer):
+    '''
+    Bayesian Optimization
+    '''
     def __init__(
             self,
             space,
