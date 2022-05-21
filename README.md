@@ -129,6 +129,7 @@ All examples can be found in `examples/` folder.
   - [X] Regularized EA
   - [X] PBT
   - [X] TuRBO
+  - [x] LaMCTS
 - [X] multi-fidelity
 
   - [X] HyperBand
