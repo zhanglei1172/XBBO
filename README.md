@@ -18,7 +18,7 @@ This project is now supported by PengCheng Lab.
 
 ---
 
-[**Overview**](#Overview) | [#Links](#Links) |[**Installation**](#Installation) | [**Quick Start**](#quick-start) | [**Benchmark**](#benchmark) |[**Contributing**](#Contributing) | [**License**](#License)
+[**Overview**](#Overview) | [**Links**](#Links) |[**Installation**](#Installation) | [**Quick Start**](#quick-start) | [**Benchmark**](#benchmark) |[**Contributing**](#Contributing) | [**License**](#License)
 
 **For more information and API usages, please refer to our** [**Documentation**](https://xbbo.readthedocs.io).
 
