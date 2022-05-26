@@ -28,6 +28,8 @@ This project is now supported by PengCheng Lab.
 
 **XBBO** decouples the **search algorithm** from the **search space** and provides a unified search space interface, allowing developers to focus on the search algorithm.
 
+We provide these black box optimization algorithms as follows:
+
 | Search Spaces  | Docs  | Official Links |
 | :------------: | :---: | :------------: |
 | BORE optimizer |       |                |
