@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Start &mdash; XBBO v0.0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Benchmark" href="../Benchmark/Benchmark.html" />
+    <link rel="prev" title="Installation" href="../Installation/Installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> XBBO
+            <img src="../_static/XBBO_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation/Installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Benchmark/Benchmark.html">Benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing/Contributing.html">Contributiong</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">XBBO</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Quick Start</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/QuickStart/QuickStart.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">note:</span></code>XBBO default <strong>minimize</strong> black box function.</p>
+<section id="bayesian-optimization-example">
+<h2>Bayesian Optimization example<a class="headerlink" href="#bayesian-optimization-example" title="Permalink to this headline"></a></h2>
+<p>Script path is <code class="docutils literal notranslate"><span class="pre">./examples/optimize_api_rosenbrock_bo.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">xbbo.search_space.fast_example_problem</span> <span class="kn">import</span> <span class="n">build_space_hard</span><span class="p">,</span> <span class="n">rosenbrock_2d_hard</span>
+<span class="kn">from</span> <span class="nn">xbbo.search_algorithm.bo_optimizer</span> <span class="kn">import</span> <span class="n">BO</span>
+<span class="kn">from</span> <span class="nn">xbbo.utils.constants</span> <span class="kn">import</span> <span class="n">MAXINT</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+  <span class="n">MAX_CALL</span> <span class="o">=</span> <span class="mi">30</span>
+  <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+  <span class="c1"># define black box function</span>
+  <span class="n">blackbox_func</span> <span class="o">=</span> <span class="n">rosenbrock_2d_hard</span>
+  <span class="c1"># define search space</span>
+  <span class="n">cs</span> <span class="o">=</span> <span class="n">build_space_hard</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span>
+  <span class="c1"># define black box optimizer</span>
+  <span class="n">hpopt</span> <span class="o">=</span> <span class="n">BO</span><span class="p">(</span><span class="n">space</span><span class="o">=</span><span class="n">cs</span><span class="p">,</span>
+              <span class="n">objective_function</span><span class="o">=</span><span class="n">blackbox_func</span><span class="p">,</span>
+              <span class="n">seed</span><span class="o">=</span><span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">MAXINT</span><span class="p">),</span>
+              <span class="n">suggest_limit</span><span class="o">=</span><span class="n">MAX_CALL</span><span class="p">)</span>
+
+  <span class="c1"># ---- Use minimize API ----</span>
+  <span class="n">hpopt</span><span class="o">.</span><span class="n">optimize</span><span class="p">()</span>
+  <span class="n">best_value</span><span class="p">,</span> <span class="n">best_config</span> <span class="o">=</span> <span class="n">hpopt</span><span class="o">.</span><span class="n">trials</span><span class="o">.</span><span class="n">get_best</span><span class="p">()</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Find best value:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">best_value</span><span class="p">))</span>
+  <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Best Config:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">best_config</span><span class="p">))</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>This example shows how to use this <code class="docutils literal notranslate"><span class="pre">.optimize()</span></code> api to easily and quickly optimize a black box function.</p>
+</div></blockquote>
+<p>Script path is <code class="docutils literal notranslate"><span class="pre">./examples/rosenbrock_bo.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">build_space</span><span class="p">(</span><span class="n">rng</span><span class="p">):</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">ConfigurationSpace</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">MAXINT</span><span class="p">))</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">UniformFloatHyperparameter</span><span class="p">(</span><span class="s2">&quot;x0&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">default_value</span><span class="o">=-</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">x1</span> <span class="o">=</span> <span class="n">UniformFloatHyperparameter</span><span class="p">(</span><span class="s2">&quot;x1&quot;</span><span class="p">,</span> <span class="o">-</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">default_value</span><span class="o">=-</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">cs</span><span class="o">.</span><span class="n">add_hyperparameters</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">cs</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="c1"># define black box function</span>
+<span class="n">blackbox_func</span> <span class="o">=</span> <span class="n">rosenbrock_2d</span>
+<span class="c1"># define search space</span>
+<span class="n">cs</span> <span class="o">=</span> <span class="n">build_space</span><span class="p">(</span><span class="n">rng</span><span class="p">)</span>
+<span class="c1"># define black box optimizer</span>
+<span class="n">hpopt</span> <span class="o">=</span> <span class="n">BO</span><span class="p">(</span><span class="n">config_spaces</span><span class="o">=</span><span class="n">cs</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">rng</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="n">MAXINT</span><span class="p">),</span> <span class="n">suggest_limit</span><span class="o">=</span><span class="n">MAX_CALL</span><span class="p">)</span>
+<span class="c1"># Example call of the black-box function</span>
+<span class="n">def_value</span> <span class="o">=</span> <span class="n">blackbox_func</span><span class="p">(</span><span class="n">cs</span><span class="o">.</span><span class="n">get_default_configuration</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Default Value: </span><span class="si">%.2f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">def_value</span><span class="p">)</span>
+<span class="c1"># ---- Begin BO-loop ----</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">MAX_CALL</span><span class="p">):</span>
+    <span class="c1"># suggest</span>
+    <span class="n">trial_list</span> <span class="o">=</span> <span class="n">hpopt</span><span class="o">.</span><span class="n">suggest</span><span class="p">()</span>
+    <span class="c1"># evaluate </span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">blackbox_func</span><span class="p">(</span><span class="n">trial_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">config_dict</span><span class="p">)</span>
+    <span class="c1"># observe</span>
+    <span class="n">trial_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">add_observe_value</span><span class="p">(</span><span class="n">observe_value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+    <span class="n">hpopt</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="n">trial_list</span><span class="o">=</span><span class="n">trial_list</span><span class="p">)</span>
+  
+    <span class="nb">print</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>  
+</pre></div>
+</div>
+<blockquote>
+<div><p>This example shows how to use <code class="docutils literal notranslate"><span class="pre">.ask()</span></code>、<code class="docutils literal notranslate"><span class="pre">.tell()</span></code> api to quickly optimize a black box function.</p>
+</div></blockquote>
+<p>All examples can be found in <code class="docutils literal notranslate"><span class="pre">examples/</span></code> folder.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../Installation/Installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Benchmark/Benchmark.html" class="btn btn-neutral float-right" title="Benchmark" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, PCL_AutoML.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

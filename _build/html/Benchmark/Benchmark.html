@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Benchmark &mdash; XBBO v0.0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Contributing" href="../Contributing/Contributing.html" />
+    <link rel="prev" title="Quick Start" href="../QuickStart/QuickStart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> XBBO
+            <img src="../_static/XBBO_logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Table of Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation/Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../QuickStart/QuickStart.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing/Contributing.html">Contributiong</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">XBBO</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Benchmark</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/Benchmark/Benchmark.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="benchmark">
+<h1>Benchmark<a class="headerlink" href="#benchmark" title="Permalink to this headline"></a></h1>
+<p>Run <code class="docutils literal notranslate"><span class="pre">comparison/xbbo_benchmark.py</span></code> to benchmark general BBO optimizer.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Method</th>
+<th>Minimum</th>
+<th>Best minimum</th>
+<th>Mean f_calls to min</th>
+<th>Std f_calls to min</th>
+<th>Fastest f_calls to min</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>XBBO(rs)</td>
+<td>0.684+/-0.248</td>
+<td>0.399</td>
+<td>110.4</td>
+<td>60.511</td>
+<td>17</td>
+</tr>
+<tr>
+<td>XBBO(bo-gp)</td>
+<td>0.398+/-0.000</td>
+<td>0.398</td>
+<td>138.5</td>
+<td>33.685</td>
+<td>90</td>
+</tr>
+<tr>
+<td>XBBO(tpe)</td>
+<td>0.519+/-0.119</td>
+<td>0.398</td>
+<td>191.4</td>
+<td>12.035</td>
+<td>162</td>
+</tr>
+<tr>
+<td>XBBO(anneal)</td>
+<td>0.404+/-0.005</td>
+<td>0.399</td>
+<td>164.5</td>
+<td>29.032</td>
+<td>92</td>
+</tr>
+<tr>
+<td>XBBO(cma-es)</td>
+<td>0.398+/-0.000</td>
+<td>0.398</td>
+<td>191.3</td>
+<td>8.391</td>
+<td>174</td>
+</tr>
+<tr>
+<td>XBBO(rea)</td>
+<td>0.425+/-0.026</td>
+<td>0.399</td>
+<td>115.8</td>
+<td>47.743</td>
+<td>56</td>
+</tr>
+<tr>
+<td>XBBO(de)</td>
+<td>0.465+/-0.065</td>
+<td>0.399</td>
+<td>163.5</td>
+<td>27.969</td>
+<td>99</td>
+</tr>
+<tr>
+<td>XBBO(turbo-1)</td>
+<td>0.398+/-0.000</td>
+<td>0.398</td>
+<td>110.3</td>
+<td>46.596</td>
+<td>46</td>
+</tr>
+<tr>
+<td>XBBO(turbo-2)</td>
+<td>0.398+/-0.000</td>
+<td>0.398</td>
+<td>130.7</td>
+<td>48.57</td>
+<td>68</td>
+</tr>
+<tr>
+<td>XBBO(bore)</td>
+<td>0.408+/-0.006</td>
+<td>0.401</td>
+<td>117.4</td>
+<td>58.114</td>
+<td>38</td>
+</tr>
+<tr>
+<td>XBBO(cem)</td>
+<td>1.875+/-2.090</td>
+<td>0.398</td>
+<td>144.8</td>
+<td>60.834</td>
+<td>36</td>
+</tr>
+</tbody>
+</table><section id="compare-other-bbo-library">
+<h2>Compare other bbo library<a class="headerlink" href="#compare-other-bbo-library" title="Permalink to this headline"></a></h2>
+<p>Here you can <strong>comparison</strong> with commonly used and well-known Hyperparameter Optimization (HPO) packages:</p>
+<!-- [SMAC3](comparison/SMAC3.md) --><p><a class="reference internal" href="comparison/hyperopt.html"><span class="doc">hyperopt</span></a></p>
+<p><a class="reference internal" href="comparison/skopt.html"><span class="doc">scikit-optimize</span></a></p>
+<p><a class="reference internal" href="comparison/turbo.html"><span class="doc">TuRBO</span></a></p>
+<p><a class="reference internal" href="comparison/bayes_opt.html"><span class="doc">Bayesian Optimization</span></a></p>
+<p><a class="reference internal" href="comparison/mf.html"><span class="doc">DEHB、HpBandSter</span></a></p>
+<p><a class="reference internal" href="comparison/openbox.html"><span class="doc">OpenBox</span></a></p>
+<p><a class="reference internal" href="comparison/hypermapper.html"><span class="doc">Hypermapper</span></a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../QuickStart/QuickStart.html" class="btn btn-neutral float-left" title="Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../Contributing/Contributing.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, PCL_AutoML.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
