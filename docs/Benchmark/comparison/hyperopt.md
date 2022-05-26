@@ -1,4 +1,4 @@
-# Comparison
+# Comparison with hyperopt
 
 ## Note
 
@@ -11,7 +11,7 @@
 - 初始设计：Sobol design
 - Budget: 50
 
-![rosenbrock hyperopt](../../out/comp_with_hyperopt.png)
+![rosenbrock hyperopt](../../_static/comp_with_hyperopt.png)
 
 - 测试函数：Branin (2d)
 - Budget: 200

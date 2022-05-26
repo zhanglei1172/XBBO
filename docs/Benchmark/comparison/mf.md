@@ -1,4 +1,4 @@
-# Comparison
+# Comparison multi-fidelity
 
 ## Note
 
@@ -12,5 +12,5 @@
 - Iteration num: 50
 - Repeat num: 50
 
-![对比HpBandSter](../../out/comparison_mf.png)
+![对比HpBandSter](../../_static/comparison_mf.png)
 

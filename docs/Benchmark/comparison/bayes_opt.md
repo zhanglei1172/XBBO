@@ -1,4 +1,4 @@
-# Comparison
+# Comparison with Bayesian Optimization
 
 ## Note
 
