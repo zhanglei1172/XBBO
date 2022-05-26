@@ -1,4 +1,4 @@
-# Comparison
+# Comparison with hypermapper
 
 ## Note
 

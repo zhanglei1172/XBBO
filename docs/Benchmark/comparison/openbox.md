@@ -1,4 +1,4 @@
-# Comparison
+# Comparison with open-box
 
 ## Note
 

@@ -1,4 +1,4 @@
-# Comparison
+# Comparison with scikit-optimize
 
 ## Note
 
