@@ -92,21 +92,32 @@ class BORE(AbstractOptimizer):
         #               array=config.get_array(sparse=False),
         #               origin='Random') for config in config_random
         #     ]
+
+        # targets: historical y-values
         targets = self.trials.get_history()[0]
+        # tau is the gamma-th quantile
         tau = np.quantile(targets, q=self.quantile)
+        # classify historical y-values
         z = np.less(targets, tau)
+        # update classifier
         self.classifier.fit(self.trials.get_array(), z)
+        
         # # Create classifier (if retraining from scratch every iteration)
         # self._maybe_create_classifier()
         #
         # # Train classifier
         # self._update_classifier()
+
+        # Scipy optimization using random x-values
+        # (The best point obtained with the historical x value is still around the historical value)
+        # (historical x-values can be supplemented as random)
         X_init = self.rng.uniform(low=self.bounds.lb,
                                   high=self.bounds.ub,
                                   size=(self.num_samples,
                                         self.dimension))
         f_init = self.classifier.predict(X_init)  # to minimize
 
+        #Calculate the minimum value of the fitted function
         trial_list = []
         for n_ in range(n_suggestions):
             results = []
