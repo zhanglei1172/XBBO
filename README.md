@@ -30,7 +30,7 @@ This project is now supported by PengCheng Lab.
 
 We provide these black box optimization algorithms as follows:
 
-| Search Spaces  | Docs  | Official Links |
+| Search Algorithm  | Docs  | Official Links |
 | :------------: | :---: | :------------: |
 | BORE optimizer |       |                |
 |     Anneal     |       |                |
