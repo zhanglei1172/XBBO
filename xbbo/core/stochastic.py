@@ -1,3 +1,7 @@
+'''
+Currently not be used.
+'''
+
 import numpy as np
 
 class Category():

@@ -68,6 +68,7 @@ class Anneal(AbstractOptimizer):
                           config_dict=config.get_dictionary(),
                           array=config.get_array()))
         else:
+            assert self.trials.trials_num > 0, "Anneal need init_buget > 0"
             for n in range(n_suggestions):
                 X = self.trials.get_array()
                 Y = np.asarray(self.trials._his_observe_value)

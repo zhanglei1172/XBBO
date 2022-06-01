@@ -16,7 +16,7 @@ try:
     from xbbo.surrogate.prf import RandomForestWithInstances
 except:
     print("If your want to use probability random foreset, make sure 'pyrfr' is installed!")
-from xbbo.utils.constants import MAXINT, Key
+from xbbo.core.constants import MAXINT, Key
 from xbbo.utils.util import get_types
 from .. import alg_register
 logger = logging.getLogger(__name__)

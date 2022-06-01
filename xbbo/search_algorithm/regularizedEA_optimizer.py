@@ -17,7 +17,7 @@ class RegularizedEA(AbstractOptimizer):
     def __init__(self,
                  space: DenseConfigurationSpace,
                  seed: int = 42,
-                 llambda=None,
+                 pop_size=None,
                  sample_size=None,
                  **kwargs):
         AbstractOptimizer.__init__(self,
@@ -32,8 +32,8 @@ class RegularizedEA(AbstractOptimizer):
         self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
         # self.num_of_tour_particips = kwargs.get('n_part',2)
-        self.llambda = llambda if llambda else 4 + math.floor(3 * math.log(self.dimension)) # (eq. 48)
-        self.tournament_sample_size = self.llambda//2 if sample_size is None else min(max(sample_size, 1), self.llambda)
+        self.pop_size = pop_size if pop_size else 4 + math.floor(3 * math.log(self.dimension)) # (eq. 48)
+        self.tournament_sample_size = self.pop_size//2 if sample_size is None else min(max(sample_size, 1), self.pop_size)
         self.population = self.create_initial_population()
         self.population_y = None
 
@@ -50,7 +50,7 @@ class RegularizedEA(AbstractOptimizer):
         self.listy = []
 
     def _suggest(self, n_suggestions=1):
-        assert self.llambda % n_suggestions == 0
+        assert self.pop_size % n_suggestions == 0
         trial_list = []
         for n in range(n_suggestions):
             new_individual = self.population[self.cur]
@@ -79,8 +79,8 @@ class RegularizedEA(AbstractOptimizer):
                 self.population_y = np.concatenate([self.population_y, self.listy], axis=0)
 
             # remove dead
-            self.population_y = np.asarray(self.population_y[-self.llambda:])
-            self.population = np.asarray(self.population[-self.llambda:])
+            self.population_y = np.asarray(self.population_y[-self.pop_size:])
+            self.population = np.asarray(self.population[-self.pop_size:])
 
             s_id = np.argsort(self.population_y)
             rank = np.argsort(s_id)
@@ -112,8 +112,8 @@ class RegularizedEA(AbstractOptimizer):
 
 
     def create_initial_population(self):
-        # return self.rng.normal(0, 1, size=(self.llambda, self.dimension))
-        return self.rng.uniform(0, 1, size=(self.llambda, self.dimension))
+        # return self.rng.normal(0, 1, size=(self.pop_size, self.dimension))
+        return self.rng.uniform(0, 1, size=(self.pop_size, self.dimension))
 
 
     def __mutate2(self, parent):

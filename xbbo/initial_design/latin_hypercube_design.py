@@ -10,7 +10,7 @@ from ConfigSpace.hyperparameters import Constant
 
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.initial_design.base import InitialDesign
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 
 class LHDesign(InitialDesign):
     """Latin Hypercube design

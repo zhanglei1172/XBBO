@@ -4,7 +4,7 @@ from xbbo.core.trials import Trial, Trials
 import ConfigSpace
 from ConfigSpace import Configuration
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 import sys
 
 sys.path.append('../git/DEHB')

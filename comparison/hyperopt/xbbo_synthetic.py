@@ -7,20 +7,16 @@ logging.basicConfig(level=logging.INFO)
 import numpy as np
 from ConfigSpace.hyperparameters import UniformFloatHyperparameter
 
-from xbbo.search_space.fast_example_problem import branin
+from xbbo.problem.fast_example_problem import Branin
 from xbbo.configspace.space import DenseConfigurationSpace
 from xbbo.search_algorithm import alg_register
 
 
 def run_one_exp(opt_name, max_call, seed):
-    # Build Configuration Space which defines all parameters and their ranges
-    cs = DenseConfigurationSpace(seed=seed)
-    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
-    x2 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
-    cs.add_hyperparameters([x1, x2])
+    branin = Branin(rng=seed)
 
     hpopt = alg_register[opt_name](
-        space=cs,
+        space=branin.get_configuration_space(),
         seed=seed,
         suggest_limit=max_call,
         initial_design='sobol',

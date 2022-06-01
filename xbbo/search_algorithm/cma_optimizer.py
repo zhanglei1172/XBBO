@@ -2,7 +2,7 @@ from typing import Optional, List, Tuple, cast
 
 import numpy as np
 import cma
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 # from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace

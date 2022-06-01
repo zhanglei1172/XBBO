@@ -12,7 +12,7 @@ from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator, DEHB_ConfigGenerator, SHBracketManager
 # from xbbo.search_algorithm.de_optimizer import DE
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 from .. import alg_register
 
 # class DEHB_CG(BasicConfigGenerator, DE):

@@ -3,7 +3,7 @@ import sys
 sys.path.append('../hypermapper/')
 from hypermapper import optimizer  # noqa 
 import json, os, math
-from xbbo.search_space.fast_example_problem import branin
+from xbbo.problem.fast_example_problem import branin
 import pandas as pd
 
 import numpy as np

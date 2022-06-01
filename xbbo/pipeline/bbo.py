@@ -2,10 +2,10 @@ import numpy as np
 from time import time
 import tqdm
 
-from xbbo.search_space import problem_register
+from xbbo.problem import problem_register
 from xbbo.search_algorithm import alg_register
 from xbbo.configspace import build_space
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT, Key
 from xbbo.utils.record import Record
 
 

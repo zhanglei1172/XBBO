@@ -12,8 +12,8 @@ from ConfigSpace.conditions import LessThanCondition
 # from xbbo.search_algorithm.transfer_RMoGP_optimizer import SMBO
 from xbbo.search_algorithm.transfer_bo_optimizer import SMBO
 
-from xbbo.search_space.offline_hp import Model
-from xbbo.utils.constants import MAXINT
+from xbbo.problem.offline_hp import Model
+from xbbo.core.constants import MAXINT
 from xbbo.surrogate.transfer.base_surrogate import BaseModel
 
 def rosenbrock_2d(x):

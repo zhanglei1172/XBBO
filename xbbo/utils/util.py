@@ -87,3 +87,22 @@ def get_types(config_space, instance_features=None):
     types = np.array(types, dtype=np.uint)
     bounds = np.array(bounds, dtype=object)
     return types, bounds
+
+def create_rng(rng):
+    """ ref: hpolib
+    helper to create rng from RandomState or int
+    :param rng: int or RandomState
+    :return: RandomState
+    """
+    if rng is None:
+        return np.random.RandomState()
+    elif type(rng) == np.random.RandomState:
+        return rng
+    elif int(rng) == rng:
+        # As seed is sometimes -1 (e.g. if SMAC optimizes a
+        # deterministic function
+        rng = np.abs(rng)
+        return np.random.RandomState(rng)
+    else:
+        raise ValueError("%s is neither a number nor a RandomState. "
+                         "Initializing RandomState failed")

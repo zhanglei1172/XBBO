@@ -6,7 +6,7 @@ from xbbo.core.trials import Trials
 # from xbbo.surrogate.base import Surrogate
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.surrogate.transfer.tst import BaseModel
-from xbbo.utils.constants import VERY_SMALL_NUMBER
+from xbbo.core.constants import VERY_SMALL_NUMBER
 
 class ABCWeightStategy(metaclass=abc.ABCMeta):
     def __init__(self,

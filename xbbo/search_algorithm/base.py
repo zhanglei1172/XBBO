@@ -5,7 +5,7 @@ import numpy as np
 import ConfigSpace as CS
 from xbbo.configspace.space import DenseConfigurationSpace
 from xbbo.core.trials import Trials
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 # from xbbo.configspace.space import Configurations
 
 

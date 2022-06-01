@@ -7,7 +7,7 @@ import numpy as np
 
 from xbbo.configspace.space import DenseConfiguration
 from xbbo.initial_design.base import InitialDesign
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 
 
 class SobolDesign(InitialDesign):
