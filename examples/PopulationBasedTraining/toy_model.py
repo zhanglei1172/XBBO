@@ -20,8 +20,8 @@ class Model(Abstract_PBT_Model):
         self.opt = SGD([self.theta], lr=0.01)
         self.history_hp = []  # for record strategy
         self.trajectory_hp = []
-        self.trajectory_loss = []  # 记录该个体score过程
-        self.history_loss = []  # 记录使用了（考虑权重迁移）hp-stategy后的score过程
+        self.trajectory_loss = []  # 记录该个体loss过程
+        self.history_loss = []  # 记录使用了（考虑权重迁移）hp-stategy后的loss过程
         self.hp = torch.empty(2, device=self.device)
         self.obj_val_func = lambda theta: 1.2 - (theta**2).sum()
         self.obj_train_func = lambda theta, h: 1.2 - ((h * theta)**2).sum()
