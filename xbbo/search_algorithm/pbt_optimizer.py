@@ -137,6 +137,7 @@ class PBT(AbstractOptimizer):
                 for i in range(self.pop_size):
                     population_model[i].evaluate()
                 losses = [net.loss for net in population_model]
+                assert np.any(np.isfinite(losses)), "ERROR: At Least 1 loss is finite"
                 if finished:
                     break
                 # Update respective config

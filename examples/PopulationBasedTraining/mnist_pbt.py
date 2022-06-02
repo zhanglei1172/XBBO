@@ -30,6 +30,9 @@ class MnistPBT(PBT):
             top_id = self.rng.choice(top_ids)
             checkpoint = population_model[top_id].save_checkpoint()
             population_model[bot_id].load_checkpoint(checkpoint)
+            # Keep dataloader iter syncronize(when loss is nan or early stopping)
+            population_model[bot_id].iter_train_loader = population_model[top_id].iter_train_loader
+            
             self.population_hp_array[bot_id] = self.population_hp_array[
                 top_id].copy()
             # explore
@@ -45,7 +48,7 @@ class MnistPBT(PBT):
             # x_unwarped = DenseConfiguration.array_to_dict(self.space, x_array)
             # self.population_hp[bot_id] = x_unwarped
             population_model[bot_id].history_hp = copy.copy(
-                population_model[top_id].history_loss)
+                population_model[top_id].history_hp)
             population_model[bot_id].history_loss = copy.copy(
                 population_model[top_id].history_loss)
             population_model[bot_id].update_hp(new_config.get_dictionary())
@@ -53,12 +56,12 @@ class MnistPBT(PBT):
         
 if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    epoch_num = 100
+    epoch_num = 10
     rng = np.random.RandomState(42)
     
     config_space = Model.get_configuration_space(rng.randint(MAXINT))
     # define black box optimizer
-    pbt = MnistPBT(space=config_space, pop_size=2, seed=rng.randint(MAXINT))
+    pbt = MnistPBT(space=config_space, pop_size=5, seed=rng.randint(MAXINT))
 
     population_model = [
         Model(seed=rng.randint(MAXINT), device=device) for _ in range(pbt.pop_size)
@@ -74,7 +77,7 @@ if __name__ == "__main__":
     for i in range(pbt.pop_size):
         desc_data = np.array(population_model[i].history_loss)
         desc_data[:, 0] /= len(population_model[-1])
-        ax1.plot(desc_data[:, 0], desc_data[:, 1], alpha=0.5)
+        ax1.plot(desc_data[:, 0], -desc_data[:, 1], alpha=0.5)
     ax1.set_xlabel("epoch")
     ax1.set_ylabel("score")
     # for i in range(self.pop_size):
@@ -86,15 +89,15 @@ if __name__ == "__main__":
     for i in range(pbt.pop_size):
         desc_data = np.array([[x[0], x[-1]['lr']] for x in population_model[i].history_hp])
         desc_data[:, 0] /= len(population_model[-1])
-        desc_data = np.append(desc_data, [[pbt.epoch, desc_data[-1, 1]]], axis=0)
+        desc_data = np.append(desc_data, [[epoch_num, desc_data[-1, 1]]], axis=0)
         ax2.plot(desc_data[:, 0], desc_data[:, 1], label='best individual' if i==best_individual_index else None)
     ax2.set_xlabel("epoch")
     ax2.set_ylabel("lr")
     plt.legend()
     plt.suptitle("PBT search (lr, momentum) in MNIST")
     plt.tight_layout()
-    plt.savefig('./out/PBT_mnist.png')
+    # plt.savefig('./a.png')
     plt.show()
 
-    print('-----\nBest hyper-param strategy: {}'.format(pbt.population_model[best_individual_index].history_hp))
-    print('final score: {}'.format(-pbt.population_model[best_individual_index].history_loss[-1]))
+    print('-----\nBest hyper-param strategy: {}'.format(population_model[best_individual_index].history_hp))
+    print('final -score: {}'.format(population_model[best_individual_index].history_loss[-1]))
