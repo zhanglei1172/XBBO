@@ -16,7 +16,6 @@ from xbbo.core.constants import MAXINT, Key
 class Ackley(AbstractBenchmark):
     def __init__(self, dim=10, rng=np.random.RandomState(42)):
         self.dims      = dim
-        self.rng = rng
         self.keys = ["x_{}".format(i) for i in range(self.dims)]
         super().__init__(rng)
         self.get_configuration_space()

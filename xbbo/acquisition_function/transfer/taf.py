@@ -95,8 +95,11 @@ class TAF_AcqFunc(AbstractAcquisitionFunction):
         # denominator = self.selfWeight
         f *= self.selfWeight
         for d in range(len(self.weight)):
-            f += self.weight[d] * (self.base_incuments[d] - self.pre_weight_model[d].predict(
-                X, None)[0]).clip(0)
+            base_pred_mean = self.pre_weight_model[d].predict(
+                X, None)[0]
+            if len(base_pred_mean.shape) == 1:
+                base_pred_mean = np.expand_dims(base_pred_mean, axis=-1)
+            f += self.weight[d] * (self.base_incuments[d] - base_pred_mean).clip(0)
             # denominator += self.weight[d]
 
         return f

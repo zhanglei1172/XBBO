@@ -173,7 +173,7 @@ class KernelRegress(ABCWeightStategy):
         base_model_means = []
         for model in self.base_models:
             base_model_means.append(
-                model._predict_normalize(trials.get_sparse_array(), None)[0])
+                model._predict_normalize(trials.get_array(), None)[0])
         if not base_model_means:
             return []
         base_model_means = np.stack(base_model_means)  # [model, obs_num, 1]

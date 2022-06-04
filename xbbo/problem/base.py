@@ -1,5 +1,5 @@
 import abc
-
+import numpy as np
 import ConfigSpace
 from xbbo.core.constants import Key
 
@@ -23,7 +23,7 @@ class AbstractBenchmark(object, metaclass=abc.ABCMeta):
         self.counter   = 0
 
         self.rng = create_rng(rng)
-        self.configuration_space = self.get_configuration_space()
+        # self.configuration_space = self.get_configuration_space()
 
     @abc.abstractmethod
     def objective_function(self, configuration, **kwargs):
