@@ -6,7 +6,7 @@ import numpy as np
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import UniformFloatHyperparameter, Constant
 
-from xbbo.search_space.fast_example_problem import branin
+from xbbo.problem.fast_example_problem import branin
 # from xbbo.configspace.space import ConfigurationSpace
 from xbbo.search_algorithm import alg_register
 

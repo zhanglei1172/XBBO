@@ -5,7 +5,7 @@ from smac.initial_design.latin_hypercube_design import LHDesign
 from ext_algs.base import Ext_opt
 
 from xbbo.core.trials import Trial, Trials
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 
 class SMAC_opt(Ext_opt):
     def __init__(self,

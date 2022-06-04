@@ -2,7 +2,7 @@ from typing import Iterable
 import numpy as np
 import ConfigSpace as CS
 from xbbo.configspace.space import DenseConfiguration
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 
 
 class Trial:
@@ -32,6 +32,10 @@ class Trial:
     def add_observe_value(self, observe_value=None, obs_info=None):
         if obs_info is None:
             obs_info = {}
+        if isinstance(observe_value, dict):
+            assert not obs_info
+            obs_info = observe_value
+            observe_value = obs_info[Key.FUNC_VALUE]
         self.info.update(obs_info)
         self.observe_value = observe_value
 

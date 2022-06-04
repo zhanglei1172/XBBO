@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from openbox import Advisor, sp, Observation
 
-from xbbo.search_space.fast_example_problem import branin
+from xbbo.problem.fast_example_problem import branin
 
 import numpy as np
 

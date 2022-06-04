@@ -375,25 +375,6 @@ class DenseConfiguration(CS.Configuration):
         # TODO(LT): specify `dtype` flexibly
         array_dense = np.zeros(cs.size_dense, dtype=dtype)
 
-        # process numerical hyperparameters
-        # if cs.nums:
-        #     array_dense[cs.num_trg] = array_sparse[cs.num_src]
-
-        # # process categorical hyperparameters
-        # if cs.cats:
-        #     choice = array_sparse[cs.cat_src] # conditional=>nan
-        #     cat_trg_offset = np.uintp(choice)
-        #     array_dense[cs.cat_trg + cat_trg_offset] = 1 if choice else choice
-        # # process numerical hyperparameters
-        # if cs.num:
-        #     array_dense = cs.num.invconvert(array_dense, array_sparse)
-        # # process categorical hyperparameters
-        # if cs.round:
-        #     array_dense = cs.round.invconvert(array_dense, array_sparse)
-        # if cs.bin:
-        #     array_dense = cs.bin.invconvert(array_dense, array_sparse)
-        # if cs.onehot:
-        #     array_dense = cs.onehot.invconvert(array_dense, array_sparse)
         for v in cs.map.values():
             array_dense = v.invconvert(array_dense, array_sparse)
         return array_dense

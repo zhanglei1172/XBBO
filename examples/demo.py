@@ -7,8 +7,7 @@ from xbbo.pipeline.bbo import BBO
 from xbbo.pipeline.pbt import PBT
 from xbbo.pipeline.transfer_bbo import Transfer_BBO
 from xbbo.utils.config import cfg, load_cfg_fom_args
-from xbbo.pipeline.nas import NAS
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 
 # cfg.freeze()
 

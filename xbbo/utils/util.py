@@ -1,10 +1,13 @@
+from typing import Optional
 import numpy as np
 import pickle, os, json
 from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
                                          OrdinalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
                                          UniformIntegerHyperparameter)
+import urllib
 
+import tqdm
 
 def dumpOBJ(path, filename, obj):
     with open(os.path.join(path, filename), 'wb') as f:
@@ -87,3 +90,39 @@ def get_types(config_space, instance_features=None):
     types = np.array(types, dtype=np.uint)
     bounds = np.array(bounds, dtype=object)
     return types, bounds
+
+def create_rng(rng):
+    """ ref: hpolib
+    helper to create rng from RandomState or int
+    :param rng: int or RandomState
+    :return: RandomState
+    """
+    if rng is None:
+        return np.random.RandomState()
+    elif type(rng) == np.random.RandomState:
+        return rng
+    elif int(rng) == rng:
+        # As seed is sometimes -1 (e.g. if SMAC optimizes a
+        # deterministic function
+        rng = np.abs(rng)
+        return np.random.RandomState(rng)
+    else:
+        raise ValueError("%s is neither a number nor a RandomState. "
+                         "Initializing RandomState failed")
+        
+def download_and_extract_archive(
+    url: str,
+    download_root: str,
+    extract_root: Optional[str] = None,
+    filename: Optional[str] = None,
+    remove_finished: bool = False,
+) -> None:
+    download_root = os.path.expanduser(download_root)
+    if extract_root is None:
+        extract_root = download_root
+    if not filename:
+        filename = os.path.basename(url)
+
+    os.system('wget {} -O {} && unzip -d {} {}'.format(url,filename, extract_root, filename))
+    if remove_finished:
+        os.system('rm {}'.format(filename))

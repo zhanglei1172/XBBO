@@ -1,13 +1,13 @@
 from typing import Optional, List, Tuple, cast
 
 import numpy as np
-try:
-    from xbbo.alg_auxiliary.lamcts import MCTS
-    from xbbo.alg_auxiliary.lamcts.latent_space import LatentConverterRNVP, LatentConverterVAE, LatentConverterPCA, LatentConverterCNN, LatentConverterIdentity
-except Exception as e:
-    print(repr(e))
+# try:
+from xbbo.alg_auxiliary.lamcts import MCTS
+from xbbo.alg_auxiliary.lamcts.latent_space import LatentConverterIdentity
+# except Exception as e:
+    # print(repr(e))
 from xbbo.initial_design import ALL_avaliable_design
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 # from xbbo.configspace.feature_space import Uniform2Gaussian
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace

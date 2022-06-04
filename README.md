@@ -18,7 +18,7 @@ This project is now supported by PengCheng Lab.
 
 ---
 
-[**Overview**](#Overview) | [**Links**](#Links) |[**Installation**](#Installation) | [**Quick Start**](#quick-start) | [**Benchmark**](#benchmark) |[**Contributing**](#Contributing) | [**License**](#License)
+[**Overview**](#overview) | [**Links**](#links) |[**Installation**](#installation) | [**Quick Start**](#quick-start) | [**Benchmark**](#benchmark) |[**Contributing**](#contributing) | [**License**](#license)
 
 **For more information and API usages, please refer to our** [**Documentation**](https://xbbo.readthedocs.io).
 
@@ -30,26 +30,26 @@ This project is now supported by PengCheng Lab.
 
 We provide these black box optimization algorithms as follows:
 
-| Search Algorithm  | Docs  | Official Links |
-| :------------: | :---: | :------------: |
-| BORE optimizer |       |                |
-|     Anneal     |       |                |
-|       DE       |       |                |
-|      CMA       |       |                |
-|      NSGA      |       |                |
-| Regularized EA |       |                |
-|      PBT       |       |                |
-|     TuRBO      |       |                |
-|     LaMCTS     |       |                |
-|   HyperBand    |       |                |
-|      BOHB      |       |                |
-|      DEHB      |       |                |
-|    MFES-BO     |       |                |
-|     TST-R      |       |                |
-|      TAF       |       |                |
-|   TAF(RGPE)    |       |                |
-|     RMoGP      |       |                |
-|   RGPE(mean)   |       |                |
+| Search Algorithm | Docs  | Official Links |
+| :--------------: | :---: | :------------: |
+|  BORE optimizer  |       |                |
+|      Anneal      |       |                |
+|        DE        |       |                |
+|       CMA        |       |                |
+|       NSGA       |       |                |
+|  Regularized EA  |       |                |
+|       PBT        |       |                |
+|      TuRBO       |       |                |
+|      LaMCTS      |       |                |
+|    HyperBand     |       |                |
+|       BOHB       |       |                |
+|       DEHB       |       |                |
+|     MFES-BO      |       |                |
+|      TST-R       |       |                |
+|       TAF        |       |                |
+|    TAF(RGPE)     |       |                |
+|      RMoGP       |       |                |
+|    RGPE(mean)    |       |                |
 
 
 # Links
@@ -123,4 +123,5 @@ This project is released under the [MIT license](https://mit-license.org).
 ## TODO
 
 - [ ] 文档完善
+- [ ] Logger
 - [ ] parallel

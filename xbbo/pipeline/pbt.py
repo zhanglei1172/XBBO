@@ -3,7 +3,7 @@ from time import time
 import tqdm
 from matplotlib import pyplot as plt
 
-from xbbo.search_space import problem_register
+from xbbo.problem import problem_register
 from xbbo.search_algorithm import alg_register
 from xbbo.configspace import build_space
 

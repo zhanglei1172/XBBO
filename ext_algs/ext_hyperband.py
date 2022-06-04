@@ -3,7 +3,7 @@ from ext_algs.base import Ext_opt
 from xbbo.core.trials import Trial, Trials
 import ConfigSpace
 from ConfigSpace import Configuration
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 import sys
 
 

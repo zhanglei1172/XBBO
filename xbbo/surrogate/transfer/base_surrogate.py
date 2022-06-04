@@ -1,7 +1,7 @@
 import typing
 import numpy as np
 
-from xbbo.utils.constants import VERY_SMALL_NUMBER
+from xbbo.core.constants import VERY_SMALL_NUMBER
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 
 class BaseModel(GPR_sklearn):

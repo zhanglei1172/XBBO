@@ -6,7 +6,7 @@ from xbbo.core.trials import Trials
 # from xbbo.surrogate.base import Surrogate
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 from xbbo.surrogate.transfer.tst import BaseModel
-from xbbo.utils.constants import VERY_SMALL_NUMBER
+from xbbo.core.constants import VERY_SMALL_NUMBER
 
 class ABCWeightStategy(metaclass=abc.ABCMeta):
     def __init__(self,
@@ -173,7 +173,7 @@ class KernelRegress(ABCWeightStategy):
         base_model_means = []
         for model in self.base_models:
             base_model_means.append(
-                model._predict_normalize(trials.get_sparse_array(), None)[0])
+                model._predict_normalize(trials.get_array(), None)[0])
         if not base_model_means:
             return []
         base_model_means = np.stack(base_model_means)  # [model, obs_num, 1]

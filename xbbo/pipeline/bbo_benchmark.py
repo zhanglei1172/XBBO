@@ -7,7 +7,7 @@ import numpy as np
 from xbbo.core.trials import Trial, Trials
 
 from xbbo.search_algorithm import alg_register
-from xbbo.utils.constants import MAXINT, Key
+from xbbo.core.constants import MAXINT, Key
 from xbbo.utils.util import dumpJson, dumpOBJ
 
 """

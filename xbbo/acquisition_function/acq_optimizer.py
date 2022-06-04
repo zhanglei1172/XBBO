@@ -10,7 +10,7 @@ from xbbo.acquisition_function.base import AbstractAcquisitionFunction, Acquisit
 
 from xbbo.configspace.space import DenseConfigurationSpace, DenseConfiguration, get_one_exchange_neighbourhood
 from xbbo.core.trials import Trials
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 from xbbo.utils.util import get_types
 
 logger = logging.getLogger(__name__)

@@ -172,3 +172,5 @@ xbbo_benchmark_noise.py
 branin_output_samples.csv
 comparison/xbbo_benchmark_noise_101.py
 logs/
+
+data/
