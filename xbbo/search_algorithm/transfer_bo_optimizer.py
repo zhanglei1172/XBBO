@@ -17,11 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 @alg_register.register('bo-transfer')
-class SMBO(AbstractOptimizer):
+class TransferBO(AbstractOptimizer):
     def __init__(self,
-                 space: DenseConfigurationSpace,
+                 space,
                  seed: int = 42,
                  initial_design: str = 'sobol',
+                 init_budget: int = None,
                  suggest_limit: int = np.inf,
                  surrogate: str = 'gp',
                  acq_func: str = 'ei',
@@ -37,81 +38,27 @@ class SMBO(AbstractOptimizer):
                                    suggest_limit=suggest_limit,
                                    **kwargs)
         self.predict_x_best = predict_x_best
-        self.dimension = self.space.get_dimensions()
+        self.dimension = self.space.get_dimensions(sparse=True)
 
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
+            self.space,
+            self.rng,
+            ta_run_limit=suggest_limit,
+            init_budget=init_budget,
+            **kwargs)
         self.init_budget = self.initial_design.init_budget
         self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
         )
-        self.trials = Trials(space,dim=self.dimension)
+        self.trials = Trials(space, dim=self.dimension)
 
         # self.rho = kwargs.get("rho", 1)
         self.bandwidth = kwargs.get("bandwdth", 0.1)
-        self.base_models = kwargs.get("base_models")
-        if self.base_models:
-            assert isinstance(self.base_models[0], BaseModel)
-            if surrogate == 'gp':
-                self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
-            elif surrogate == 'tst':
-                self.surrogate_model = TST_surrogate(self.space,
-                                                     self.base_models,
-                                                     rng=self.rng)
-        else:
-            raise NotImplementedError()
-        if weight_srategy == 'kernel':
-            self.weight_sratety = KernelRegress(self.space, self.base_models,
-                                                self.surrogate_model, self.rng)
-        elif weight_srategy == 'rw':
-            self.weight_sratety = RankingWeight(self.space,
-                                                self.base_models,
-                                                self.surrogate_model,
-                                                self.rng,
-                                                budget=suggest_limit,
-                                                is_purn=True)
-        elif weight_srategy == 'zero':
-            self.weight_sratety = ZeroWeight(self.space, self.base_models,
-                                             self.surrogate_model, self.rng)
-        else:
-            raise NotImplementedError()
-
-        if acq_func == 'mogp':
-            self.acquisition_func = MoGP_AcqFunc(self.surrogate_model,
-                                                 self.base_models, self.rng)
-        elif acq_func == 'taf':
-            self.acquisition_func = TAF_AcqFunc(self.surrogate_model,
-                                                self.base_models, self.rng)
-        elif acq_func == 'ei':
-            self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
-        else:
-            raise NotImplementedError()
-
-        if acq_opt == 'ls':
-            self.acq_maximizer = LocalSearch(self.acquisition_func, self.space,
-                                             self.rng)
-        elif acq_opt == 'rs':
-            self.acq_maximizer = RandomSearch(self.acquisition_func,
-                                              self.space, self.rng)
-        elif acq_opt == 'rs_ls':
-            self.acq_maximizer = InterleavedLocalAndRandomSearch(
-                self.acquisition_func, self.space, self.rng)
-        elif acq_opt == 'scipy':
-            self.acq_maximizer = ScipyOptimizer(self.acquisition_func,
-                                                self.space, self.rng)
-        elif acq_opt == 'scipy_global':
-            self.acq_maximizer = ScipyGlobalOptimizer(self.acquisition_func,
-                                                      self.space, self.rng)
-        elif acq_opt == 'r_scipy':
-            self.acq_maximizer = RandomScipyOptimizer(self.acquisition_func,
-                                                      self.space, self.rng)
-        else:
-            raise ValueError('acq_opt {} not in {}'.format(
-                acq_opt,
-                ['ls', 'rs', 'rs_ls', 'scipy', 'scipy_global', 'r_scipy']))
-        logger.info(
-            "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
-            .format(surrogate, acq_func, acq_opt))
+        self._surrogate = surrogate
+        self._acq_func = acq_func
+        self._weight_srategy = weight_srategy
+        self._acq_opt = acq_opt
+        self._suggest_limit = suggest_limit
 
     def _suggest(self, n_suggestions=1):
         trial_list = []
@@ -126,7 +73,7 @@ class SMBO(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array(sparse=False)))
+                          array=config.get_array(sparse=True)))
         else:
             # update target surrogate model
             self.surrogate_model.train(
@@ -160,7 +107,7 @@ class SMBO(AbstractOptimizer):
                         trial_list.append(
                             Trial(configuration=config,
                                   config_dict=config.get_dictionary(),
-                                  array=config.get_array(sparse=False)))
+                                  array=config.get_array(sparse=True)))
                         _idx += 1
 
                         break
@@ -216,5 +163,73 @@ class SMBO(AbstractOptimizer):
 
         return x_best_array, best_observation
 
+    def get_transfer_knowledge(self, old_D_X, old_D_y):
+        self.base_models = []
+        for i in range(len(old_D_X)):
+            self.base_models.append(BaseModel(self.space, rng=self.rng, do_optimize=False))
+            self.base_models[-1].train(old_D_X[i], old_D_y[i])
+        # self.base_models = kwargs.get("base_models")
+        if self.base_models:
+            assert isinstance(self.base_models[0], BaseModel)
+            if self._surrogate == 'gp':
+                self.surrogate_model = GPR_sklearn(self.space, rng=self.rng)
+            elif self._surrogate == 'tst':
+                self.surrogate_model = TST_surrogate(self.space,
+                                                     self.base_models,
+                                                     rng=self.rng)
+        else:
+            raise NotImplementedError()
+        if self._weight_srategy == 'kernel':
+            self.weight_sratety = KernelRegress(self.space, self.base_models,
+                                                self.surrogate_model, self.rng)
+        elif self._weight_srategy == 'rw':
+            self.weight_sratety = RankingWeight(self.space,
+                                                self.base_models,
+                                                self.surrogate_model,
+                                                self.rng,
+                                                budget=self._suggest_limit,
+                                                is_purn=True)
+        elif self._weight_srategy == 'zero':
+            self.weight_sratety = ZeroWeight(self.space, self.base_models,
+                                             self.surrogate_model, self.rng)
+        else:
+            raise NotImplementedError()
 
-opt_class = SMBO
+        if self._acq_func == 'mogp':
+            self.acquisition_func = MoGP_AcqFunc(self.surrogate_model,
+                                                 self.base_models, self.rng)
+        elif self._acq_func == 'taf':
+            self.acquisition_func = TAF_AcqFunc(self.surrogate_model,
+                                                self.base_models, self.rng)
+        elif self._acq_func == 'ei':
+            self.acquisition_func = EI_AcqFunc(self.surrogate_model, self.rng)
+        else:
+            raise NotImplementedError()
+
+        if self._acq_opt == 'ls':
+            self.acq_maximizer = LocalSearch(self.acquisition_func, self.space,
+                                             self.rng)
+        elif self._acq_opt == 'rs':
+            self.acq_maximizer = RandomSearch(self.acquisition_func,
+                                              self.space, self.rng)
+        elif self._acq_opt == 'rs_ls':
+            self.acq_maximizer = InterleavedLocalAndRandomSearch(
+                self.acquisition_func, self.space, self.rng)
+        elif self._acq_opt == 'scipy':
+            self.acq_maximizer = ScipyOptimizer(self.acquisition_func,
+                                                self.space, self.rng)
+        elif self._acq_opt == 'scipy_global':
+            self.acq_maximizer = ScipyGlobalOptimizer(self.acquisition_func,
+                                                      self.space, self.rng)
+        elif self._acq_opt == 'r_scipy':
+            self.acq_maximizer = RandomScipyOptimizer(self.acquisition_func,
+                                                      self.space, self.rng)
+        else:
+            raise ValueError('acq_opt {} not in {}'.format(
+                self._acq_opt,
+                ['ls', 'rs', 'rs_ls', 'scipy', 'scipy_global', 'r_scipy']))
+        logger.info(
+            "Execute Bayesian optimization...\n [Using ({})surrogate, ({})acquisition function, ({})acquisition optmizer]"
+            .format(self._surrogate, self._acq_func, self._acq_opt))
+
+opt_class = TransferBO

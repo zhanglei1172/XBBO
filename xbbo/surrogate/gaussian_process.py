@@ -404,22 +404,3 @@ class GPR_sklearn(BaseGP):
                 f_opt_star = f_opt
                 theta_star = theta
         return theta_star
-
-    # def _set_has_conditions(self) -> None:
-    #     has_conditions = len(self.configspace.get_conditions()) > 0
-    #     to_visit = []
-    #     to_visit.append(self.kernel)
-    #     while len(to_visit) > 0:
-    #         current_param = to_visit.pop(0)
-    #         if isinstance(current_param,
-    #                       sklearn.gaussian_process.kernels.KernelOperator):
-    #             to_visit.insert(0, current_param.k1)
-    #             to_visit.insert(1, current_param.k2)
-    #             current_param.has_conditions = has_conditions
-    #         elif isinstance(current_param,
-    #                         sklearn.gaussian_process.kernels.Kernel):
-    #             current_param.has_conditions = has_conditions
-    #         else:
-    #             raise ValueError(current_param)
-
-

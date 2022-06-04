@@ -1,10 +1,13 @@
+from typing import Optional
 import numpy as np
 import pickle, os, json
 from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
                                          OrdinalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
                                          UniformIntegerHyperparameter)
+import urllib
 
+import tqdm
 
 def dumpOBJ(path, filename, obj):
     with open(os.path.join(path, filename), 'wb') as f:
@@ -106,3 +109,20 @@ def create_rng(rng):
     else:
         raise ValueError("%s is neither a number nor a RandomState. "
                          "Initializing RandomState failed")
+        
+def download_and_extract_archive(
+    url: str,
+    download_root: str,
+    extract_root: Optional[str] = None,
+    filename: Optional[str] = None,
+    remove_finished: bool = False,
+) -> None:
+    download_root = os.path.expanduser(download_root)
+    if extract_root is None:
+        extract_root = download_root
+    if not filename:
+        filename = os.path.basename(url)
+
+    os.system('wget {} -O {} && unzip -d {} {}'.format(url,filename, extract_root, filename))
+    if remove_finished:
+        os.system('rm {}'.format(filename))
