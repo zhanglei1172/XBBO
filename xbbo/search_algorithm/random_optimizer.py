@@ -13,6 +13,7 @@ class RandomOptimizer(AbstractOptimizer):
             seed: int = 42,
             initial_design: str = 'random',
             #  min_sample=1,
+            init_budget: int = None,
             suggest_limit: int = np.inf,
             **kwargs):
         AbstractOptimizer.__init__(self,
@@ -23,12 +24,15 @@ class RandomOptimizer(AbstractOptimizer):
                                    suggest_limit=suggest_limit,
                                    **kwargs)
         self.initial_design = ALL_avaliable_design[initial_design](
-            self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
+            self.space,
+            self.rng,
+            ta_run_limit=suggest_limit,
+            init_budget=init_budget,**kwargs)
         self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
         )
         self.dimension = self.space.get_dimensions()
-        self.trials = Trials(space,dim=self.dimension)
+        self.trials = Trials(space, dim=self.dimension)
 
     def _suggest(self, n_suggestions=1):
         trial_list = []

@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # define search space
     cs = blackbox_func.get_configuration_space()
     # define black box optimizer
-    hpopt = RandomOptimizer(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol')
+    hpopt = RandomOptimizer(space=cs, seed=rng.randint(MAXINT), suggest_limit=MAX_CALL, initial_design='sobol',init_budget=50)
     # ---- Begin BO-loop ----
     for i in range(MAX_CALL):
         # suggest
