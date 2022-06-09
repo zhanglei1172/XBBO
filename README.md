@@ -50,7 +50,7 @@ We provide these black box optimization algorithms as follows:
 |    TAF(RGPE)     |       |                |
 |      RMoGP       |       |                |
 |    RGPE(mean)    |       |                |
-
+|       PSO        |       |                |
 
 # Links
 
