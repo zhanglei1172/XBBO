@@ -15,7 +15,7 @@ if __name__ == "__main__":
     # define search space
     cs = blackbox_func.get_configuration_space()
     # define black box optimizer
-    hpopt = RegularizedEA(space=cs, seed=rng.randint(MAXINT),pop_size=100)
+    hpopt = RegularizedEA(space=cs, seed=rng.randint(MAXINT),initial_budget=100)
     # ---- Begin BO-loop ----
     for i in range(MAX_CALL):
         # suggest
