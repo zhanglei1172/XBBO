@@ -6,7 +6,7 @@ import numpy as np
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace
 from xbbo.core.trials import Trial, Trials
-from . import alg_register
+from .. import alg_register
 
 
 @alg_register.register('nsga2')
