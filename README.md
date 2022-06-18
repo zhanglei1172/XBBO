@@ -30,27 +30,28 @@ This project is now supported by PengCheng Lab.
 
 We provide these black box optimization algorithms as follows:
 
-| Search Algorithm | Docs  | Official Links |
-| :--------------: | :---: | :------------: |
-|  BORE optimizer  |       |                |
-|      Anneal      |       |                |
-|        DE        |       |                |
-|       CMA        |       |                |
-|       NSGA       |       |                |
-|  Regularized EA  |       |                |
-|       PBT        |       |                |
-|      TuRBO       |       |                |
-|      LaMCTS      |       |                |
-|    HyperBand     |       |                |
-|       BOHB       |       |                |
-|       DEHB       |       |                |
-|     MFES-BO      |       |                |
-|      TST-R       |       |                |
-|       TAF        |       |                |
-|    TAF(RGPE)     |       |                |
-|      RMoGP       |       |                |
-|    RGPE(mean)    |       |                |
-|       PSO        |       |                |
+|    Search Algorithm    | Docs  | Official Links | multi-fideility | transfer | multi-obj |
+| :--------------------: | :---: | :------------: | :-------------: | :------: | :-------: |
+|         Random         |       |                |                 |          |           |
+|          BORE          |       |                |                 |          |           |
+|         Anneal         |       |                |                 |          |           |
+| Diffenential Evolution |       |                |                 |          |           |
+|         CMA-ES         |       |                |                 |          |           |
+|        NSGA-II         |       |                |                 |          |     √     |
+|     Regularized EA     |       |                |                 |          |           |
+|          PBT           |       |                |                 |          |           |
+|         TuRBO          |       |                |                 |          |           |
+|         LaMCTS         |       |                |                 |          |           |
+|       HyperBand        |       |                |        √        |          |           |
+|          BOHB          |       |                |        √        |          |           |
+|          DEHB          |       |                |        √        |          |           |
+|        MFES-BO         |       |                |        √        |          |           |
+|         TST-R          |       |                |                 |    √     |           |
+|          TAF           |       |                |                 |    √     |           |
+|       TAF(RGPE)        |       |                |                 |    √     |           |
+|         RMoGP          |       |                |                 |    √     |           |
+|       RGPE(mean)       |       |                |                 |    √     |           |
+|          PSO           |       |                |                 |          |           |
 
 # Links
 

@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from xbbo.search_algorithm.nsga_optimizer import NSGAII
+from xbbo.search_algorithm.multi_obj.nsga_optimizer import NSGAII
 from xbbo.problem.fast_example_problem import ZDT1
 from xbbo.core.constants import MAXINT
 
