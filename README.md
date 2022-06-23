@@ -72,36 +72,59 @@ pip install xbbo
 
 For detailed instructions, please refer to [**Installation.md**](./docs/Installation/Installation.md)
 
+## Search Space
+
+XBBO uses **configspace** as a tool to define search space. **Please see [ConfigSpace](https://automl.github.io/ConfigSpace/master/API-Doc.html) for how to define a search space.**
+
 ## Quick Start
 
 `note:`XBBO default **minimize** black box function. All examples can be found in `examples/` folder.
 
-```python
-import numpy as np
 
-from xbbo.search_space.fast_example_problem import build_space_hard, rosenbrock_2d_hard
+Here we take optimizing a quadratic function as a toy example:
+
+```python
+from ConfigSpace import ConfigurationSpace
+from ConfigSpace.hyperparameters import \
+    CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
+
 from xbbo.search_algorithm.bo_optimizer import BO
-from xbbo.utils.constants import MAXINT
+
+def custom_black_box_func(config):
+    '''
+    define black box function:
+    y = x^2
+    '''
+    return config['x'] ** 2
+
+def custom_search_space():
+    '''
+    define search space
+    '''
+    configuration_space = ConfigurationSpace()
+    configuration_space.add_hyperparameter(UniformFloatHyperparameter('x', -10, 10, default_value=-3))
+    return configuration_space
 
 if __name__ == "__main__":
-  MAX_CALL = 30
-  rng = np.random.RandomState(42)
+    MAX_CALL = 30
 
-  # define black box function
-  blackbox_func = rosenbrock_2d_hard
-  # define search space
-  cs = build_space_hard(rng)
-  # define black box optimizer
-  hpopt = BO(space=cs,
-              objective_function=blackbox_func,
-              seed=rng.randint(MAXINT),
-              suggest_limit=MAX_CALL)
+    cs = custom_search_space()
 
-  # ---- Use minimize API ----
-  hpopt.optimize()
-  best_value, best_config = hpopt.trials.get_best()
-  print('Find best value:{}'.format(best_value))
-  print('Best Config:{}'.format(best_config))
+    # specify black box optimizer
+    hpopt = BO(space=cs, suggest_limit=MAX_CALL)
+    # ---- Begin BO-loop ----
+    for i in range(MAX_CALL):
+        # suggest
+        trial_list = hpopt.suggest()
+        # evaluate 
+        obs = custom_black_box_func(trial_list[0].config_dict)
+        # observe
+        trial_list[0].add_observe_value(obs)
+        hpopt.observe(trial_list=trial_list)
+        
+        print(obs)
+    
+    print('find best (value, config):{}'.format(hpopt.trials.get_best()))
 ```
 
 Please refer to [**Quick Start.md**](./docs/QuickStart/QuickStart.md) for more information.
