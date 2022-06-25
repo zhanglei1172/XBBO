@@ -12,7 +12,7 @@ from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator, ConfigGenerator, SHBracketManager
 from xbbo.search_algorithm.random_optimizer import RandomOptimizer
 
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 from .. import alg_register
 
 class HB_CG(BasicConfigGenerator, RandomOptimizer):

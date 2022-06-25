@@ -9,7 +9,7 @@ import pandas as pd
 from matplotlib import rcParams
 
 from xbbo.utils.util import loadJson, loadOBJ
-from xbbo.utils.constants import Key
+from xbbo.core.constants import Key
 
 
 class Analyse():

@@ -12,7 +12,7 @@ from xbbo.core.trials import Trials, Trial
 from xbbo.search_algorithm.multi_fidelity.utils.bracket_manager import BasicConfigGenerator
 from xbbo.search_algorithm.tpe_optimizer import TPE
 from xbbo.search_algorithm.bo_optimizer import BO
-from xbbo.utils.constants import MAXINT, Key
+from xbbo.core.constants import MAXINT, Key
 from .. import alg_register
 
 class BOHB_CG_TPE(BasicConfigGenerator, TPE):

@@ -3,7 +3,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 #
-import torch
+# import torch
+from scipy.stats.qmc import Sobol
 import json
 import numpy as np
 import random
@@ -14,7 +15,7 @@ import warnings
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -24,7 +25,7 @@ import copy as cp
 from sklearn.svm import SVC
 from sklearn.linear_model import Ridge
 
-from torch.quasirandom import SobolEngine
+# from torch.quasirandom import SobolEngine
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import ConstantKernel, Matern
@@ -382,7 +383,9 @@ class Classifier():
     def propose_rand_samples_probe(self, nums_samples, path, lb, ub):
 
         seed = self.rng.randint(int(1e6))
-        sobol = SobolEngine(dimension=self.dims, scramble=True, seed=seed)
+        sobol = Sobol(d=self.dims,
+                          scramble=True,
+                          seed=seed)
 
         center = np.mean(self.true_X, axis=0)
         #check if the center located in the region
@@ -409,8 +412,7 @@ class Classifier():
                     break
                 lb_ = np.clip(center - L / 2, lb, ub)
                 ub_ = np.clip(center + L / 2, lb, ub)
-                cands_ = sobol.draw(10000).to(
-                    dtype=torch.float64).cpu().detach().numpy()
+                cands_ = sobol.random(10000)
                 cands_ = (ub_ - lb_) * cands_ + lb_
                 ratio, tmp = self.get_sample_ratio_in_region(cands_, path)
             final_L.append(L[axis])
@@ -427,8 +429,7 @@ class Classifier():
         cands = np.array([])
         while len(cands) < 10000:
             count += 10000
-            cands = sobol.draw(count).to(
-                dtype=torch.float64).cpu().detach().numpy()
+            cands = sobol.random(count)
 
             cands = (ub_ - lb_) * cands + lb_
             ratio, cands = self.get_sample_ratio_in_region(cands, path)
@@ -443,9 +444,9 @@ class Classifier():
         #rejected sampling
         selected_cands = np.zeros((1, self.sample_dims))
         seed = self.rng.randint(int(1e6))
-        sobol = SobolEngine(dimension=self.sample_dims,
-                            scramble=True,
-                            seed=seed)
+        sobol = Sobol(d=self.sample_dims,
+                          scramble=True,
+                          seed=seed)
 
         # scale the samples to the entire search space
         # ----------------------------------- #
@@ -479,11 +480,13 @@ class Classifier():
         for center in centers:
             center = self.true_X[self.rng.randint(len(self.true_X))]
             if self.use_gpr:
-                cands = sobol.draw(2000).to(
-                    dtype=torch.float64).cpu().detach().numpy()
+                cands = sobol.random(2000)
+                # cands = sobol.draw(2000).to(
+                #     dtype=torch.float64).cpu().detach().numpy()
             else:  # just taking random samples, not reranking by expected improvement, so don't need as many
-                cands = sobol.draw(20).to(
-                    dtype=torch.float64).cpu().detach().numpy()
+                cands = sobol.random(20)
+                # cands = sobol.draw(20).to(
+                #     dtype=torch.float64).cpu().detach().numpy()
             ratio = 1
             L = 0.0001
             Blimit = np.max(ub - lb)
@@ -607,8 +610,8 @@ class Classifier():
             max_cholesky_size=2000,  # When we switch from Cholesky to Lanczos
             n_training_steps=50,  # Number of steps of ADAM to learn the hypers
             min_cuda=1024,  #  Run on the CPU for small datasets
-            device="cuda"
-            if torch.cuda.is_available() else "cpu",  # "cpu" or "cuda"
+            device="cuda",
+            # if torch.cuda.is_available() else "cpu",  # "cpu" or "cuda"
             dtype="float32",  # float64 or float32
             X_init=X_init,
         )

@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 import statsmodels.api as sm
 import scipy.stats as sps
 from xbbo.configspace.space import DenseConfiguration
-from xbbo.utils.constants import MAXINT, Key
+from xbbo.core.constants import MAXINT, Key
 
 logger = logging.getLogger(__name__)
 

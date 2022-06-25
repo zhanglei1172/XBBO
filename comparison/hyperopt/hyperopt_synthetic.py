@@ -1,7 +1,7 @@
 # Import HyperOpt Library
 from hyperopt import tpe, atpe, mix, anneal, rand, hp, fmin, Trials
 
-from xbbo.search_space.fast_example_problem import branin
+from xbbo.problem.fast_example_problem import branin
 
 import numpy as np
 

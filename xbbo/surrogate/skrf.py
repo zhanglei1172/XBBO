@@ -7,7 +7,7 @@ from typing import List, Optional, Tuple, Union
 
 from xbbo.surrogate.base import BaseRF
 from xbbo.configspace.space import DenseConfigurationSpace
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 from xbbo.utils.util import get_types
 
 

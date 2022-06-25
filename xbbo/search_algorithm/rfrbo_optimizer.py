@@ -14,7 +14,7 @@ from xbbo.initial_design import ALL_avaliable_design
 from xbbo.surrogate.gaussian_process import GPR_sklearn
 
 
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 from . import alg_register
 
 logger = logging.getLogger(__name__)

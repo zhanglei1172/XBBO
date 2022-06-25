@@ -7,7 +7,7 @@ import gc
 from xbbo.pipeline.bbo_benchmark import BBObenchmark
 from xbbo.utils.analysis import Analyse, Analyse_multi_benchmark
 from xbbo.utils.config import cfg, load_cfg_fom_args
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 from xbbo.utils.util import dumpJson
 
 exp = []

@@ -8,7 +8,7 @@ import ConfigSpace
 from xbbo.search_algorithm.base import AbstractOptimizer
 from xbbo.configspace.space import DenseConfiguration, DenseConfigurationSpace, deactivate_inactive_hyperparameters
 from xbbo.core.trials import Trial, Trials
-from xbbo.utils.constants import MAXINT
+from xbbo.core.constants import MAXINT
 from . import alg_register
 from xbbo.initial_design import ALL_avaliable_design
 
