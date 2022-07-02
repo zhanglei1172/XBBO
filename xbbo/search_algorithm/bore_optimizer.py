@@ -5,6 +5,7 @@ from scipy.optimize import minimize, OptimizeResult
 from sklearn.ensemble import RandomForestClassifier
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
+from xbbo.search_algorithm.lfbo_optimizer import Classfify
 
 from . import alg_register
 from xbbo.search_algorithm.base import AbstractOptimizer
@@ -175,35 +176,6 @@ class BORE(AbstractOptimizer):
         return not is_duplicate
 
 
-class Classfify():
-    def __init__(self, classify: str = 'rf'):
-        if classify == 'rf':
-            self.model = RandomForestClassifier(n_estimators=25)
-        else:
-            raise NotImplementedError()
-
-    def fit(self, X, z):
-        self.model.fit(X, z.ravel())
-
-    def predict(self, x):
-        if x.ndim == 1:
-            x = x.reshape(1, -1)
-        return 1 - self.model.predict_proba(x)[:, 1]
-
-
-def from_bounds(bounds):
-
-    if isinstance(bounds, Bounds):
-        low = bounds.lb
-        high = bounds.ub
-        dim = len(low)
-        assert dim == len(high), "lower and upper bounds sizes do not match!"
-    else:
-        # assumes `bounds` is a list of tuples
-        low, high = zip(*bounds)
-        dim = len(bounds)
-
-    return (low, high), dim
 
 
 opt_class = BORE
