@@ -11,7 +11,7 @@ OPTM:
   name: pbt_optimizer
   epoch: 10
   interval: 0.5
-  max_call: 0
+  suggest_limit: 0
   pop_size: 10
   n_suggestions: 1
   n_obj: 1

@@ -116,11 +116,11 @@ def benchmark(test_algs,
 
 if __name__ == "__main__":
     # bore currently has some bugs
-    test_algs = ["bore"
+    test_algs = ["pso"
         # 'anneal', 'basic-bo', 'tpe', 'cem', 'cma-es', 'de', 'rs', 'rea',
         # 'turbo-1',
         # 'turbo-2',
-        # 'bore'
+        # 'bore', 'lfbo','xnes'
     ]  # 'nsga2','bo-transfer','pbt'
     benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')
     # benchmark(test_algs, run_one_exp, 40, 1, 42, desc='XBBO') # for fast test

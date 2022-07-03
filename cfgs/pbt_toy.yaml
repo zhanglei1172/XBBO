@@ -12,7 +12,7 @@ OPTM:
   epoch: 200
   interval: 5.0
 
-#  max_call: 0
+#  suggest_limit: 0
   pop_size: 2
   n_suggestions: 1
   n_obj: 1

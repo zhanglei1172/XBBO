@@ -14,9 +14,9 @@ from xbbo.core.constants import MAXINT, Key
 
 @problem_register.register('Ackley')
 class Ackley(AbstractBenchmark):
-    def __init__(self, dim=10, rng=np.random.RandomState(42)):
-        self.dims      = dim
-        self.keys = ["x_{}".format(i) for i in range(self.dims)]
+    def __init__(self, dim=10, rng=np.random.RandomState(), **kwargs):
+        self.dim      = dim
+        self.keys = ["x_{}".format(i) for i in range(self.dim)]
         super().__init__(rng)
         self.get_configuration_space()
         
@@ -50,7 +50,7 @@ class Ackley(AbstractBenchmark):
 
 @problem_register.register('Branin')
 class Branin(AbstractBenchmark):
-    def __init__(self, dim=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim=2, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 2, "ERROR: Current only support 2dim branin"
         self.dim = dim
         super().__init__(rng)
@@ -85,7 +85,7 @@ class Branin(AbstractBenchmark):
 
 @problem_register.register('Rosenbrock')
 class Rosenbrock(AbstractBenchmark):
-    def __init__(self, dim:int=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim:int=2, rng=np.random.RandomState(), **kwargs) -> None:
         self.dim = dim
         self.keys = ["x_{}".format(i) for i in range(self.dim)]
         super().__init__(rng)
@@ -120,7 +120,7 @@ class Rosenbrock(AbstractBenchmark):
 
 @problem_register.register('Forrester')
 class Forrester(AbstractBenchmark):
-    def __init__(self, dim:int=1, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim:int=1, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 1, "ERROR: Current only support 1dim Forrester"
         self.dim = dim
         super().__init__(rng)
@@ -151,7 +151,7 @@ class Forrester(AbstractBenchmark):
 
 @problem_register.register('Sinusoid')
 class Sinusoid(AbstractBenchmark):
-    def __init__(self, dim:int=1, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim:int=1, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 1, "ERROR: Current only support 1dim Sinusoid"
         self.dim = dim
         super().__init__(rng)
@@ -182,7 +182,7 @@ class Sinusoid(AbstractBenchmark):
 
 @problem_register.register('StyblinskiTang')
 class StyblinskiTang(AbstractBenchmark):
-    def __init__(self, dim:int=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim:int=2, rng=np.random.RandomState(), **kwargs) -> None:
         self.dim = dim
         self.keys = ["x_{}".format(i) for i in range(self.dim)]
         super().__init__(rng)
@@ -218,7 +218,7 @@ class StyblinskiTang(AbstractBenchmark):
 
 @problem_register.register('Michalewicz')
 class Michalewicz(AbstractBenchmark):
-    def __init__(self, dim:int=2, rng=np.random.RandomState(42), m=10) -> None:
+    def __init__(self, dim:int=2, rng=np.random.RandomState(), m=10) -> None:
         self.dim = dim
         self.m = m
         self.keys = ["x_{}".format(i) for i in range(self.dim)]
@@ -268,7 +268,7 @@ class Michalewicz(AbstractBenchmark):
 
 @problem_register.register('Hartmann')
 class Hartmann(AbstractBenchmark):
-    def __init__(self, dim, A, P, alpha=np.array([1.0, 1.2, 3.0, 3.2]), rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim, A, P, alpha=np.array([1.0, 1.2, 3.0, 3.2]), rng=np.random.RandomState(), **kwargs) -> None:
         self.dim = dim
         self.keys = ["x_{}".format(i) for i in range(self.dim)]
         self.A = A
@@ -305,7 +305,7 @@ class Hartmann(AbstractBenchmark):
     
 @problem_register.register('Hartmann3D')
 class Hartmann3D(Hartmann):
-    def __init__(self, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, rng=np.random.RandomState(), **kwargs) -> None:
         dim = 3
         self.keys = ["x_{}".format(i) for i in range(self.dim)]
         A = np.array([[3.0, 10.0, 30.0],
@@ -330,7 +330,7 @@ class Hartmann3D(Hartmann):
 @problem_register.register('Hartmann6D')
 class Hartmann6D(Hartmann):
 
-    def __init__(self, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, rng=np.random.RandomState(), **kwargs) -> None:
         A = np.array([[10.0,  3.0, 17.0,  3.5,  1.7,  8.0],
                       [0.05, 10.0, 17.0,  0.1,  8.0, 14.0],
                       [3.0,  3.5,  1.7, 10.0, 17.0,  8.0],
@@ -346,7 +346,7 @@ class Hartmann6D(Hartmann):
 
 @problem_register.register('GoldsteinPrice')
 class GoldsteinPrice(AbstractBenchmark):
-    def __init__(self, dim=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim=2, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 2, "ERROR: Current only support 2dim GoldsteinPrice"
         self.dim = dim
         super().__init__(rng)
@@ -384,7 +384,7 @@ class GoldsteinPrice(AbstractBenchmark):
 
 @problem_register.register('SixHumpCamel')
 class SixHumpCamel(AbstractBenchmark):
-    def __init__(self, dim=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim=2, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 2, "ERROR: Current only support 2dim SixHumpCamel"
         self.dim = dim
         super().__init__(rng)
@@ -419,7 +419,7 @@ class SixHumpCamel(AbstractBenchmark):
 
 @problem_register.register('Bliznyuk')
 class Bliznyuk(AbstractBenchmark):
-    def __init__(self, dim=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim=2, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 2, "ERROR: Current only support 4dim Bliznyuk"
         self.dim = dim
         super().__init__(rng)
@@ -464,7 +464,7 @@ class Bliznyuk(AbstractBenchmark):
 
 @problem_register.register('ZDT1')
 class ZDT1(AbstractBenchmark):
-    def __init__(self, dim=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim=2, rng=np.random.RandomState(), **kwargs) -> None:
         assert dim == 2, "ERROR: Current only support 2dim ZDT1"
         self.dim = dim
         super().__init__(rng)
@@ -500,7 +500,7 @@ class ZDT1(AbstractBenchmark):
 
 @problem_register.register('ContingOnes')
 class CountingOnes(AbstractBenchmark):
-    def __init__(self, n_categorical=1, n_continuous=1, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, n_categorical=1, n_continuous=1, rng=np.random.RandomState(), **kwargs) -> None:
         self.n_categorical = n_categorical
         self.n_continuous = n_continuous
         self.float_keys = ["float_{}".format(i) for i in range(self.n_continuous)]
@@ -540,7 +540,7 @@ class CountingOnes(AbstractBenchmark):
 
 @problem_register.register('SVM')
 class SVM_hyperparam_search(AbstractBenchmark):
-    def __init__(self, dim=2, rng=np.random.RandomState(42)) -> None:
+    def __init__(self, dim=2, rng=np.random.RandomState(), **kwargs) -> None:
         self.dim = dim
         super().__init__(rng)
         self.get_configuration_space()
@@ -626,7 +626,7 @@ class SVM_hyperparam_search(AbstractBenchmark):
     
 @problem_register.register('NasBench201')
 class NasBench201(AbstractBenchmark):
-    def __init__(self, dataset_name, input_dir,rng=np.random.RandomState(42)):
+    def __init__(self, dataset_name='cifar10-valid', input_dir='./nasbench201/',rng=np.random.RandomState()):
         self.INPUT = 'input'
         self.OUTPUT = 'output'
         self.OPS = ['avg_pool_3x3', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'skip_connect']
@@ -701,9 +701,11 @@ class NasBench201(AbstractBenchmark):
 @problem_register.register('FCNet')
 class FCNet(AbstractBenchmark):
     '''
+    wget -P ./datasets/ http://ml4aad.org/wp-content/uploads/2019/01/fcnet_tabular_benchmarks.tar.gz
+    tar xf fcnet_tabular_benchmarks.tar.gz
     install HPOBench: https://github.com/automl/nas_benchmarks
     '''
-    def __init__(self, dataset_name, input_dir, rng=np.random.RandomState(42)):
+    def __init__(self, dataset_name="protein", input_dir='./datasets', rng=np.random.RandomState(), **kwargs):
         from pathlib import Path
         from tabular_benchmarks import (FCNetProteinStructureBenchmark,
                                         FCNetSliceLocalizationBenchmark,
@@ -727,12 +729,15 @@ class FCNet(AbstractBenchmark):
         self.get_configuration_space()
     
     @AbstractBenchmark._check_configuration
-    def objective_function(self, config, budget=100, deterministic=False,**kwargs):
+    def objective_function(self, config, budget=None, deterministic=False,**kwargs):
         y, cost = self.benchmark.objective_function(config)
         return {Key.FUNC_VALUE: y, Key.COST: cost}
 
     def get_configuration_space(self):
-        return self.benchmark.get_configuration_space(self.rng)
+        if hasattr(self, "configuration_space"):
+            return self.configuration_space
+        self.configuration_space = self.benchmark.get_configuration_space()
+        return self.configuration_space
 
     def get_minimum(self):
 

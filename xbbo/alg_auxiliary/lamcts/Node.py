@@ -30,7 +30,7 @@ class Node:
                  gamma_type="auto",
                  verbose=False,
                  normalize=True,
-                 rng=np.random.RandomState(42),
+                 rng=np.random.RandomState(),
                  split_use_predict=True,
                  **kwargs):
         # Note: every node is initialized as a leaf,

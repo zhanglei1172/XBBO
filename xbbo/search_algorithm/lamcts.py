@@ -56,15 +56,17 @@ class LaMCTS(AbstractOptimizer):
                 "LaMCTS optimizer currently does not support conditional space!"
             )
         self.dimension = self.space.get_dimensions()
+        self.init_budget = init_budget
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space,
             self.rng,
             ta_run_limit=suggest_limit,
             init_budget=init_budget,
             **kwargs)
-        self.init_budget = self.initial_design.init_budget
+        if self.init_budget is None:
+            self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
-        )
+        )[:self.init_budget]
         self.bounds = self.space.get_bounds()
         if split_latent_model == 'identity':
             self.split_latent_converter = LatentConverterIdentity(

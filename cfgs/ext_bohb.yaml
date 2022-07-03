@@ -10,7 +10,7 @@ GENERAL:
 OPTM:
   name: ext_bohb
   n_suggestions: 1
-  # max_call: 30
+  # suggest_limit: 30
   kwargs:
     bracket_limit: 50
     # round_limit: 4

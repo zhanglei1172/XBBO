@@ -65,7 +65,7 @@ class PBT(AbstractOptimizer):
     def __init__(
             self,
             space: ConfigurationSpace,
-            pop_size: int = 30,
+            init_budget: int = 30,
             initial_design: str = 'random',
             seed: int = 42,
             fraction: float = 0.2,
@@ -84,18 +84,17 @@ class PBT(AbstractOptimizer):
 
         self.rng = np.random.RandomState(seed)
         self.dimension = self.space.get_dimensions()
-        self.pop_size = pop_size if pop_size else 4 + math.floor(
+        self.init_budget = init_budget if init_budget else 4 + math.floor(
             3 * math.log(self.dimension))
-        self.pop_size = pop_size
-        self.init_budget = pop_size
+        self.init_budget = init_budget
 
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, init_budget=self.init_budget)
-
+        if self.init_budget is None:
+            self.init_budget = self.initial_design.init_budget
         # self.population_hp = [{'h1':1.0, 'h2':0.0}, {'h1':0.0,'h2':1.0}]
-        self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
-        )
+        )[:self.init_budget]
         self.population_configs = self.initial_design_configs
         self.population_hp_array = convert_denseConfigurations_to_array(
             self.population_configs)
@@ -127,14 +126,14 @@ class PBT(AbstractOptimizer):
         for i in range(int(epoch_num*len(population_model[0]))):
             while not finished:
                 # parallel training with respective config
-                for i in range(self.pop_size):
+                for i in range(self.init_budget):
                     population_model[i].step(
                         int(interval * len(population_model[i])))
                     if population_model[i].step_num == int(
                             len(population_model[i]) * epoch_num):
                         finished = True
                 # parallel evalueate with respective config
-                for i in range(self.pop_size):
+                for i in range(self.init_budget):
                     population_model[i].evaluate()
                 losses = [net.loss for net in population_model]
                 assert np.any(np.isfinite(losses)), "ERROR: At Least 1 loss is finite"
