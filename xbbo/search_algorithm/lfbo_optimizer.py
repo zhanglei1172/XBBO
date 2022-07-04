@@ -230,6 +230,8 @@ def _load_class(classname='XGBClassify'):
     if classname == 'XGBClassify':
         from xgboost import XGBClassifier
         class XGBClassify(XGBClassifier):
+            def fit(self,*args, **kwargs):
+                return super().fit(*args, eval_metric='logloss', callbacks=[], verbose=False, **kwargs)
             def predict_proba(self,*args, **kwargs):
                 return super().predict_proba(*args, **kwargs)[:,-1]
         return XGBClassify
@@ -270,10 +272,11 @@ def _load_class(classname='XGBClassify'):
                 self.num_units = num_units
                 seed = random_state.randint(MAXINT)
                 torch.manual_seed(seed)
+                self.net = Network(self.input_dim,self.output_dim, self.num_layers, self.num_units)
+                self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-4, weight_decay=0.0)
+
 
             def fit(self, X, z, sample_weight):
-                self.net = Network(self.input_dim,self.output_dim, self.num_layers, self.num_units)
-                optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-4, weight_decay=0.0)
                 batch_size = 64
 
                 X = torch.tensor(X, dtype=torch.float)
@@ -285,11 +288,11 @@ def _load_class(classname='XGBClassify'):
 
                 for i in range(500):
                     for x, y, w in loader:
-                        optimizer.zero_grad()
+                        self.optimizer.zero_grad()
                         y_ = self.net(x)
                         loss = nn.BCEWithLogitsLoss(weight=w)(y_, y)
                         loss.backward()
-                        optimizer.step()
+                        self.optimizer.step()
             
             def predict_proba(self, x):
                 x = torch.tensor(x, dtype=torch.float)
