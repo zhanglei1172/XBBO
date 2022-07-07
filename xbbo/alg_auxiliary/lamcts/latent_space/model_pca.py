@@ -9,7 +9,7 @@ from sklearn.decomposition import PCA
 
 
 class LatentConverterPCA:
-    def __init__(self,  bounds, dim, latent_dim, rng=np.random.RandomState(42), **kwargs):
+    def __init__(self,  bounds, dim, latent_dim, rng=np.random.RandomState(), **kwargs):
         self.latent_dim = latent_dim
         self.dim = dim
         self.bounds = bounds

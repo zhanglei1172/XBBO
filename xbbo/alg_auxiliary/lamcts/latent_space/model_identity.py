@@ -19,7 +19,7 @@ import numpy as np
 #         return x
 
 class LatentConverterIdentity:
-    def __init__(self, bounds, dim, latent_dim, device='cpu', rng=np.random.RandomState(42), **kwargs):
+    def __init__(self, bounds, dim, latent_dim, device='cpu', rng=np.random.RandomState(), **kwargs):
         self.device = device
         self.reset()
         self.rng = rng

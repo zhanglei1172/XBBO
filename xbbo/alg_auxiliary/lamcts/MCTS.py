@@ -49,7 +49,7 @@ class MCTS:
             leaf_size=20,
             splitter_type='kmeans',
             normalize=True,
-            rng=np.random.RandomState(42),
+            rng=np.random.RandomState(),
             split_use_predict=True,
             verbose=False,
             **kwargs):

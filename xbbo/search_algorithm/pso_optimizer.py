@@ -44,7 +44,9 @@ class PSO(AbstractOptimizer):
             ta_run_limit=suggest_limit,
             init_budget=init_budget,
             **kwargs)
-        self.init_budget = self.initial_design.init_budget
+        self.init_budget = init_budget
+        if self.init_budget is None:
+            self.init_budget = self.initial_design.init_budget
         self.pop_size = self.init_budget
         self.trials = Trials(space, dim=self.dimension)
 
@@ -53,7 +55,7 @@ class PSO(AbstractOptimizer):
         self.cur = 0
         self.gen = 0
         self.initial_design_configs = self.initial_design.select_configurations(
-        )
+        )[:self.init_budget]
         self.population_X = np.asarray([
             config.get_array(sparse=False)
             for config in self.initial_design_configs

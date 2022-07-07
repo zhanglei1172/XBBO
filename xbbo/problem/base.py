@@ -23,6 +23,7 @@ class AbstractBenchmark(object, metaclass=abc.ABCMeta):
         self.counter   = 0
 
         self.rng = create_rng(rng)
+        self.get_configuration_space()
         # self.configuration_space = self.get_configuration_space()
 
     @abc.abstractmethod

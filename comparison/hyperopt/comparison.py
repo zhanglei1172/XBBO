@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from hyperopt_synthetic import run_one_exp as hyperopt_synthetic_opt
+from xbbo.core.constants import MAXINT
 from xbbo_synthetic import run_one_exp as xbbo_synthetic_opt
 
 max_call = 50
@@ -10,7 +11,7 @@ if __name__ == "__main__":
     rng = np.random.RandomState(42)
     result_opts = defaultdict(list)
     for i in range(3):
-        seed = rng.randint(1e5)
+        seed = rng.randint(MAXINT)
         # result_opts['hyperopt-rand'].append(hyperopt_synthetic_opt('rand', max_call,seed))
         result_opts['hyperopt-tpe'].append(hyperopt_synthetic_opt('tpe', max_call,seed))
         # result_opts['hyperopt-atpe'].append(hyperopt_synthetic_opt('atpe', max_call,seed))

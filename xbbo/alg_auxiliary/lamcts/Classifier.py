@@ -68,7 +68,7 @@ class Classifier():
                  normalize=True,
                  verbose=False,
                  split_use_predict=True,
-                 rng=np.random.RandomState(42),
+                 rng=np.random.RandomState(),
                  dynamic_C=True,
                  **kwargs):
         self.training_counter = 0
