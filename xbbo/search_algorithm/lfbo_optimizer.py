@@ -273,7 +273,7 @@ def _load_class(classname='XGBClassify'):
                 seed = random_state.randint(MAXINT)
                 torch.manual_seed(seed)
                 self.net = Network(self.input_dim,self.output_dim, self.num_layers, self.num_units)
-                self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-4, weight_decay=0.0)
+                self.optimizer = torch.optim.Adam(self.net.parameters(), lr=1e-3, weight_decay=0.0)
 
 
             def fit(self, X, z, sample_weight):
@@ -286,7 +286,7 @@ def _load_class(classname='XGBClassify'):
                 dataset = TensorDataset(X, z, sample_weight)
                 loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=False)
 
-                for i in range(500):
+                for i in range(100//len(loader)):
                     for x, y, w in loader:
                         self.optimizer.zero_grad()
                         y_ = self.net(x)
