@@ -116,7 +116,7 @@ def benchmark(test_algs,
 
 if __name__ == "__main__":
     # bore currently has some bugs
-    test_algs = ["pso"
+    test_algs = ["lfbo"
         # 'anneal', 'basic-bo', 'tpe', 'cem', 'cma-es', 'de', 'rs', 'rea',
         # 'turbo-1',
         # 'turbo-2',
