@@ -6,9 +6,10 @@ import numpy as np
 from ConfigSpace import ConfigurationSpace
 from ConfigSpace import UniformFloatHyperparameter, Constant
 
-from xbbo.problem.fast_example_problem import branin
+from xbbo.problem.fast_example_problem import Branin
 # from xbbo.configspace.space import ConfigurationSpace
 from xbbo.search_algorithm import alg_register
+from xbbo.core.constants import MAXINT
 
 
 def run_one_exp(opt_name, max_call, seed):
@@ -34,11 +35,8 @@ def run_one_exp(opt_name, max_call, seed):
         # }
     }
     # Build Configuration Space which defines all parameters and their ranges
-    cs = ConfigurationSpace(seed=seed)
-    x1 = UniformFloatHyperparameter("x1", -5, 10, default_value=0)
-    x3 = UniformFloatHyperparameter("x2", 0, 15, default_value=0)
-    # x2 = Constant("x3", 0)
-    cs.add_hyperparameters([x1, x3])
+    bbFunc = Branin(rng=seed)
+    cs = bbFunc.get_configuration_space()
     if opt_name in option_kwargs:
         dic = option_kwargs[opt_name]
         hpopt = alg_register[dic['name']](space=cs,
@@ -58,7 +56,7 @@ def run_one_exp(opt_name, max_call, seed):
         trial_list = hpopt.suggest()
         # evaluate
         for trial in trial_list:
-            value = branin(trial.config_dict)
+            value = bbFunc(trial.config_dict)
             # observe
             trial.add_observe_value(observe_value=value)
         hpopt.observe(trial_list=trial_list)
@@ -82,7 +80,7 @@ def benchmark(test_algs,
         rng = np.random.RandomState(father_seed)
         results_ = []
         for _ in range(repeat_num):
-            seed = rng.randint(1e5)
+            seed = rng.randint(MAXINT)
             losses = func_to_call(test_alg, max_call, seed)
             res = [losses.min(), losses.argmin() + 1]
 
@@ -118,11 +116,11 @@ def benchmark(test_algs,
 
 if __name__ == "__main__":
     # bore currently has some bugs
-    test_algs = ["tpe"
+    test_algs = ["lfbo"
         # 'anneal', 'basic-bo', 'tpe', 'cem', 'cma-es', 'de', 'rs', 'rea',
         # 'turbo-1',
         # 'turbo-2',
-        # 'bore'
+        # 'bore', 'lfbo','xnes'
     ]  # 'nsga2','bo-transfer','pbt'
     benchmark(test_algs, run_one_exp, 200, 10, 42, desc='XBBO')
     # benchmark(test_algs, run_one_exp, 40, 1, 42, desc='XBBO') # for fast test

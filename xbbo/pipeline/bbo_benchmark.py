@@ -6,6 +6,7 @@ import numpy as np
 
 from xbbo.core.trials import Trial, Trials
 
+from xbbo.problem import problem_register
 from xbbo.search_algorithm import alg_register
 from xbbo.core.constants import MAXINT, Key
 from xbbo.utils.util import dumpJson, dumpOBJ
@@ -49,6 +50,7 @@ class BBObenchmark:
             seed=self.rng.randint(MAXINT),
             budget_bound=[self.min_budget, self.max_budget],
             objective_function=self._call_obj,
+            suggest_limit=self.cfg.OPTM.suggest_limit,
             **dict(self.cfg.OPTM.kwargs))
 
         self.n_suggestions = self.cfg.OPTM.n_suggestions
@@ -191,7 +193,16 @@ class BBObenchmark:
             # y_star_test = b.y_star_test
             # inc_config = None
         else:
-            raise NotImplementedError
+            assert problem_name in problem_register
+            problem = problem_register[problem_name](rng=seed, **kwargs)
+            cs = problem.get_configuration_space()
+            # seed=seed)
+            # dimensions = len(cs.get_hyperparameters())
+            # self.min_budget = kwargs.get("min_budget", 576 / dimensions)
+            # self.max_budget = kwargs.get("max_budget", 93312 / dimensions)
+            # self.y_star_test = -dimensions
+            self._objective_function = problem.objective_function
+            self._objective_function_test = problem.objective_function_test
 
         return problem, cs
 
@@ -207,7 +218,7 @@ class BBObenchmark:
         budget = kwargs.get(Key.BUDGET)
         r = {}
         if budget is None:
-            kwargs[Key.BUDGET] = self.max_budget
+            kwargs[Key.BUDGET] = 1 if self.max_budget is None else self.max_budget
         res = self._objective_function(config, **kwargs)
         r.update(kwargs)
         r.update(res)

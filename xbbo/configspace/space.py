@@ -31,7 +31,7 @@ class Bin():
         # array_sparse[self.src] = np.round(array_dense[self.trg]*(self.sizes-1))
         return array_sparse
     def invconvert(self, array_dense, array_sparse):
-        array_dense[self.trg] = array_sparse[self.src] / self.sizes #+ self.bins_width/2
+        array_dense[self.trg] = array_sparse[self.src] / self.sizes + self.bins_width/2
         return array_dense
     def get_bounds(self,):
         return np.zeros(len(self.trg)), np.ones(len(self.trg))
@@ -239,13 +239,13 @@ class DenseConfigurationSpace(CS.ConfigurationSpace):
 
             elif isinstance(hp, (CSH.OrdinalHyperparameter)):
                 cat_size = len(hp.sequence)
-                if self.encoding_cat == 'one-hot':
+                if self.encoding_ord == 'one-hot':
                     oh_cats.append((src_ind, trg_ind, cat_size))
                     trg_ind += cat_size
-                elif self.encoding_cat == 'bin':
+                elif self.encoding_ord == 'bin':
                     bin_cats.append((src_ind, trg_ind, cat_size))
                     trg_ind += 1
-                elif self.encoding_cat == 'round':
+                elif self.encoding_ord == 'round':
                     round_cats.append((src_ind, trg_ind, cat_size))
                     trg_ind += 1
                 else:

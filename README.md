@@ -5,6 +5,7 @@
 <p>
 	<a href="https://img.shields.io/badge/Python-%3E%3D3.7-blue"><img src="https://img.shields.io/badge/Python-%3E%3D3.7-blue"></a>
 	<a href="https://img.shields.io/badge/License-MIT-brightgreen"><img src="https://img.shields.io/badge/License-MIT-brightgreen"></a>
+      <a href="https://pypi.org/project/XBBO/"><img src="https://img.shields.io/badge/PyPI-XBBO-yellowgreen.svg"></a>
   <a href="https://xbbo.readthedocs.io/en/latest/?badge=latest"><img src="https://readthedocs.org/projects/xbbo/badge/?version=latest"></a>
   <!-- <a href="https://img.shields.io/badge/Docs-latest-yellowgreen"><img src="https://img.shields.io/badge/Docs-latest-yellowgreen"></a> -->
 </p>
@@ -30,28 +31,30 @@ This project is now supported by PengCheng Lab.
 
 We provide these black box optimization algorithms as follows:
 
-|    Search Algorithm    | Docs  | Official Links | multi-fideility | transfer | multi-obj |
-| :--------------------: | :---: | :------------: | :-------------: | :------: | :-------: |
-|         Random         |       |                |                 |          |           |
-|          BORE          |       |                |                 |          |           |
-|         Anneal         |       |                |                 |          |           |
-| Diffenential Evolution |       |                |                 |          |           |
-|         CMA-ES         |       |                |                 |          |           |
-|        NSGA-II         |       |                |                 |          |     √     |
-|     Regularized EA     |       |                |                 |          |           |
-|          PBT           |       |                |                 |          |           |
-|         TuRBO          |       |                |                 |          |           |
-|         LaMCTS         |       |                |                 |          |           |
-|       HyperBand        |       |                |        √        |          |           |
-|          BOHB          |       |                |        √        |          |           |
-|          DEHB          |       |                |        √        |          |           |
-|        MFES-BO         |       |                |        √        |          |           |
-|         TST-R          |       |                |                 |    √     |           |
-|          TAF           |       |                |                 |    √     |           |
-|       TAF(RGPE)        |       |                |                 |    √     |           |
-|         RMoGP          |       |                |                 |    √     |           |
-|       RGPE(mean)       |       |                |                 |    √     |           |
-|          PSO           |       |                |                 |          |           |
+|    Search Algorithm    | Docs  |                 Official Links                  | multi-fideility | transfer | multi-obj |
+| :--------------------: | :---: | :---------------------------------------------: | :-------------: | :------: | :-------: |
+|         Random         |       |                                                 |                 |          |           |
+|          BORE          |       |                                                 |                 |          |           |
+|         Anneal         |       |                                                 |                 |          |           |
+| Diffenential Evolution |       |                                                 |                 |          |           |
+|         CMA-ES         |       |                                                 |                 |          |           |
+|        NSGA-II         |       |                                                 |                 |          |     √     |
+|     Regularized EA     |       |                                                 |                 |          |           |
+|          PBT           |       |                                                 |                 |          |           |
+|         TuRBO          |       |                                                 |                 |          |           |
+|         LaMCTS         |       |                                                 |                 |          |           |
+|       HyperBand        |       |                                                 |        √        |          |           |
+|          BOHB          |       |                                                 |        √        |          |           |
+|          DEHB          |       |                                                 |        √        |          |           |
+|        MFES-BO         |       |                                                 |        √        |          |           |
+|         TST-R          |       |                                                 |                 |    √     |           |
+|          TAF           |       |                                                 |                 |    √     |           |
+|       TAF(RGPE)        |       |                                                 |                 |    √     |           |
+|         RMoGP          |       |                                                 |                 |    √     |           |
+|       RGPE(mean)       |       |                                                 |                 |    √     |           |
+|          PSO           |       |                                                 |                 |          |           |
+|          XNES          |       |                                                 |                 |          |           |
+|          LFBO          |       | [lfbo-ml/lfbo](https://github.com/lfbo-ml/lfbo) |                 |          |           |
 
 # Links
 
@@ -74,7 +77,7 @@ For detailed instructions, please refer to [**Installation.md**](./docs/Installa
 
 ## Search Space
 
-XBBO uses **configspace** as a tool to define search space. **Please see [ConfigSpace](https://automl.github.io/ConfigSpace/master/API-Doc.html) for how to define a search space.**
+XBBO uses **ConfigSpace** as a tool to define search space. **Please see [ConfigSpace](https://automl.github.io/ConfigSpace/master/API-Doc.html) for how to define a search space.**
 
 ## Quick Start
 
@@ -115,7 +118,7 @@ if __name__ == "__main__":
     # ---- Begin BO-loop ----
     for i in range(MAX_CALL):
         # suggest
-        trial_list = hpopt.suggest()
+        trial_list = hpopt.suggest() # defalut suggest one trial
         # evaluate 
         obs = custom_black_box_func(trial_list[0].config_dict)
         # observe

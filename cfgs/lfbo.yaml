@@ -1,0 +1,34 @@
+GENERAL:
+  pipeline: BBO
+  exp_dir_root: "./exp"
+  random_seed: 0
+
+#BBO:
+#  DATASETS:
+#    name: ''
+
+OPTM:
+  name: lfbo
+  n_suggestions: 1
+  suggest_limit: 300
+  kwargs:
+    budget_limit: 300
+    classify: "rf"
+    num_starts: 5
+    num_samples: 5000
+    initial_design: 'random'
+    init_budget: 10
+  # kwargs:
+  #   surrogate: gp
+  #   acq_func: ei
+  #   acq_opt: rs_ls
+  #   initial_design: sobol
+  #   predict_x_best: true
+
+
+TEST_PROBLEM:
+  name: Rosenbrock
+  kwargs:
+    dim: 2
+    dataset_name: 'protein'
+    input_dir: '/home/leizhang/datasets/fcnet'

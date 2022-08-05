@@ -36,16 +36,17 @@ class RegularizedEA(AbstractOptimizer):
         self.dimension = self.space.get_dimensions()
         self.bounds = self.space.get_bounds()
         # self.num_of_tour_particips = kwargs.get('n_part',2)
-
+        self.init_budget = init_budget
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space,
             self.rng,
             ta_run_limit=suggest_limit,
             init_budget=init_budget,
             **kwargs)
-        self.init_budget = self.initial_design.init_budget
+        if self.init_budget is None:
+            self.init_budget = self.initial_design.init_budget
         self.initial_design_configs = self.initial_design.select_configurations(
-        )
+        )[:self.init_budget]
         self.pop_size = self.init_budget
         self.tournament_sample_size = self.pop_size // 2 if sample_size is None else min(
             max(sample_size, 1), self.pop_size)

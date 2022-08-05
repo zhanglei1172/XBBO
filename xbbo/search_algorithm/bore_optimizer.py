@@ -5,6 +5,7 @@ from scipy.optimize import minimize, OptimizeResult
 from sklearn.ensemble import RandomForestClassifier
 from xbbo.core.trials import Trial, Trials
 from xbbo.initial_design import ALL_avaliable_design
+from xbbo.search_algorithm.lfbo_optimizer import Classfify
 
 from . import alg_register
 from xbbo.search_algorithm.base import AbstractOptimizer
@@ -30,7 +31,7 @@ class BORE(AbstractOptimizer):
         AbstractOptimizer.__init__(self,
                                    space,
                                    encoding_cat='one-hot',
-                                   encoding_ord='one-hot',
+                                   encoding_ord='bin',
                                    seed=seed,
                                    suggest_limit=suggest_limit,
                                    **kwargs)
@@ -44,12 +45,15 @@ class BORE(AbstractOptimizer):
         self.dimension = self.space.get_dimensions()
         bounds = self.space.get_bounds()
         self.bounds = Bounds(bounds.lb, bounds.ub)  #(bounds.lb, bounds.ub)
+        self.init_budget = kwargs.get('init_budget')
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
-        self.init_budget = self.initial_design.init_budget
+        if self.init_budget is None:
+            self.init_budget = self.initial_design.init_budget
+            
         # self.hp_num = len(self.space)
         self.initial_design_configs = self.initial_design.select_configurations(
-        )
+        )[:self.init_budget]
 
         self.trials = Trials(space,dim=self.dimension)
         self.random_rate = random_rate
@@ -57,7 +61,7 @@ class BORE(AbstractOptimizer):
         self.num_samples = kwargs.get("num_samples", 1024)
         self.method = kwargs.get("method", "L-BFGS-B")
         self.options = kwargs.get('options', dict(maxiter=1000, ftol=1e-9))
-        self.quantile = kwargs.get("quantile", 0.25)
+        self.quantile = kwargs.get("quantile", 0.33)
 
     def _suggest(self, n_suggestions=1):
         dataset_size = self.trials.trials_num
@@ -175,35 +179,6 @@ class BORE(AbstractOptimizer):
         return not is_duplicate
 
 
-class Classfify():
-    def __init__(self, classify: str = 'rf'):
-        if classify == 'rf':
-            self.model = RandomForestClassifier(n_estimators=25)
-        else:
-            raise NotImplementedError()
-
-    def fit(self, X, z):
-        self.model.fit(X, z.ravel())
-
-    def predict(self, x):
-        if x.ndim == 1:
-            x = x.reshape(1, -1)
-        return 1 - self.model.predict_proba(x)[:, 1]
-
-
-def from_bounds(bounds):
-
-    if isinstance(bounds, Bounds):
-        low = bounds.lb
-        high = bounds.ub
-        dim = len(low)
-        assert dim == len(high), "lower and upper bounds sizes do not match!"
-    else:
-        # assumes `bounds` is a list of tuples
-        low, high = zip(*bounds)
-        dim = len(bounds)
-
-    return (low, high), dim
 
 
 opt_class = BORE

@@ -40,6 +40,7 @@ class Analyse():
         mean_df = {}
         std_df = {}
         index = -1
+        replace_nan = 1
         for cfg_path in cfg_paths:  # for every method
             with open(cfg_path, 'r') as f:
                 cfg = yaml.safe_load(f)
@@ -61,9 +62,11 @@ class Analyse():
 
             regret = []
             costs = []
+            use_log = False
             for jfile in jfiles:
                 j = loadJson(jfile)
                 curr_regret = np.array(j[self.regret_key])
+                kwargs["title"] = self.benchmark
                 if method_name == 'dehb_':
                     curr_cost = np.array(j['runtime'])
                 else:
@@ -77,6 +80,21 @@ class Analyse():
                     curr_regret = (curr_regret + d) / d  # 0-1
                     max_budget = 93312 / d
                     curr_cost /= max_budget
+                elif self.benchmark == "Rosenbrock":
+                    d = cfg["TEST_PROBLEM"].get("dim", 2)
+                    curr_regret = np.log(curr_regret) # 0-1
+                    kwargs["use_log"] = True
+                    kwargs["plot_type"] = "fevals"
+                    curr_cost = np.arange(len(curr_regret)) + 1
+                elif self.benchmark == "FCNet":
+                    dataset_name = cfg["TEST_PROBLEM"]["kwargs"].get("dataset_name")
+                    # curr_regret = np.log() # 0-1
+                    kwargs["use_log"] = True
+                    kwargs["plot_type"] = "fevals"
+                    kwargs['title'] = kwargs['title'] + '-{}'.format(dataset_name)
+                    curr_cost = np.arange(len(curr_regret)) + 1
+                    curr_regret -= {"protein":0.2213788479566574}[dataset_name]
+                
                 _, idx = np.unique(curr_regret, return_index=True)
                 idx.sort()
 
@@ -89,10 +107,12 @@ class Analyse():
             t = np.max([costs[i][0] for i in range(len(costs))])
             # t = costs[:, 0].max()
             min_cost = min(min_cost, t)
-            te, cost = self._fill_trajectory(regret, costs, replace_nan=1)
+            te, cost = self._fill_trajectory(regret, costs, replace_nan=replace_nan)
 
             idx = cost.tolist().index(t)
             te = te[idx:, :]
+            # log_te = np.log(te) if use_log else te
+            # te = np.log(te) if  kwargs["use_log"] else te
             cost = cost[idx:]
 
             # Clips off all measurements after 10^7s
@@ -207,7 +227,7 @@ class Analyse():
     def _fill_trajectory(self,
                          performance_list,
                          cost_list,
-                         replace_nan=np.NaN):
+                         replace_nan=np.NaN, use_log=False):
         frame_dict = collections.OrderedDict()
         counter = np.arange(0, len(performance_list))
         for p, t, c in zip(performance_list, cost_list, counter):
@@ -245,9 +265,9 @@ class Analyse():
         # bench_type = kwargs.get("bench_type", 'protein')
         title = kwargs.get("title", "benchmark")
         legend_size = kwargs.get("legend_size", 40)
-        if self.benchmark != 'cc18':
+        if self.benchmark != 'cc18' or kwargs.get('use_log_x'):
             plt.xscale("log")
-        if self.benchmark != 'svm' and self.benchmark != 'bnn':
+        if (self.benchmark != 'svm' and self.benchmark != 'bnn') or kwargs.get('use_log'):
             plt.yscale("log")
         plt.tick_params(which='both', direction="in")
         if self.benchmark == 'svm' or self.benchmark == 'bnn' or self.benchmark == "cc18" or self.benchmark == "paramnet":
@@ -338,6 +358,9 @@ class Analyse():
             os.path.join(self.out_dir, '{}.{}'.format(plot_name, output_type)))
         plt.savefig(os.path.join(self.out_dir,
                                  '{}.{}'.format(plot_name, output_type)),
+                    bbox_inches='tight')
+        plt.savefig(os.path.join(self.out_dir,
+                                 '{}.{}'.format(plot_name, "png")),
                     bbox_inches='tight')
 
 

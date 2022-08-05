@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # ---- Begin BO-loop ----
     for i in range(MAX_CALL):
         # suggest
-        trial_list = hpopt.suggest()
+        trial_list = hpopt.suggest() # defalut suggest one trial
         # evaluate 
         obs = custom_black_box_func(trial_list[0].config_dict)
         # observe
