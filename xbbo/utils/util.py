@@ -5,9 +5,7 @@ from ConfigSpace.hyperparameters import (CategoricalHyperparameter,
                                          OrdinalHyperparameter, Constant,
                                          UniformFloatHyperparameter,
                                          UniformIntegerHyperparameter)
-import urllib
 
-import tqdm
 
 def dumpOBJ(path, filename, obj):
     with open(os.path.join(path, filename), 'wb') as f:

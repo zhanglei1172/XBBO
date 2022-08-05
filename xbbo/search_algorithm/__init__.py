@@ -1,4 +1,5 @@
 import importlib, os
+import warnings
 
 from xbbo.core.register import Register
 
@@ -11,13 +12,21 @@ for model in os.listdir(os.path.dirname(__file__)):
             module = importlib.import_module('.' + model[:-3], __package__)
     except Exception as e:
         print("Warnning: import alg-{} failed!".format(model))
+        warnings.warn(e)
 for model in os.listdir(os.path.dirname(__file__)+'/multi_fidelity'):
     try:
         if model.endswith('.py'):
             module = importlib.import_module('.' + model[:-3], __package__+'.multi_fidelity')
     except Exception as e:
         print("Warnning: import alg-{} failed!".format(model))
-
+        warnings.warn(e)
+for model in os.listdir(os.path.dirname(__file__)+'/multi_obj'):
+    try:
+        if model.endswith('.py'):
+            module = importlib.import_module('.' + model[:-3], __package__+'.multi_obj')
+    except Exception as e:
+        print("Warnning: import alg-{} failed!".format(model))
+        warnings.warn(e)
 # __all__ = alg_register.keys()
 # def get_opt_class(opt_name):
 
