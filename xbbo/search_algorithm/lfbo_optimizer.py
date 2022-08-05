@@ -49,7 +49,7 @@ class LFBO(AbstractOptimizer):
         self.bounds = Bounds(bounds.lb, bounds.ub)  #(bounds.lb, bounds.ub)
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
-        self.init_budget = kwargs['init_budget']
+        self.init_budget = kwargs.get('init_budget')
         if self.init_budget is None:
             self.init_budget = self.initial_design.init_budget
             

@@ -45,7 +45,7 @@ class BORE(AbstractOptimizer):
         self.dimension = self.space.get_dimensions()
         bounds = self.space.get_bounds()
         self.bounds = Bounds(bounds.lb, bounds.ub)  #(bounds.lb, bounds.ub)
-        self.init_budget = kwargs['init_budget']
+        self.init_budget = kwargs.get('init_budget')
         self.initial_design = ALL_avaliable_design[initial_design](
             self.space, self.rng, ta_run_limit=suggest_limit, **kwargs)
         if self.init_budget is None:
