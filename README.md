@@ -34,7 +34,7 @@ We provide these black box optimization algorithms as follows:
 |    Search Algorithm    | Docs  |                 Official Links                  | multi-fideility | transfer | multi-obj |
 | :--------------------: | :---: | :---------------------------------------------: | :-------------: | :------: | :-------: |
 |         Random         |       |                                                 |                 |          |           |
-|          BORE          |       |                                                 |                 |          |           |
+|          BORE          |       | [ltiao/bore](https://github.com/ltiao/bore) |                 |          |           |
 |         Anneal         |       |                                                 |                 |          |           |
 | Diffenential Evolution |       |                                                 |                 |          |           |
 |         CMA-ES         |       |                                                 |                 |          |           |
