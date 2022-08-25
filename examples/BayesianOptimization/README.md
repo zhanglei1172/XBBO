@@ -29,6 +29,6 @@ And run `PYTHONPATH='./' python comparison/xbbo_benchmark.py` in the command lin
 ### Branin
 
 |     Method     |    Minimum    | Best minimum | Mean f_calls to min | Std f_calls to min | Fastest f_calls to min |
-+----------------+---------------+--------------+---------------------+--------------------+------------------------+
+| :--------: | :-----------: | :----------: | :-----------------: | :----------------: | :--------------------: |
 | XBBO(basic-bo) | 0.398+/-0.000 |    0.398     |        158.4        |       37.492       |           95           |
 
