@@ -48,8 +48,10 @@ def do_experiment(cfg_clone):  # pragma: main
 
 if __name__ == '__main__':
     confs = {
-        "./cfgs/bore.yaml": ["--mark", "bore"],
-        "./cfgs/lfbo.yaml": ["--mark", "lfbo"],
+        "./cfgs/turbo-1.yaml": ["--mark", "turbo-1"],
+        "./cfgs/turbo-2.yaml": ["--mark", "turbo-2"]
+        # "./cfgs/bore.yaml": ["--mark", "bore"],
+        # "./cfgs/lfbo.yaml": ["--mark", "lfbo"],
         # "./cfgs/ext_openbox_hb.yaml": ["--mark", "openbox_hb"],
         # "./cfgs/rfdehb.yaml": ["--mark", "rfdehb"],
         # "./cfgs/ext_dehb.yaml": ["--mark", "ext_dehb"],
@@ -66,7 +68,7 @@ if __name__ == '__main__':
     }
     general_argv = ["-r", "50"]
     # general_opts = ["TEST_PROBLEM.name", "countingones"]
-    general_opts = ["OPTM.kwargs.classify", "xgb", "OPTM.kwargs.num_starts", "0", "TEST_PROBLEM.name", "FCNet"]
+    general_opts = ["TEST_PROBLEM.name", "Rosenbrock"]
     for conf in confs:
         cfg_clone = cfg.clone()
         cfg.freeze()
@@ -135,7 +137,7 @@ if __name__ == '__main__':
     #                      "hb"])  # repeat 3 times with diffent seeds
     # do_experiment(cfg_clone)
     # cfg.defrost()
-    marks = ["rs","hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "openbox-mfes", "lfbo", 'bore']
+    marks = ["rs","hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "openbox-mfes", "lfbo", 'bore',"turbo-1",'turbo-2']
     # marks = ["DEHB_DEHB", "RFHB", "hb","DEHB","bohb_array_inf", "RFHB_OH"]
     # Analyse('./exp', benchmark='countingones', marks=marks, legend_size=16)
     Analyse('./exp', benchmark='FCNet', marks=marks, legend_size=16)
