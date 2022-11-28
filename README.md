@@ -42,7 +42,7 @@ We provide these black box optimization algorithms as follows:
 |     Regularized EA     |       |                                                 |                 |          |           |
 |          PBT           |       |                                                 |                 |          |           |
 |         TuRBO          |       |                                                 |                 |          |           |
-|         LaMCTS         |       |                                                 |                 |          |           |
+|         LaMCTS         | | [facebookresearch/LaMCTS](https://github.com/facebookresearch/LaMCTS)                                                  |                 |          |           |
 |       HyperBand        |       |                                                 |        √        |          |           |
 |          BOHB          |       |                                                 |        √        |          |           |
 |          DEHB          |       |                                                 |        √        |          |           |
