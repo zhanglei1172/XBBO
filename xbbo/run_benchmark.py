@@ -48,7 +48,8 @@ def do_experiment(cfg_clone):  # pragma: main
 
 if __name__ == '__main__':
     confs = {
-        "./cfgs/lamcts.yaml": ["--mark", "lamcts"],
+        "./cfgs/tpe.yaml": ["--mark", "TPE"],
+        # "./cfgs/lamcts.yaml": ["--mark", "lamcts"],
         # "./cfgs/turbo-2.yaml": ["--mark", "turbo-2"]
         # "./cfgs/bore.yaml": ["--mark", "bore"],
         # "./cfgs/lfbo.yaml": ["--mark", "lfbo"],
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     #                      "hb"])  # repeat 3 times with diffent seeds
     # do_experiment(cfg_clone)
     # cfg.defrost()
-    marks = ["rs","hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "openbox-mfes", "lfbo", 'bore',"turbo-1",'turbo-2','lamcts']
+    marks = ["rs","hb","DEHB","bohb", "ext_hb", "ext_bohb","ext_dehb", "openbox_hb","openbox_bohb", "openbox-mfes", "lfbo", 'bore',"turbo-1",'turbo-2','lamcts','TPE']
     # marks = ["DEHB_DEHB", "RFHB", "hb","DEHB","bohb_array_inf", "RFHB_OH"]
     # Analyse('./exp', benchmark='countingones', marks=marks, legend_size=16)
     Analyse('./exp', benchmark='FCNet', marks=marks, legend_size=16)
