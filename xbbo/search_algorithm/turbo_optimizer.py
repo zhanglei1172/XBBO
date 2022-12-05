@@ -139,15 +139,17 @@ class TuRBO_state():
     
     def _get_length_scale(self):
         ks = self.surrogate_model.kernel
+        eles = []
         ele_end = 0
         ele_num = None
         for hp in ks.hyperparameters:
             ele_end += hp.n_elements
             if 'length_scale' in hp.name:
                 ele_num = hp.n_elements
-                break
+                eles.extend(ks.theta[ele_end-ele_num:ele_end])
+                # break
         assert ele_num is not None
-        return np.exp(ks.theta[ele_end-ele_num:ele_end]) # Be careful log theta
+        return np.exp(eles) # Be careful log theta
 
     def create_candidates(self, n_candidates):
         length = self.length

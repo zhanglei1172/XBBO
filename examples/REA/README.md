@@ -19,7 +19,7 @@ E.g. `PYTHONPATH='./' python examples/REA/rosenbrock_rea.py`
 Modify the following section of `comparison/xbbo_benchmark.py` :
 
 ```python
-test_algs = ["bore"]
+test_algs = ["rea"]
 ```
 And run `PYTHONPATH='./' python comparison/xbbo_benchmark.py` in the command line.
 

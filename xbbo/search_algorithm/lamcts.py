@@ -152,7 +152,7 @@ class LaMCTS(AbstractOptimizer):
                 trial_list.append(
                     Trial(configuration=config,
                           config_dict=config.get_dictionary(),
-                          array=config.get_array(),
+                          array=config.get_array(sparse=False),
                           _latent_sample=None,
                           _leaf=None))
         else:

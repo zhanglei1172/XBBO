@@ -33,16 +33,19 @@ We provide these black box optimization algorithms as follows:
 
 |    Search Algorithm    | Docs  |                 Official Links                  | multi-fideility | transfer | multi-obj |
 | :--------------------: | :---: | :---------------------------------------------: | :-------------: | :------: | :-------: |
-|         Random         |       |                                                 |                 |          |           |
-|          BORE          |       | [ltiao/bore](https://github.com/ltiao/bore) |                 |          |           |
-|         Anneal         |       |                                                 |                 |          |           |
-| Diffenential Evolution |       |                                                 |                 |          |           |
-|         CMA-ES         |       |                                                 |                 |          |           |
+|         Random         |   [Random](examples/RandomSearch/README.md)    |                                                 |                 |          |           |
+|         Bayesian Optimization         |   [BO](examples/BayesianOptimization/README.md)    |                                                 |                 |          |           |
+|        TPE         |   [TPE](examples/TPE/README.md)    |      [hyperopt](https://github.com/hyperopt/hyperopt)                                           |                 |          |           |
+|          BORE          |   [BORE](examples/BORE/README.md)    | [ltiao/bore](https://github.com/ltiao/bore) |                 |          |           |
+|         Anneal         |   [Anneal](examples/Anneal/README.md)    |                                                 |                 |          |           |
+|         CEM         |   [CEM](examples/CEM/README.md)    |                                                 |                 |          |           |
+| Diffenential Evolution |   [DE](examples/DE/README.md)    |                                                 |                 |          |           |
+|         CMA-ES         |   [CMA-ES](examples/CMAES/README.md)    |      [CMA-ES/pycma](https://github.com/CMA-ES/pycma)                                           |                 |          |           |
 |        NSGA-II         |       |                                                 |                 |          |     √     |
-|     Regularized EA     |       |                                                 |                 |          |           |
+|     Regularized EA     |  [REA](examples/REA/README.md)     |     [Google-Research](https://github.com/AsimKhan2019/Google-Research/tree/cb1b8d505d48e6ee80a786c77f3527b35112755e/evolution/regularized_evolution_algorithm)                                            |                 |          |           |
 |          PBT           |       |                                                 |                 |          |           |
-|         TuRBO          |       |                                                 |                 |          |           |
-|         LaMCTS         |       |                                                 |                 |          |           |
+|         TuRBO          |   [TuRBO](examples/TuRBO/README.md)    |                                                 |                 |          |           |
+|         LaMCTS         | [LaMCTS](./examples/LaMCTS/README.md) | [facebookresearch](https://github.com/facebookresearch/LaMCTS)                                                  |                 |          |           |
 |       HyperBand        |       |                                                 |        √        |          |           |
 |          BOHB          |       |                                                 |        √        |          |           |
 |          DEHB          |       |                                                 |        √        |          |           |
@@ -54,7 +57,7 @@ We provide these black box optimization algorithms as follows:
 |       RGPE(mean)       |       |                                                 |                 |    √     |           |
 |          PSO           |       |                                                 |                 |          |           |
 |          XNES          |       |                                                 |                 |          |           |
-|          LFBO          |       | [lfbo-ml/lfbo](https://github.com/lfbo-ml/lfbo) |                 |          |           |
+|          LFBO          |    [LFBO](examples/LFBO/README.md)   | [lfbo-ml/lfbo](https://github.com/lfbo-ml/lfbo) |                 |          |           |
 
 # Links
 
