@@ -15,6 +15,11 @@ from xbbo.search_algorithm.transfer_bo_optimizer import TransferBO
 from xbbo.problem.transfer_problem import BenchName, TransferBenchmark
 from xbbo.core.constants import MAXINT
 
+from utils import get_logger, init_logger
+
+init_logger('./logs/TAF.log')
+_logger = get_logger()
+
 if __name__ == "__main__":
     MAX_CALL = 30
     rng = np.random.RandomState(42)
@@ -58,6 +63,8 @@ if __name__ == "__main__":
         trial_list[0].add_observe_value(obs)
         hpopt.observe(trial_list=trial_list)
 
-        print(obs)
+        # print(obs)
+        _logger.info('iter:{}, obs:{}'.format(i, obs))
 
-    print('find best (value, config):{}'.format(hpopt.trials.get_best()))
+    # print('find best (value, config):{}'.format(hpopt.trials.get_best()))
+    _logger.info('find best (value, config):{}'.format(hpopt.trials.get_best()))

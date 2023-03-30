@@ -12,6 +12,7 @@ from ConfigSpace.hyperparameters import \
     CategoricalHyperparameter, UniformFloatHyperparameter, UniformIntegerHyperparameter
 from xbbo.core.constants import MAXINT, Key
 from xbbo.problem.base import AbstractBenchmark
+from xbbo.utils.util import create_rng
 
 class BenchName(Enum):
     TST = 0
@@ -263,18 +264,18 @@ class TransferBenchmark(AbstractBenchmark):
         self.target_task_name = target_task_name
         self.normalize_y = normalize_y
         self.data_path_root = data_path_root
-        super().__init__(rng)
-        
+        rng = create_rng(rng)
         if bench_name == BenchName.TST:
-            self.data_loader = TST_Data(bench_name=bench_name,data_path_root=data_path_root, data_base_name=data_base_name,target_task_name=target_task_name, rng=self.rng,**kwargs)
+            self.data_loader = TST_Data(bench_name=bench_name,data_path_root=data_path_root, data_base_name=data_base_name,target_task_name=target_task_name, rng=rng,**kwargs)
             # self.old_D_x, self.old_D_y, self.new_D_x, self.new_D_y, self.hp_config = 
             # self.api_config = self.hp_config
         elif bench_name in [BenchName.Table_deepar, BenchName.Table_fcnet, BenchName.Table_nas102, BenchName.Table_xgboost]:
-            self.data_loader = Table_Data(bench_name=bench_name,data_path_root=data_path_root, data_base_name=data_base_name,target_task_name=target_task_name,min_max_features=True, rng=self.rng,**kwargs)
+            self.data_loader = Table_Data(bench_name=bench_name,data_path_root=data_path_root, data_base_name=data_base_name,target_task_name=target_task_name,min_max_features=True, rng=rng,**kwargs)
         else:
             raise NotImplemented
         if normalize_y:
             self.old_D_y = [(y - y.min())/(y.max()-y.min()) for y in self.old_D_y]
+        super().__init__(rng)
 
         self._old_D_x, self._old_D_y, _new_D_x, _new_D_y = self.data_loader.load_data()
         self._bbfunc = BlackboxOffline(_new_D_x, _new_D_y)
