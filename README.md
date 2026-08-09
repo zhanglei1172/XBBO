@@ -1,3 +1,5 @@
+
+
 <div align="center">
 
 <img src="./docs/_static/XBBO_logo.png" width="200">
@@ -13,7 +15,7 @@
 
 <br>
 
-**XBBO** is an an effective, modular, reproducible and flexible black-box optimization (BBO) codebase, which aims to provide a common framework and benchmark for the BBO community.
+**XBBO** is an effective, modular, reproducible and flexible black-box optimization (BBO) codebase, which aims to provide a common framework and benchmark for the BBO community.
 
 This project is now supported by PengCheng Lab.
 
@@ -56,7 +58,7 @@ We provide these black box optimization algorithms as follows:
 |         RMoGP          |       |                                                 |                 |    √     |           |
 |       RGPE(mean)       |       |                                                 |                 |    √     |           |
 |          PSO           |       |                                                 |                 |          |           |
-|          XNES          |       |                                                 |                 |          |           |
+|          XNES          |                                                 |                 |          |           |
 |          LFBO          |    [LFBO](examples/LFBO/README.md)   | [lfbo-ml/lfbo](https://github.com/lfbo-ml/lfbo) |                 |          |           |
 
 # Links
